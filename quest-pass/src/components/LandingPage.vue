@@ -100,7 +100,7 @@ const enterSite = () => {
     // 2. Navigate after transition
     // In a real app, you would use Vue Router here, e.g., router.push('/login')
     setTimeout(() => {
-        window.location.href = 'login-page.html';
+        window.location.href = 'login.vue';
     }, 600); // match the .loader-overlay transition duration
 };
 </script>
