@@ -40,8 +40,11 @@
             this <router-link> is the vue-way of doing <a> tags.
             it'll navigate to the eventdetails page without a full page reload.
           -->
+          <!-- If event.id is present make the card a router-link, otherwise render a non-clickable div
+               This prevents Vue Router from throwing "Missing required param 'id'" when id is undefined. -->
           <router-link
-            :to="'/event/' + event.id"
+            v-if="event.id"
+            :to="{ name: 'EventDetails', params: { id: event.id } }"
             class="text-decoration-none text-dark"
           >
             <div class="card h-100 event-card shadow-sm border-0">
@@ -62,6 +65,26 @@
               </div>
             </div>
           </router-link>
+
+          <div v-else class="text-decoration-none text-dark">
+            <div class="card h-100 event-card shadow-sm border-0">
+              <img
+                :src="event.image"
+                class="card-img-top"
+                alt="Event Image"
+                @error="onImageError"
+              />
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title fw-bold">{{ event.title }}</h5>
+                <p class="card-text text-muted small flex-grow-1">
+                  {{ event.date }}
+                </p>
+                <p class="card-text description-truncate">
+                  {{ event.description }}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <!-- no events found message -->
@@ -224,8 +247,11 @@ function onImageError(event) {
 
 /* new style to truncate long descriptions */
 .description-truncate {
+  /* Use the WebKit box model for multi-line truncation */
   display: -webkit-box;
   -webkit-line-clamp: 2; /* show 2 lines */
+  /* standard (future) property for compatibility */
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -32,6 +32,8 @@ const routes = [
     name: 'EventDetails',
     component: EventDetails,
     meta: { requiresAuth: true }, // protect this page too
+    // allow the route param `id` to be passed as a prop to the component
+    props: true,
   },
 ];
 

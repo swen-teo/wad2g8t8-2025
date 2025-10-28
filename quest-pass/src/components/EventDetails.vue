@@ -363,9 +363,11 @@ const SPOTIFY_RECENTLY_PLAYED =
   'https://api.spotify.com/v1/me/player/recently-played?limit=50';
 
 // --- component setup ---
+// accept `id` as a prop (route props) but fall back to the route param
+const props = defineProps({ id: { type: [String, Number], required: false } });
 const route = useRoute();
 const userStore = useUserStore();
-const eventId = route.params.id;
+const eventId = props.id ?? route.params.id;
 const userId = userStore.currentUser ? userStore.currentUser.uid : null;
 
 // --- local state ---
