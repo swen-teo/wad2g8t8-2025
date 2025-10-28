@@ -76,10 +76,15 @@ onMounted(() => {
     if (user) {
       // a user is logged in!
       // fetch their profile data
-      // from the firestore database using their uid.
-      await userStore.fetchUserProfile(user.uid);
+      // from the firestore database.
+
+      // --- THE FIX ---
+      // We must pass the *entire user object* to the store,
+      // not just the user.uid. The store needs the whole
+      // object to get the email, name, and photo URL.
+      await userStore.fetchUserProfile(user);
     } else {
-      // user is logged in.
+      // user is logged out.
       // clear any old data from our store.
       userStore.clearUser();
     }
