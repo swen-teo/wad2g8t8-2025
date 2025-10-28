@@ -6,7 +6,7 @@
 export async function generateQuizQuestions(artist) {
   // we're fetching from a secure backend
   const response = await fetch(
-    'https://turbo-fiesta-6v96v6q7xw73gxw-3000.app.github.dev/api/quiz',
+    'https://damp-werewolf-x6rr5rjxrq626vrq-8888.app.github.dev/api/quiz',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
