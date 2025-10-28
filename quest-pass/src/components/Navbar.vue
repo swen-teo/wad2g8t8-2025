@@ -49,7 +49,7 @@
         <!-- User Dropdown (Logged In) -->
         <ul
           class="navbar-nav ms-auto"
-          v-if="userStore.currentUser"
+          v-if="userStore.isLoggedIn"
         >
           <li class="nav-item me-2 d-flex align-items-center">
             <span class="navbar-text d-flex align-items-center">

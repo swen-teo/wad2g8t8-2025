@@ -93,7 +93,18 @@ async function handleGoogleLogin() {
     <div class="row h-100 align-items-center justify-content-center">
       <div class="col-md-6 col-lg-4">
         <!-- decorative animated background layer -->
-        <div class="bg-sparkles" aria-hidden="true"></div>
+        <div class="bg-sparkles" aria-hidden="true">
+          <!-- The dots layer from your original styles -->
+          <div class="dots"></div>
+          <!-- New falling stars layer -->
+          <div class="falling-stars">
+            <div class="star">★</div>
+            <div class="star">★</div>
+            <div class="star">★</div>
+            <div class="star">★</div>
+            <div class="star">★</div>
+          </div>
+        </div>
         <!-- your sparkle animation container can go here -->
 
         <div class="card shadow-lg border-0" style="border-radius: 1rem">
@@ -257,10 +268,20 @@ async function handleGoogleLogin() {
   animation: dotsMove 20s linear infinite;
 }
 
+/* ensure falling stars sit above soft blobs but behind the card */
+.bg-sparkles .falling-stars {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 1;
+  mix-blend-mode: screen; /* make stars pop against background */
+  pointer-events: none;
+}
+
 /* ensure the card content sits above the effects */
 .card {
   position: relative;
-  z-index: 1;
+  z-index: 2; /* ensure the card sits above stars and blobs */
 }
 
 @keyframes gradientShift {
@@ -279,5 +300,62 @@ async function handleGoogleLogin() {
   to { transform: translateY(-40px); }
 }
 
-</style>
+/* --- ADDED FOR FALLING STARS --- */
+/* Falling stars: brighter, glowing streaks that sit above blobs */
+.star {
+  position: absolute;
+  top: -8vh; /* start above viewport */
+  font-size: 18px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.6);
+  transform: translateY(0) rotate(0deg);
+  animation: starFall linear infinite;
+  will-change: transform, opacity;
+}
 
+@keyframes starFall {
+  from {
+    transform: translateY(-8vh) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(110vh) rotate(360deg) scale(0.95);
+    opacity: 0.85;
+  }
+}
+
+/* Add variety to the stars for a more natural look */
+.falling-stars .star:nth-child(1) {
+  left: 6%;
+  animation-duration: 3.6s;
+  animation-delay: -1.2s;
+  font-size: 20px;
+}
+.falling-stars .star:nth-child(2) {
+  left: 26%;
+  animation-duration: 2.8s;
+  animation-delay: -2.1s;
+  font-size: 16px;
+}
+.falling-stars .star:nth-child(3) {
+  left: 46%;
+  animation-duration: 4.4s;
+  animation-delay: -0.6s;
+  font-size: 18px;
+}
+.falling-stars .star:nth-child(4) {
+  left: 66%;
+  animation-duration: 2.4s;
+  animation-delay: -3.0s;
+  font-size: 22px;
+}
+.falling-stars .star:nth-child(5) {
+  left: 86%;
+  animation-duration: 3.8s;
+  animation-delay: -3.8s;
+  font-size: 17px;
+}
+/* --- END OF FALLING STARS --- */
+
+</style>
