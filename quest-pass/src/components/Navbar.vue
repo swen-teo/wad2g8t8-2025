@@ -44,10 +44,11 @@
           class="navbar-nav ms-auto"
           v-if="userStore.currentUser"
         >
-          <li class="nav-item me-2">
-            <span class="navbar-text">
+          <li class="nav-item me-2 d-flex align-items-center">
+            <span class="navbar-text d-flex align-items-center">
               <i class="fas fa-star text-warning me-1"></i>
-              {{ userStore.userPoints }} PTS
+              <span class="fw-semibold">{{ userStore.currentUser?.totalPoints ?? 0 }}</span>
+              <span class="ms-1 text-muted small">PTS</span>
             </span>
           </li>
           <li class="nav-item dropdown">
@@ -60,7 +61,7 @@
               aria-expanded="false"
             >
               <img
-                :src="userStore.userAvatar"
+                :src="(userStore.currentUser && userStore.currentUser.avatar) || 'https://placehold.co/30/a78bfa/ffffff?text=U'"
                 class="rounded-circle me-2"
                 width="30"
                 height="30"
