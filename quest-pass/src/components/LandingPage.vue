@@ -47,6 +47,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
 // --- Reactive State ---
 const isLoading = ref(true);
@@ -93,14 +94,15 @@ onMounted(() => {
 });
 
 // --- Methods ---
+const router = useRouter();
+
 const enterSite = () => {
     // 1. Trigger the fade-out
     isLoading.value = false;
 
-    // 2. Navigate after transition
-    // In a real app, you would use Vue Router here, e.g., router.push('/login')
+    // 2. Navigate after transition using the router
     setTimeout(() => {
-        window.location.href = 'login.vue';
+        router.push({ name: 'Login' });
     }, 600); // match the .loader-overlay transition duration
 };
 </script>

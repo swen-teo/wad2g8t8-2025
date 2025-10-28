@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
@@ -16,6 +16,7 @@ const error = ref(null); // holds any firebase error messages
 
 // --- services ---
 const router = useRouter();
+const route = useRoute();
 const googleProvider = new GoogleAuthProvider();
 
 // --- methods ---
@@ -38,7 +39,9 @@ async function handleLogin() {
     // if it works, the listener in app.vue will see it
     // and the router will redirect us away.
     // we don't even need to redirect here, but we can.
-    router.push('/');
+    // prefer redirect query if present (user tried to access a protected route)
+    const redirect = route.query.redirect || { name: 'Home' };
+    router.push(redirect);
   } catch (err) {
     // handle firebase errors
     switch (err.code) {
@@ -72,7 +75,8 @@ async function handleGoogleLogin() {
     // open the google popup
     await signInWithPopup(auth, googleProvider);
     // just like before, app.vue will handle the state
-    router.push('/');
+    const redirect = route.query.redirect || { name: 'Home' };
+    router.push(redirect);
   } catch (err) {
     // user might have closed the popup
     if (err.code !== 'auth/popup-closed-by-user') {
