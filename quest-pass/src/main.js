@@ -6,6 +6,7 @@ import axios from 'axios'
 // bootstrap (CSS + JS)
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+
 // project global styles 
 import './style.css'
 

@@ -47,13 +47,19 @@
         </ul>
 
         <!-- User Dropdown (Logged In) -->
+        <!-- 
+          FIX: Changed v-if="userStore.isLoggedIn" to v-if="userStore.currentUser"
+          This prevents an error when Vue tries to render 'userStore.currentUser.name'
+          before the currentUser object has been loaded from Firestore.
+        -->
         <ul
           class="navbar-nav ms-auto"
-          v-if="userStore.isLoggedIn"
+          v-if="userStore.currentUser"
         >
           <li class="nav-item me-2 d-flex align-items-center">
             <span class="navbar-text d-flex align-items-center">
               <font-awesome-icon :icon="['fas','star']" class="text-warning me-1" />
+              <!-- This was already safe, but it's good practice -->
               <span class="fw-semibold">{{ userStore.currentUser?.totalPoints ?? 0 }}</span>
               <span class="ms-1 text-muted small">PTS</span>
             </span>
@@ -75,6 +81,7 @@
                 alt="User Avatar"
                 style ="object-fit: cover"
               />
+              <!-- This is now safe because of the parent v-if -->
               {{ userStore.currentUser.name }}
             </a>
             <ul
