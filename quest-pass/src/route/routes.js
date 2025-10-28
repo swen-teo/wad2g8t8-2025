@@ -9,10 +9,16 @@ import Home from '../components/Home.vue';
 import Login from '../components/Login.vue';
 import Profile from '../components/Profile.vue';
 import EventDetails from '../components/EventDetails.vue';
+import LandingPage from "../components/LandingPage.vue";
 
 const routes = [
   {
     path: '/',
+    name: 'LandingPage',
+    component: LandingPage,
+  },
+  {
+    path: '/home',
     name: 'Home',
     component: Home,
   },
