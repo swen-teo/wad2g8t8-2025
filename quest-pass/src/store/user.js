@@ -5,26 +5,50 @@ import { signOut } from 'firebase/auth';
 // fix: remove useRouter, it's not reliable to use it inside a pinia store.
 // We will call router.push() from the component *after* logout completes.
 
-// This is the "demo user" data from your app (2).js
-// We use this as a template for new users.
-const demoUserTemplate = {
-  id: 9999, // This will be replaced by Firebase UID
-  name: 'Jungkook',
-  email: 'demo@questpass.com',
-  spotifyConnected: true,
-  totalPoints: 888,
-  level: 9,
-  currentTier: 'Gold',
-  badges: ['First Quest', 'Quiz Master', 'Superfan'],
-  avatar:
-    'https://i.pinimg.com/474x/55/41/a6/5541a64a6e9c00ffaa0e552d7f102d62.jpg',
-  favoriteGenres: ['Pop', 'K-pop', 'Indie Rock'],
-  streakDays: 5,
-  joinDate: '2025-08-01',
-  completedQuests: 11,
-  purchasedTickets: 4,
-  activeQuests: [],
-};
+// // This is the "demo user" data from your app (2).js
+// // We use this as a template for new users.
+// const demoUserTemplate = {
+//   id: 9999, // This will be replaced by Firebase UID
+//   name: 'Jungkook',
+//   email: 'demo@questpass.com',
+//   spotifyConnected: true,
+//   totalPoints: 888,
+//   level: 9,
+//   currentTier: 'Gold',
+//   badges: ['First Quest', 'Quiz Master', 'Superfan'],
+//   avatar:
+//     'https://i.pinimg.com/474x/55/41/a6/5541a64a6e9c00ffaa0e552d7f102d62.jpg',
+//   favoriteGenres: ['Pop', 'K-pop', 'Indie Rock'],
+//   streakDays: 5,
+//   joinDate: '2025-08-01',
+//   completedQuests: 11,
+//   purchasedTickets: 4,
+//   activeQuests: [],
+// };
+
+function createDefaultUserProfile(user) {
+  const now = new Date().toISOString().split('T')[0]; // e.g. "2025-10-28"
+  return {
+    id: user.uid,
+    uid: user.uid,
+    name: user.displayName || 'New User',
+    email: user.email,
+    avatar: user.photoURL || 'https://placehold.co/100x100?text=User',
+
+    // Default progress fields (all fresh!)
+    totalPoints: 0,
+    level: 1,
+    currentTier: 'Bronze',
+    badges: ['First Quest'],
+
+    favoriteGenres: [],
+    streakDays: 1,
+    joinDate: now,
+    completedQuests: 0,
+    purchasedTickets: 0,
+    activeQuests: [],
+  };
+}
 
 // Define the store
 export const useUserStore = defineStore('user', {
@@ -76,18 +100,20 @@ export const useUserStore = defineStore('user', {
           // User profile exists, load it
           this.currentUser = { id: docSnap.id, ...docSnap.data() };
         } else {
-          // User profile doesn't exist (first-time login)
-          // Create one using their Google info and the demo template
-          console.log('User profile not found, creating a new one...');
-          const newUserProfile = {
-            ...demoUserTemplate, // Use demo data as a base
-            id: user.uid,
-            uid: user.uid,
-            email: user.email, // Use their actual email
-            name: user.displayName || 'New User', // Use their Google display name
-            avatar: user.photoURL || demoUserTemplate.avatar, // Use Google photo
-            joinDate: new Date().toISOString().split('T')[0], // Set join date to today
-          };
+          // // User profile doesn't exist (first-time login)
+          // // Create one using their Google info and the demo template
+          // console.log('User profile not found, creating a new one...');
+          // const newUserProfile = {
+          //   ...demoUserTemplate, // Use demo data as a base
+          //   id: user.uid,
+          //   uid: user.uid,
+          //   email: user.email, // Use their actual email
+          //   name: user.displayName || 'New User', // Use their Google display name
+          //   avatar: user.photoURL || demoUserTemplate.avatar, // Use Google photo
+          //   joinDate: new Date().toISOString().split('T')[0], // Set join date to today
+          // };
+          console.log('Creating new user profile for:', user.email);
+          const newUserProfile = createDefaultUserProfile(user);
 
           // Save this new profile to Firestore
           await setDoc(userDocRef, newUserProfile);

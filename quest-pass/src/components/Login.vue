@@ -8,6 +8,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/firebase.js';
 // we don't need the store here, since App.vue handles the login state
+import { useUserStore } from '@/store/user.js';
 
 // --- state ---
 const loginForm = ref({ email: '', password: '' });
@@ -18,6 +19,7 @@ const error = ref(null); // holds any firebase error messages
 const router = useRouter();
 const route = useRoute();
 const googleProvider = new GoogleAuthProvider();
+const userStore = useUserStore();
 
 // --- methods ---
 
@@ -31,14 +33,15 @@ async function handleLogin() {
 
   try {
     // try to sign in with firebase auth
-    await signInWithEmailAndPassword(
+    const userCredential = await signInWithEmailAndPassword(
       auth,
       loginForm.value.email,
       loginForm.value.password
     );
-    // if it works, the listener in app.vue will see it
-    // and the router will redirect us away.
-    // we don't even need to redirect here, but we can.
+
+    // update the Pinia user store immediately so components react
+    await userStore.fetchUserProfile(userCredential.user);
+
     // prefer redirect query if present (user tried to access a protected route)
     const redirect = route.query.redirect || { name: 'Home' };
     router.push(redirect);
@@ -73,8 +76,11 @@ async function handleGoogleLogin() {
 
   try {
     // open the google popup
-    await signInWithPopup(auth, googleProvider);
-    // just like before, app.vue will handle the state
+    const result = await signInWithPopup(auth, googleProvider);
+
+    // update the Pinia user store immediately so components react
+    await userStore.fetchUserProfile(result.user);
+
     const redirect = route.query.redirect || { name: 'Home' };
     router.push(redirect);
   } catch (err) {

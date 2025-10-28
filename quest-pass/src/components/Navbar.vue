@@ -73,6 +73,7 @@
                 width="30"
                 height="30"
                 alt="User Avatar"
+                style ="object-fit: cover"
               />
               {{ userStore.currentUser.name }}
             </a>
