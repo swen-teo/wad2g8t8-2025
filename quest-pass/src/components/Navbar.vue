@@ -1,51 +1,133 @@
-<nav class="navbar navbar-expand-lg navbar-light sticky-top">
+<template>
+  <nav class="navbar navbar-expand-lg navbar-light sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="./">
-            <i class="fas fa-ticket-alt me-2"></i>QuestPass
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <!-- logged in links -->
-            <ul class="navbar-nav me-auto" v-if="currentUser">
-                <li class="nav-item">
-                    <a class="nav-link" href="./">
-                        <i class="fas fa-calendar-alt me-2"></i>Events
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="profile-page.html">
-                        <i class="fas fa-user-circle me-2"></i>Profile
-                    </a>
-                </li>
+      <router-link class="navbar-brand fw-bold" to="/">
+        <i class="fas fa-ticket-alt me-2"></i>QuestPass
+      </router-link>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarNav"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div
+        class="collapse navbar-collapse"
+        id="navbarNav"
+      >
+        <!-- Logged-in links -->
+        <ul
+          class="navbar-nav me-auto"
+          v-if="userStore.isLoggedIn"
+        >
+          <li class="nav-item">
+            <router-link
+              class="nav-link"
+              active-class="active"
+              to="/"
+              >Events</router-link
+            >
+          </li>
+          <li class="nav-item">
+            <router-link
+              class="nav-link"
+              active-class="active"
+              to="/profile"
+              >Profile</router-link
+            >
+          </li>
+        </ul>
+
+        <!-- User Dropdown (Logged In) -->
+        <ul
+          class="navbar-nav ms-auto"
+          v-if="userStore.currentUser"
+        >
+          <li class="nav-item me-2">
+            <span class="navbar-text">
+              <i class="fas fa-star text-warning me-1"></i>
+              {{ userStore.userPoints }} PTS
+            </span>
+          </li>
+          <li class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle d-flex align-items-center"
+              href="#"
+              id="navbarUserDropdown"
+              role="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <img
+                :src="userStore.userAvatar"
+                class="rounded-circle me-2"
+                width="30"
+                height="30"
+                alt="User Avatar"
+              />
+              {{ userStore.currentUser.name }}
+            </a>
+            <ul
+              class="dropdown-menu dropdown-menu-end"
+              aria-labelledby="navbarUserDropdown"
+            >
+              <li>
+                <router-link
+                  class="dropdown-item"
+                  to="/profile"
+                  >My Profile</router-link
+                >
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  @click.prevent="handleLogout"
+                  >Logout</a
+                >
+              </li>
             </ul>
-            <!-- spacer for logged out -->
-            <div class="me-auto" v-else></div>
+          </li>
+        </ul>
 
-            <!-- user dropdown (logged in) -->
-            <div class="navbar-nav" v-if="currentUser">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" @click.stop.prevent="toggleDropdown($event)">
-                        <img :src="currentUser.avatar" alt="Avatar" class="rounded-circle me-2" width="32" height="32">
-                        <span>{{ currentUser.name }}</span>
-                        <span v-if="currentTier" class="badge ms-2" :style="{backgroundColor: currentTier.color}">{{ currentUser.currentTier }}</span>
-                    </a>
-                    <ul v-if="isDropdownOpen" class="dropdown-menu dropdown-menu-end show" :style="dropdownStyle">
-                        <li>
-                            <a class="dropdown-item" href="login-page.html">
-                                <i class="fas fa-sign-out-alt fa-fw me-2"></i>Logout
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- login/signin page -->
-            <div class="navbar-nav" v-else>
-                <a href="login-page.html" class="btn btn-outline-light me-2">Login</a>
-                <a href="login-page.html" class="btn btn-primary">Sign Up</a>
-            </div>
-        </div>
+        <!-- Login Button (Logged Out) -->
+        <ul
+          class="navbar-nav ms-auto"
+          v-if="!userStore.isLoggedIn && !userStore.loading"
+        >
+          <li class="nav-item">
+            <router-link
+              class="btn btn-primary"
+              to="/login"
+              >Login / Sign Up</router-link
+            >
+          </li>
+        </ul>
+      </div>
     </div>
-</nav>
+  </nav>
+</template>
+
+<script setup>
+import { useUserStore } from '@/store/user';
+import { useRouter } from 'vue-router';
+
+const userStore = useUserStore();
+const router = useRouter();
+
+// This replaces the logout() method from app.js
+async function handleLogout() {
+  await userStore.logout();
+  router.push('/login');
+}
+</script>
+
+<style scoped>
+/* Add a subtle style for the active link */
+.nav-link.active {
+  font-weight: 600;
+  color: var(--primary-1) !important;
+}
+</style>

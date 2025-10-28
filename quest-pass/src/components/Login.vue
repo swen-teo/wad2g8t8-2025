@@ -1,134 +1,190 @@
+<script setup>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import {
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from 'firebase/auth';
+import { auth } from '@/firebase.js';
+// we don't need the store here, since App.vue handles the login state
+
+// --- state ---
+const loginForm = ref({ email: '', password: '' });
+const isLoading = ref(false); // one loading state for both buttons
+const error = ref(null); // holds any firebase error messages
+
+// --- services ---
+const router = useRouter();
+const googleProvider = new GoogleAuthProvider();
+
+// --- methods ---
+
+/**
+ * this handles the main email/password login
+ */
+async function handleLogin() {
+  if (isLoading.value) return; // don't let the user double-click
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    // try to sign in with firebase auth
+    await signInWithEmailAndPassword(
+      auth,
+      loginForm.value.email,
+      loginForm.value.password
+    );
+    // if it works, the listener in app.vue will see it
+    // and the router will redirect us away.
+    // we don't even need to redirect here, but we can.
+    router.push('/');
+  } catch (err) {
+    // handle firebase errors
+    switch (err.code) {
+      case 'auth/user-not-found':
+        error.value = 'no account found with that email.';
+        break;
+      case 'auth/wrong-password':
+        error.value = 'incorrect password. please try again.';
+        break;
+      case 'auth/invalid-credential':
+        error.value = 'invalid email or password.';
+        break;
+      default:
+        error.value = 'an error occurred. please try again.';
+    }
+  } finally {
+    // no matter what, stop loading
+    isLoading.value = false;
+  }
+}
+
+/**
+ * this handles the "login with google" popup
+ */
+async function handleGoogleLogin() {
+  if (isLoading.value) return;
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    // open the google popup
+    await signInWithPopup(auth, googleProvider);
+    // just like before, app.vue will handle the state
+    router.push('/');
+  } catch (err) {
+    // user might have closed the popup
+    if (err.code !== 'auth/popup-closed-by-user') {
+      error.value = 'failed to sign in with google.';
+    }
+  } finally {
+    isLoading.value = false;
+  }
+}
+</script>
+
 <template>
-  <div>
-    <!-- Sparkle animation container from login-page.html -->
-    <div
-      class="sparkle-container"
-      ref="sparkleContainerRef"
-    ></div>
+  <div class="container-fluid vh-100" style="background-color: #f8f9fa">
+    <div class="row h-100 align-items-center justify-content-center">
+      <div class="col-md-6 col-lg-4">
+        <!-- your sparkle animation container can go here -->
 
-    <div class="container-fluid bg-light-gradient vh-100">
-      <div class="row h-100 align-items-center justify-content-center">
-        <!-- Left Side: Instructions -->
-        <div class="col-lg-7 d-none d-lg-block p-5">
-          <h2 class="display-5 fw-bold mb-4">
-            Unlock Your Fandom.
-          </h2>
-          <p class="lead text-muted mb-5">
-            Turn your passion into points. Complete quests related to your
-            favorite artists and events.
-          </p>
-          <div class="row instructions-row g-4">
-            <div class="col-md-4">
-              <div class="card h-100 shadow-sm border-0">
-                <div class="card-body text-center p-4">
-                  <i
-                    class="fas fa-search-location fa-3x text-primary-1 mb-3"
-                  ></i>
-                  <h5 class="fw-bold">1. Find Events</h5>
-                  <p class="small text-muted">
-                    Browse upcoming shows and events.
-                  </p>
-                </div>
+        <div class="card shadow-lg border-0" style="border-radius: 1rem">
+          <div class="card-body p-4 p-md-5 text-center">
+            <i class="fas fa-ticket-alt fa-3x text-primary-1 mb-4"></i>
+            <h1 class="fw-bold mb-3">Welcome Back</h1>
+            <p class="text-muted mb-4">Log in to continue your quest.</p>
+
+            <!-- email/password form -->
+            <form @submit.prevent="handleLogin">
+              <div class="form-floating mb-3">
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  placeholder="name@example.com"
+                  v-model="loginForm.email"
+                  required
+                />
+                <label for="email">Email address</label>
               </div>
-            </div>
-            <div class="col-md-4">
-              <div class="card h-100 shadow-sm border-0">
-                <div class="card-body text-center p-4">
-                  <i
-                    class="fas fa-tasks fa-3x text-primary-2 mb-3"
-                  ></i>
-                  <h5 class="fw-bold">2. Complete Quests</h5>
-                  <p class="small text-muted">
-                    Take quizzes, check in, or listen to music.
-                  </p>
-                </div>
+
+              <div class="form-floating mb-3">
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  placeholder="Password"
+                  v-model="loginForm.password"
+                  required
+                />
+                <label for="password">Password</label>
               </div>
-            </div>
-            <div class="col-md-4">
-              <div class="card h-100 shadow-sm border-0">
-                <div class="card-body text-center p-4">
-                  <i class="fas fa-trophy fa-3x text-success mb-3"></i>
-                  <h5 class="fw-bold">3. Earn Rewards</h5>
-                  <p class="small text-muted">
-                    Unlock exclusive perks and access.
-                  </p>
-                </div>
+
+              <!-- this is the error message display -->
+              <div
+                v-if="error"
+                class="alert alert-danger py-2"
+                role="alert"
+              >
+                {{ error }}
               </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Right Side: Login Form -->
-        <div class="col-lg-5 p-5">
-          <div
-            class="card shadow-lg border-0"
-            style="border-radius: 1.5rem"
-          >
-            <div class="card-body p-5 text-center">
-              <i
-                class="fas fa-ticket-alt fa-3x text-primary-1 mb-4"
-              ></i>
-              <h1 class="fw-bold mb-3">Welcome Back</h1>
-              <p class="text-muted mb-4">
-                Log in to continue your quest.
-              </p>
-
-              <!-- Login form wired up with Vue -->
-              <form @submit.prevent="handleLogin">
-                <div class="form-floating mb-3">
-                  <input
-                    type="email"
-                    class="form-control"
-                    id="email"
-                    placeholder="name@example.com"
-                    v-model="loginForm.email"
-                    required
-                  />
-                  <label for="email">Email address</label>
-                </div>
-                <div class="form-floating mb-3">
-                  <input
-                    type="password"
-                    class="form-control"
-                    id="password"
-                    placeholder="Password"
-                    v-model="loginForm.password"
-                    required
-                  />
-                  <label for="password">Password</label>
-                </div>
-
-                <div
-                  class="d-flex justify-content-between align-items-center mb-4"
+              <!-- 
+                fix: here is the corrected login button.
+                the v-if and v-else spans are direct siblings,
+                so vue will correctly toggle between them.
+              -->
+              <div class="d-grid mb-3">
+                <button
+                  class="btn btn-primary btn-lg fw-bold"
+                  type="submit"
+                  :disabled="isLoading"
                 >
-                  <a
-                    href="#"
-                    class="text-muted small text-decoration-none"
-                    >Forgot password?</a
-                  >
-                </div>
-
-                <div class="d-grid">
-                  <button
-                    class="btn btn-primary btn-lg fw-bold"
-                    type="submit"
-                  >
-                    Login
-                  </button>
-                </div>
-              </form>
+                  <span
+                    v-if="isLoading"
+                    class="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                  <span v-else>Login</span>
+                </button>
+              </div>
 
               <hr class="my-4" />
 
-              <p class="text-muted">
-                Don't have an account?
-                <a
-                  href="#"
-                  class="text-primary-1 fw-bold text-decoration-none"
-                  >Register here</a
+              <!-- 
+                fix: same logic for the google button.
+                we just show/hide the spinner and text.
+              -->
+              <div class="d-grid">
+                <button
+                  class="btn btn-outline-secondary btn-lg"
+                  type="button"
+                  @click="handleGoogleLogin"
+                  :disabled="isLoading"
                 >
-              </p>
-            </div>
+                  <img
+                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                    alt="Google icon"
+                    style="width: 20px; height: 20px; margin-right: 10px"
+                  />
+                  <!-- 
+                    we use v-if="isLoading" on the spinner
+                    and v-if="!isLoading" on the text.
+                    this is just another way to write v-if/v-else.
+                  -->
+                  <span
+                    v-if="isLoading"
+                    class="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                  <span v-if="!isLoading">Login with Google</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -136,142 +192,13 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-// You will need to create this store to manage the user's login state
-// import { useUserStore } from '@/store/user';
-
-// --- State ---
-// This comes from the data() in app.js
-const loginForm = ref({ email: '', password: '' });
-const sparkleContainerRef = ref(null); // Ref for the animation container
-
-// --- Router & Store ---
-const router = useRouter();
-// const userStore = useUserStore(); // Uncomment when you create your Pinia store
-
-// --- Methods ---
-/**
- * Handles the form submission.
- */
-function handleLogin() {
-  console.log('Attempting login with:', loginForm.value);
-
-  // --- Real-world logic would go here ---
-  // 1. Call your Pinia store action:
-  //    await userStore.login(loginForm.value.email, loginForm.value.password);
-  //
-  // 2. The store would make an API call.
-  // 3. If successful, redirect to the home page.
-
-  // --- For now, we'll simulate a login and redirect ---
-  // In a real app, you'd get the user from the store:
-  // userStore.currentUser = userStore.demoUser;
-  console.log('Simulating successful login...');
-
-  // Redirect to the home page ('/') after login
-  router.push('/');
-}
-
-// --- Lifecycle Hooks ---
-/**
- * Runs the sparkle animation script from login-page.html
- * once the component is mounted to the DOM.
- */
-onMounted(() => {
-  if (sparkleContainerRef.value) {
-    const container = sparkleContainerRef.value;
-    const color1 = '#a78bfa'; // --primary-1
-    const color2 = '#60a5fa'; // --primary-2
-    const numSparkles = 50;
-
-    for (let i = 0; i < numSparkles; i++) {
-      const sparkle = document.createElement('i');
-      sparkle.className = 'fas fa-star sparkle';
-
-      const randomDuration = 5 + Math.random() * 5; // 5-10 seconds
-      const randomStartOffset = Math.random() * randomDuration;
-
-      sparkle.style.left = `${Math.random() * 100}%`;
-      sparkle.style.top = `${-Math.random() * 1}%`;
-      sparkle.style.animationDuration = `${randomDuration}s`;
-      sparkle.style.animationDelay = `${-randomStartOffset}s`;
-
-      sparkle.style.color = Math.random() > 0.5 ? color1 : color2;
-      container.appendChild(sparkle);
-    }
-  }
-});
-</script>
-
 <style scoped>
-/* Styles copied directly from login-page.html */
-
-/* Dim sibling cards when one card is hovered or focused */
-.instructions-row .card {
-  transition:
-    filter 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.instructions-row:hover .card {
-  filter: brightness(0.85) saturate(0.95);
-}
-.instructions-row .card:hover,
-.instructions-row .card:focus-within {
-  filter: none;
-  transform: translateY(-6px);
-  box-shadow:
-    0 18px 34px rgba(167, 139, 250, 0.15),
-    0 14px 22px rgba(167, 139, 250, 0.1);
-}
-
-/* Background gradient */
-.bg-light-gradient {
-  background: linear-gradient(
-    135deg,
-    rgba(239, 234, 255, 0.3) 0%,
-    rgba(243, 233, 255, 0.7) 100%
-  );
-}
-
-/* Sparkle animation */
-.sparkle-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* 
-    deep() applies animations
-*/
-:deep(.sparkle) {
-  position: absolute;
-  font-size: 10px;
-  opacity: 0;
-  animation: fall 10s linear infinite;
-  text-shadow:
-    0 0 5px currentColor,
-    0 0 10px currentColor;
-}
-
-@keyframes fall {
-  0% {
-    transform: translateY(-20px) rotate(0deg);
-    opacity: 0.8;
-  }
-  90% {
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateY(105vh) rotate(360deg);
-    opacity: 0;
-  }
+/* your login-page.html styles can go here */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 </style>
+

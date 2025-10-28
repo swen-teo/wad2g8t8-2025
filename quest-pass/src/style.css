@@ -1,79 +1,482 @@
+/* =========================================================
+   QuestPass — Soft Pastel Theme (Full CSS)
+   Font: Poppins (site-wide)
+   ========================================================= */
+
+/* 1) Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* 2) Design Tokens */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  --ink: #2d2d3d;
+  --ink-muted: #707089;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  --bg-1: #fff0ff;
+  --bg-2: #efeaff;
+  --bg-3: #f3e9ff;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --chip-1: #f1e7ff;
+  --chip-2: #fde7f7;
+  --icon-tone: #8a7df9;
+
+  --primary-1: #a78bfa;  /* purple */
+  --primary-2: #60a5fa;  /* blue */
+
+  --card: #ffffff;
+  --card-radius: 22px;
+  --elev-1: 0 12px 28px rgba(125,120,255,.10), 0 2px 6px rgba(90,70,180,.05);
+  --elev-1h: 0 16px 34px rgba(125,120,255,.14), 0 3px 8px rgba(90,70,180,.06);
+
+  --ring: #d8c7ff;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+/* 3) Base */
+html { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  color: var(--ink);
   min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, var(--bg-1) 0%, transparent 50%),
+    radial-gradient(1000px 500px at 90% 10%, var(--bg-2) 0%, transparent 55%),
+    linear-gradient(180deg, var(--bg-3) 0%, #f7f3ff 60%, #f9f6ff 100%);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  margin: 0 0 .5rem 0;
+  color: var(--ink);
+}
+.display-4 { font-size: 3rem; line-height: 1.1; }
+
+.main-content { padding-top: 2rem; }
+.hero-section { padding: 3rem 0; }
+
+/* 4) Navbar */
+.navbar {
+  background: #fff !important;
+  border-bottom: 1px solid #eee;
+  box-shadow: var(--elev-1);
+  padding: 1rem 1.5rem;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+.navbar-brand {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 1.35rem;
+  color: var(--ink) !important;
+}
+
+.navbar .nav-link {
+  font-family: 'Poppins', sans-serif;
   font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+  font-size: 1.1rem;           /* larger */
+  color: var(--ink) !important;
+  margin-left: 20px;
+  opacity: .85;
+  transition: all 0.15s ease;
 }
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.navbar .nav-link:hover { opacity: 1; color: #7c89ff !important; }
+
+/* Active page indicator */
+.navbar .nav-link.active {
+  font-weight: 700;            /* bold when selected */
+  color: #7c89ff !important;
+  border-bottom: 2px solid #7c89ff;
+  padding-bottom: 4px;
 }
 
+.navbar .dropdown-menu {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 14px;
+  box-shadow: var(--elev-1);
+  padding: .5rem;
+}
+.navbar .dropdown-item {
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 10px;
+}
+.navbar .dropdown-item:hover { background: #f6f2ff; }
+
+/* 5) Cards */
 .card {
-  padding: 2em;
+  background: var(--card);
+  color: var(--ink);
+  border: none;
+  border-radius: var(--card-radius);
+  box-shadow: var(--elev-1);
+  overflow: hidden;
+  transition: transform .15s ease, box-shadow .15s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 340px;
+}
+.card:hover { transform: translateY(-4px); box-shadow: var(--elev-1h); }
+
+.card-body, .card__body {
+  padding: 1.5rem;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
 }
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.event-image, .quest-image {
+  aspect-ratio: 16/10;
+  object-fit: cover;
+  border-bottom: 0;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* 6) Buttons */
+.btn {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  padding: .8rem 1.2rem;
+  border-radius: 999px;
+  border: 0;
+  letter-spacing: .2px;
+  transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  color: #fff;
+  background: linear-gradient(90deg, var(--primary-1) 0%, var(--primary-2) 100%);
+  box-shadow: 0 8px 20px rgba(96,165,250,.20);
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(96,165,250,.35); }
+.btn:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(96,165,250,.25) !important; }
+
+/* Ghost secondary */
+.btn-secondary {
+  background: #ffffffcc;
+  color: #7a6fb6;
+  border: 1px solid #e8d9ff;
+  box-shadow: none;
+  backdrop-filter: blur(6px);
+}
+.btn-secondary:hover {
+  border-color: var(--ring);
+  box-shadow: 0 6px 16px rgba(168,85,247,.15);
+}
+
+/* 7) Forms */
+.form-control {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: .8rem 1rem;
+  font-family: 'Poppins', sans-serif;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.03);
+}
+.form-control:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 .25rem rgba(216,199,255,.35);
+  outline: 0;
+}
+.input-group-text {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+}
+.input-group:focus-within {
+  outline: 0;
+  box-shadow: 0 0 0 .25rem rgba(216,199,255,.35);
+  border-radius: 12px;
+}
+.input-group:focus-within .form-control,
+.input-group:focus-within .input-group-text {
+  border-color: var(--ring);
+  box-shadow: none;
+}
+
+/* 8) Badges */
+.badge {
+  padding: .5em .75em;
+  border-radius: 999px;
+  border: 1px solid #eee;
+  background: linear-gradient(135deg, var(--chip-1) 0%, var(--chip-2) 100%);
+  color: var(--ink);
+  font-size: .95rem;
+  font-weight: 500;
+  box-shadow: 0 6px 14px rgba(130,120,255,.12);
+}
+.bg-warning {
+  background-color: #FFFBEA !important;
+  color: #F59E0B !important;
+  border-color: #FDE6B3 !important;
+}
+
+/* 9) Progress */
+.progress {
+  height: 28px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  padding: 4px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.06);
+}
+.progress-bar {
+  background: linear-gradient(90deg, var(--primary-1) 0%, var(--primary-2) 100%);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: width .6s ease;
+}
+
+/* 10) Carousel */
+.carousel {
+  border: 0;
+  box-shadow: var(--elev-1);
+  border-radius: 15px;
+  overflow: visible;
+}
+.carousel .card { border: none; box-shadow: none; }
+
+.card.card-carousel {
+  height: 340px; min-height: 340px; max-height: 340px;
+  display: flex; flex-direction: column;
+}
+.card.card-carousel .row.g-0 { height: 100%; flex-wrap: nowrap; }
+.card.card-carousel .col-md-5,
+.card.card-carousel .col-md-7 { display: flex; flex-direction: column; height: 100%; }
+.card.card-carousel .col-md-5 { overflow: hidden; }
+.card.card-carousel img { height: 100%; object-fit: cover; }
+.card.card-carousel .card-body {
+  flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; height: 100%;
+}
+
+/* === Carousel Controls (Darker Version) === */
+.carousel-control-prev,
+.carousel-control-next {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 54px;
+  height: 54px;
+  background: linear-gradient(145deg, #b3a6ff 0%, #8679f8 100%); /* darker purple gradient */
+  border: 1px solid #6b5edc;                                   /* deeper outline */
+  border-radius: 50%;
+  box-shadow: 0 8px 16px rgba(107, 94, 220, 0.3);
+  opacity: 1;
+  transition: all 0.15s ease;
+}
+.carousel-control-prev { left: -30px; }
+.carousel-control-next { right: -30px; }
+
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+  background: linear-gradient(145deg, #9e8fff 0%, #7366e9 100%);
+  box-shadow: 0 12px 20px rgba(107, 94, 220, 0.4);
+  transform: translateY(-50%) translate(-2px, -2px);
+}
+.carousel-control-prev:active,
+.carousel-control-next:active {
+  transform: translateY(-50%) translate(0, 0);
+  box-shadow: 0 6px 12px rgba(107, 94, 220, 0.25);
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon { background-image: none; }
+.carousel-control-prev i,
+.carousel-control-next i { color: #fff; font-size: 1.8rem; }
+
+/* 11) Toasts & Modals */
+.toast {
+  border-radius: 15px !important;
+  border: 1px solid #eee !important;
+  box-shadow: var(--elev-1) !important;
+  background: #fff;
+  color: var(--ink);
+  opacity: 1 !important;
+  width: 350px; max-width: 100%;
+}
+.toast-header {
+  border-bottom: 1px solid #f0eefb !important;
+  background-color: #fbf9ff;
+  padding: .75rem 1rem;
+}
+.toast-header .me-auto {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.toast-body { font-family: 'Poppins', sans-serif; font-size: 1rem; padding: 1rem; }
+
+.modal-content {
+  background: #fff;
+  color: var(--ink);
+  border-radius: 16px;
+  box-shadow: var(--elev-1);
+  border: 1px solid #eee;
+}
+.modal-header, .modal-body, .modal-footer { padding: 1.25rem 1.5rem; }
+
+/* 12) Links / Hovers */
+.event-card-link, .quest-card-link {
+  display: block; text-decoration: none; color: inherit;
+}
+.event-card-link:hover .card,
+.quest-card-link:hover .card,
+.carousel-item:hover .card.card-carousel {
+  transform: translateY(-4px);
+  box-shadow: var(--elev-1h);
+}
+
+/* 13) Event Details Banner */
+.banner-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid #eee;
+  box-shadow: var(--elev-1);
+  margin-bottom: 1.5rem;
+  background-color: #fff;
+}
+.banner-hero img {
+  display: block;
+  width: 100%;
+  height: clamp(300px, 42vw, 520px);
+  object-fit: cover;
+  object-position: center center;
+  border-bottom: 0;
+  transition: transform .3s ease;
+}
+.banner-hero img:hover { transform: scale(1.02); }
+
+.banner-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.35), rgba(0,0,0,.2) 40%, transparent);
+}
+.banner-content {
+  position: absolute; bottom: 1rem; left: 1.5rem; right: 1.5rem;
+  color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+.banner-content h1 {
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-weight: 600;
+  margin: 0 0 .25rem 0;
+}
+.banner-content .d-flex span { font-size: clamp(.9rem, 2vw, 1rem); }
+
+/* 14) Hero helpers (screenshot look) */
+.qp-title {
+  background: linear-gradient(180deg, #b8d4ff 0%, #a5b9ff 45%, #c4a7ff 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+.qp-subtitle { color: var(--ink-muted); }
+.qp-logo-badge {
+  width: 84px; height: 84px; margin: 0 auto 1.25rem; border-radius: 999px;
+  background:
+    radial-gradient(90px 90px at 30% 20%, #ffffff99 0%, transparent 40%),
+    linear-gradient(135deg, var(--chip-1) 0%, var(--chip-2) 100%);
+  display: grid; place-items: center;
+  box-shadow: 0 8px 24px rgba(130,120,255,.18);
+}
+.qp-logo-badge i { font-size: 34px; color: var(--icon-tone); opacity: .9; }
+
+/* 15) Feature cards grid */
+.qp-features {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+@media (min-width: 768px) {
+  .qp-features { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+
+/* HOW IT WORKS LOGIN PG */
+.step-hover-reveal .collapse {
+  /* This makes the "collapse" div visible to CSS */
+  display: block;
+
+  /* Use max-height and overflow to create the transition */
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease-out;
+}
+
+.step-hover-reveal:hover .collapse {
+  /* Set a height large enough to show the content */
+  max-height: 150px;  /* <-- INCREASED THIS VALUE */
+  transition: max-height 0.35s ease-in;
+}
+
+
+/* STAR THING */
+/* --- Animation Keyframes --- */
+@keyframes pulse-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes gentle-rotate-1 {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes gentle-rotate-2 {
+  0%, 100% { transform: rotate(3deg); }
+  50% { transform: rotate(-3deg); }
+}
+
+/* NEW: Keyframes for falling stars */
+@keyframes fall-and-fade {
+  0% { 
+      transform: translateY(-100%) scale(0.5); 
+      opacity: 0; 
   }
-  a:hover {
-    color: #747bff;
+  25% {
+        opacity: 1; /* Fade in as they start falling */
   }
-  button {
-    background-color: #f9f9f9;
+  100% { 
+      transform: translateY(100vh) scale(0.7); /* Fall beyond viewport */
+      opacity: 0; 
   }
+}
+
+/* --- Animation Utility Classes --- */
+.pulse-breathe {
+    animation: pulse-breathe 5s ease-in-out infinite;
+}
+.gentle-rotate-1 {
+  animation: gentle-rotate-1 6s ease-in-out infinite;
+  animation-delay: 0s;
+}
+.gentle-rotate-2 {
+  animation: gentle-rotate-2 6s ease-in-out infinite;
+  animation-delay: 3s; 
+}
+
+/* --- Sparkle Container --- */
+#sparkle-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden; /* Crucial to prevent horizontal scroll if stars go too wide */
+    pointer-events: none;
+}
+
+#sparkle-container .sparkle {
+    position: absolute;
+    /* REPLACED: animation-name with the new falling animation */
+    animation-name: fall-and-fade; 
+    animation-timing-function: linear; /* Changed for a more natural fall */
+    animation-iteration-count: infinite;
+    animation-fill-mode: forwards; /* Ensures it stays at 100% state after animation */
+}
+#sparkle-container .sparkle svg {
+width: 2.5rem;  /* Changed from 1rem */
+height: 2.5rem; /* Changed from 1rem */
+fill: currentColor;
 }
