@@ -58,20 +58,20 @@
         >
           <li class="nav-item me-2 d-flex align-items-center">
             <span class="navbar-text d-flex align-items-center">
-              <font-awesome-icon :icon="['fas','star']" class="text-warning me-1" />
+              <i class = "fas fa-star text-warning me-1"></i>
               <!-- This was already safe, but it's good practice -->
               <span class="fw-semibold">{{ userStore.currentUser?.totalPoints ?? 0 }}</span>
               <span class="ms-1 text-muted small">PTS</span>
             </span>
           </li>
           <li class="nav-item dropdown">
-            <a
-              class="nav-link dropdown-toggle d-flex align-items-center"
-              href="#"
+            <button
+              class="nav-link dropdown-toggle d-flex align-items-center btn btn-link"
               id="navbarUserDropdown"
-              role="button"
+              type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
+              ref="userDropdownToggle"
             >
               <img
                 :src="(userStore.currentUser && userStore.currentUser.avatar) || 'https://placehold.co/30/a78bfa/ffffff?text=U'"
@@ -82,8 +82,8 @@
                 style ="object-fit: cover"
               />
               <!-- This is now safe because of the parent v-if -->
-              {{ userStore.currentUser.name }}
-            </a>
+              <span class="d-none d-sm-inline">{{ userStore.currentUser.name }}</span>
+            </button>
             <ul
               class="dropdown-menu dropdown-menu-end"
               aria-labelledby="navbarUserDropdown"
@@ -129,11 +129,13 @@
 </template>
 
 <script setup>
+
 import { useUserStore } from '@/store/user';
 import { useRouter } from 'vue-router';
 
 const userStore = useUserStore();
 const router = useRouter();
+
 
 // This replaces the logout() method from app.js
 async function handleLogout() {
