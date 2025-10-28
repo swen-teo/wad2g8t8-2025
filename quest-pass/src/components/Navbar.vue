@@ -58,20 +58,20 @@
         >
           <li class="nav-item me-2 d-flex align-items-center">
             <span class="navbar-text d-flex align-items-center">
-              <font-awesome-icon :icon="['fas','star']" class="text-warning me-1" />
+              <i class = "fas fa-star text-warning me-1"></i>
               <!-- This was already safe, but it's good practice -->
               <span class="fw-semibold">{{ userStore.currentUser?.totalPoints ?? 0 }}</span>
               <span class="ms-1 text-muted small">PTS</span>
             </span>
           </li>
           <li class="nav-item dropdown">
-            <a
-              class="nav-link dropdown-toggle d-flex align-items-center"
-              href="#"
+            <button
+              class="nav-link dropdown-toggle d-flex align-items-center btn btn-link"
               id="navbarUserDropdown"
-              role="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
+              type="button"
+              :aria-expanded="isDropdownOpen"
+              ref="userDropdownToggle"
+              @click.stop="toggleDropdown"
             >
               <img
                 :src="(userStore.currentUser && userStore.currentUser.avatar) || 'https://placehold.co/30/a78bfa/ffffff?text=U'"
@@ -82,16 +82,21 @@
                 style ="object-fit: cover"
               />
               <!-- This is now safe because of the parent v-if -->
-              {{ userStore.currentUser.name }}
-            </a>
+              <span class="d-none d-sm-inline">{{ userStore.currentUser.name }}</span>
+            </button>
             <ul
               class="dropdown-menu dropdown-menu-end"
               aria-labelledby="navbarUserDropdown"
+              ref="userDropdownMenu"
+              :class="{ show: isDropdownOpen }"
+              v-show="isDropdownOpen"
+              @click.stop
             >
               <li>
                 <router-link
                   class="dropdown-item d-flex align-items-center"
                   to="/profile"
+                  @click="closeDropdown"
                 >
                   <font-awesome-icon :icon="['fas','user']" class="me-2" />
                   My Profile
@@ -102,7 +107,7 @@
                 <a
                   class="dropdown-item"
                   href="#"
-                  @click.prevent="handleLogout"
+                  @click.prevent="() => { closeDropdown(); handleLogout(); }"
                   >Logout</a
                 >
               </li>
@@ -129,11 +134,47 @@
 </template>
 
 <script setup>
+
 import { useUserStore } from '@/store/user';
 import { useRouter } from 'vue-router';
 
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+
 const userStore = useUserStore();
 const router = useRouter();
+
+const isDropdownOpen = ref(false);
+const userDropdownToggle = ref(null);
+const userDropdownMenu = ref(null);
+
+function toggleDropdown() {
+  isDropdownOpen.value = !isDropdownOpen.value;
+}
+
+function closeDropdown() {
+  isDropdownOpen.value = false;
+}
+
+function handleDocumentClick(event) {
+  const toggleEl = userDropdownToggle.value;
+  const menuEl = userDropdownMenu.value;
+
+  if (!toggleEl || !menuEl) {
+    return;
+  }
+
+  if (!toggleEl.contains(event.target) && !menuEl.contains(event.target)) {
+    closeDropdown();
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick);
+});
 
 // This replaces the logout() method from app.js
 async function handleLogout() {
