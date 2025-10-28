@@ -68,9 +68,10 @@
             <button
               class="nav-link dropdown-toggle d-flex align-items-center btn btn-link"
               id="navbarUserDropdown"
-              role="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
+              type="button"
+              :aria-expanded="isDropdownOpen"
+              ref="userDropdownToggle"
+              @click.stop="toggleDropdown"
             >
               <img
                 :src="(userStore.currentUser && userStore.currentUser.avatar) || 'https://placehold.co/30/a78bfa/ffffff?text=U'"
@@ -141,6 +142,39 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 const userStore = useUserStore();
 const router = useRouter();
+
+const isDropdownOpen = ref(false);
+const userDropdownToggle = ref(null);
+const userDropdownMenu = ref(null);
+
+function toggleDropdown() {
+  isDropdownOpen.value = !isDropdownOpen.value;
+}
+
+function closeDropdown() {
+  isDropdownOpen.value = false;
+}
+
+function handleDocumentClick(event) {
+  const toggleEl = userDropdownToggle.value;
+  const menuEl = userDropdownMenu.value;
+
+  if (!toggleEl || !menuEl) {
+    return;
+  }
+
+  if (!toggleEl.contains(event.target) && !menuEl.contains(event.target)) {
+    closeDropdown();
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick);
+});
 
 // This replaces the logout() method from app.js
 async function handleLogout() {
