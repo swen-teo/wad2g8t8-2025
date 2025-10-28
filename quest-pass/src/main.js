@@ -1,28 +1,33 @@
-import { createApp } from 'vue';
-import { createPinia } from 'pinia'; // import pinia
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './route/routes.js' // make sure to import your router
+import { createPinia } from 'pinia' // make sure to import pinia
+import axios from 'axios'
+// bootstrap (CSS + JS)
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+// project global styles 
+import './style.css'
 
-import App from './App.vue';
-import router from './route/routes.js';
+import { library } from '@fortawesome/fontawesome-svg-core'
 
-// Import Bootstrap CSS (allows using Bootstrap classes site-wide)
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-// imports your global styles
-// Note: Your previous file used 'main.css', this one uses 'style.css'.
-// Make sure you have a file named 'style.css' in your 'src/' folder.
-import './style.css';
+import { fas } from '@fortawesome/free-solid-svg-icons' // Solid icons (fas)
+import { far } from '@fortawesome/free-regular-svg-icons' // Regular icons (far)
+import { fab } from '@fortawesome/free-brands-svg-icons' // Brand icons (fab)
 
-// Import Bootstrap JS to enable components that require JavaScript (dropdowns, modals, tooltips)
-import 'bootstrap';
+library.add(fas, far, fab)
 
-// create the pinia instance
-const pinia = createPinia();
+const app = createApp(App)
 
-// create app
-const app = createApp(App);
+app.use(createPinia())
+app.use(router)
 
-app.use(pinia);
-app.use(router);
+// make axios available globally as $axios
+app.config.globalProperties.$axios = axios
 
-app.mount('#app');
+app.component('font-awesome-icon', FontAwesomeIcon)
+
+app.mount('#app')
 

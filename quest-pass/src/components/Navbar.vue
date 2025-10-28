@@ -1,8 +1,11 @@
 <template>
   <nav class="navbar navbar-expand-lg navbar-light sticky-top">
     <div class="container">
-      <router-link class="navbar-brand fw-bold" to="/">
-        <i class="fas fa-ticket-alt me-2"></i>QuestPass
+      <router-link
+        class="navbar-brand fw-bold"
+        :to="userStore.isLoggedIn ? { name: 'Home' } : { name: 'LandingPage' }"
+      >
+        <font-awesome-icon :icon="['fas','ticket-alt']" class="me-2" />QuestPass
       </router-link>
       <button
         class="navbar-toggler"
@@ -23,19 +26,23 @@
         >
           <li class="nav-item">
             <router-link
-              class="nav-link"
+              class="nav-link d-flex align-items-center"
               active-class="active"
-              to="/"
-              >Events</router-link
+              :to="{ name: 'Home' }"
             >
+              <font-awesome-icon :icon="['fas','calendar-alt']" class="me-2" />
+              <span>Events</span>
+            </router-link>
           </li>
           <li class="nav-item">
             <router-link
-              class="nav-link"
+              class="nav-link d-flex align-items-center"
               active-class="active"
               to="/profile"
-              >Profile</router-link
             >
+              <font-awesome-icon :icon="['fas','user']" class="me-2" />
+              <span>Profile</span>
+            </router-link>
           </li>
         </ul>
 
@@ -46,7 +53,7 @@
         >
           <li class="nav-item me-2 d-flex align-items-center">
             <span class="navbar-text d-flex align-items-center">
-              <i class="fas fa-star text-warning me-1"></i>
+              <font-awesome-icon :icon="['fas','star']" class="text-warning me-1" />
               <span class="fw-semibold">{{ userStore.currentUser?.totalPoints ?? 0 }}</span>
               <span class="ms-1 text-muted small">PTS</span>
             </span>
@@ -75,10 +82,12 @@
             >
               <li>
                 <router-link
-                  class="dropdown-item"
+                  class="dropdown-item d-flex align-items-center"
                   to="/profile"
-                  >My Profile</router-link
                 >
+                  <font-awesome-icon :icon="['fas','user']" class="me-2" />
+                  My Profile
+                </router-link>
               </li>
               <li><hr class="dropdown-divider" /></li>
               <li>
@@ -121,7 +130,8 @@ const router = useRouter();
 // This replaces the logout() method from app.js
 async function handleLogout() {
   await userStore.logout();
-  router.push('/login');
+  // navigate to the named Login route
+  router.push({ name: 'Login' });
 }
 </script>
 

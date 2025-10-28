@@ -38,11 +38,11 @@
                 </span>
               </div>
               <button
-                class="btn btn-outline-secondary btn-sm"
-                @click="userStore.logout"
-              >
-                Logout
-              </button>
+                  class="btn btn-outline-secondary btn-sm"
+                  @click="handleLogout"
+                >
+                  Logout
+                </button>
             </div>
             <hr class="my-4" />
             <div class="row text-center">
@@ -182,9 +182,11 @@ import { ref, onMounted, watch } from 'vue';
 import { useUserStore } from '@/store/user.js';
 import { db } from '@/firebase.js';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { useRouter } from 'vue-router';
 
 // get our user data from the store
 const userStore = useUserStore();
+const router = useRouter();
 
 // local state for this page
 const completedQuests = ref([]);
@@ -233,6 +235,12 @@ watch(
   },
   { immediate: true } // run this immediately on load, just in case
 );
+
+// wrapper so we logout from firebase/store and then route to Login page
+async function handleLogout() {
+  await userStore.logout();
+  router.push({ name: 'Login' });
+}
 </script>
 
 <style scoped>

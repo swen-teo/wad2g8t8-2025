@@ -89,9 +89,11 @@ async function handleGoogleLogin() {
 </script>
 
 <template>
-  <div class="container-fluid vh-100" style="background-color: #f8f9fa">
+  <div class="container-fluid vh-100 login-bg">
     <div class="row h-100 align-items-center justify-content-center">
       <div class="col-md-6 col-lg-4">
+        <!-- decorative animated background layer -->
+        <div class="bg-sparkles" aria-hidden="true"></div>
         <!-- your sparkle animation container can go here -->
 
         <div class="card shadow-lg border-0" style="border-radius: 1rem">
@@ -135,11 +137,6 @@ async function handleGoogleLogin() {
                 {{ error }}
               </div>
 
-              <!-- 
-                fix: here is the corrected login button.
-                the v-if and v-else spans are direct siblings,
-                so vue will correctly toggle between them.
-              -->
               <div class="d-grid mb-3">
                 <button
                   class="btn btn-primary btn-lg fw-bold"
@@ -159,8 +156,7 @@ async function handleGoogleLogin() {
               <hr class="my-4" />
 
               <!-- 
-                fix: same logic for the google button.
-                we just show/hide the spinner and text.
+                show/hide the spinner and text.
               -->
               <div class="d-grid">
                 <button
@@ -175,9 +171,8 @@ async function handleGoogleLogin() {
                     style="width: 20px; height: 20px; margin-right: 10px"
                   />
                   <!-- 
-                    we use v-if="isLoading" on the spinner
+                    v-if="isLoading" on the spinner
                     and v-if="!isLoading" on the text.
-                    this is just another way to write v-if/v-else.
                   -->
                   <span
                     v-if="isLoading"
@@ -197,12 +192,92 @@ async function handleGoogleLogin() {
 </template>
 
 <style scoped>
-/* your login-page.html styles can go here */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
 }
+/* Login background: animated gradient + floating soft blobs */
+.login-bg {
+  position: relative;
+  overflow: hidden;
+  /* animated multi-stop gradient */
+  background: linear-gradient(120deg, #f8f9fa 0%, #e9f0ff 30%, #fff6f9 60%, #f8f9fa 100%);
+  background-size: 300% 300%;
+  animation: gradientShift 12s ease infinite;
+}
+
+.bg-sparkles {
+  position: absolute;
+  inset: 0; /* top/right/bottom/left: 0 */
+  pointer-events: none;
+  z-index: 0; /* sit behind the card content */
+  mix-blend-mode: normal;
+}
+
+/* soft colored blob layers using pseudo elements */
+.bg-sparkles::before,
+.bg-sparkles::after {
+  content: "";
+  position: absolute;
+  filter: blur(40px) saturate(120%);
+  opacity: 0.55;
+  transform: translate3d(0,0,0);
+}
+
+.bg-sparkles::before {
+  width: 50vmax;
+  height: 50vmax;
+  left: -10vmax;
+  top: -20vmax;
+  background: radial-gradient(circle at 30% 30%, rgba(99,102,241,0.18), transparent 30%),
+              radial-gradient(circle at 70% 70%, rgba(56,189,248,0.12), transparent 30%);
+  animation: floatSlow 10s ease-in-out infinite alternate;
+}
+
+.bg-sparkles::after {
+  width: 40vmax;
+  height: 40vmax;
+  right: -12vmax;
+  bottom: -18vmax;
+  background: radial-gradient(circle at 20% 20%, rgba(236,72,153,0.12), transparent 30%),
+              radial-gradient(circle at 80% 80%, rgba(99,102,241,0.08), transparent 30%);
+  animation: floatSlow 14s ease-in-out infinite alternate-reverse;
+}
+
+/* tiny sparkle dots layer using repeating-radial-gradient */
+.bg-sparkles > .dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 2% 10%, rgba(255,255,255,0.9) 1px, transparent 1px),
+                    radial-gradient(circle at 60% 30%, rgba(255,255,255,0.6) 1px, transparent 1px);
+  background-size: 140px 140px, 220px 220px;
+  opacity: 0.06;
+  animation: dotsMove 20s linear infinite;
+}
+
+/* ensure the card content sits above the effects */
+.card {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes floatSlow {
+  from { transform: translateY(-6%) rotate(-2deg) scale(1); }
+  to { transform: translateY(6%) rotate(2deg) scale(1.02); }
+}
+
+@keyframes dotsMove {
+  from { transform: translateY(0); }
+  to { transform: translateY(-40px); }
+}
+
 </style>
 
