@@ -5,15 +5,107 @@ const axios = require("axios");
 
 admin.initializeApp();
 const db = admin.firestore();
+const { Timestamp, FieldValue } = admin.firestore;
 
 // Define the secret name
 // This tells the function it needs to access this secret
 const JAMBASE_API_KEY_SECRET = "JAMBASE_KEY";
 
 /**
+ * Formats a human readable date string for event cards/details.
+ * @param {Date|null} startDate
+ * @param {string} venueName
+ * @returns {string}
+ */
+function formatDisplayDate(startDate, venueName = "") {
+  if (!startDate) {
+    return venueName ? `Date TBA · ${venueName}` : "Date TBA";
+  }
+
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  const formatted = formatter.format(startDate);
+  return venueName ? `${formatted} · ${venueName}` : formatted;
+}
+
+/**
+ * Determines whether an event is current/upcoming/past based on its dates.
+ * @param {Date|null} startDate
+ * @param {Date|null} endDate
+ * @returns {"current"|"upcoming"|"past"}
+ */
+function resolveStatus(startDate, endDate) {
+  if (!startDate) {
+    return "upcoming";
+  }
+
+  const now = new Date();
+  const effectiveEnd = endDate || new Date(startDate.getTime() + 3 * 60 * 60 * 1000);
+
+  if (now >= startDate && now <= effectiveEnd) {
+    return "current";
+  }
+
+  return now < startDate ? "upcoming" : "past";
+}
+
+/**
+ * Builds the Firestore document payload for an event.
+ */
+function buildEventDocument({
+  id,
+  title,
+  description,
+  artistName,
+  venueName,
+  venueLocation,
+  bannerImage,
+  cardImage,
+  startDate,
+  endDate,
+  status,
+  source = "jambase",
+  rewardPointsGoal = 1000,
+  extraData = {},
+}) {
+  const start = startDate instanceof Date ? startDate : startDate ? new Date(startDate) : null;
+  const end = endDate instanceof Date ? endDate : endDate ? new Date(endDate) : null;
+  const finalStatus = status || resolveStatus(start, end);
+
+  return {
+    jambaseId: source === "jambase" ? id : null,
+    title,
+    description,
+    artistName,
+    venue: {
+      name: venueName || "Venue TBA",
+      location: venueLocation || "Location TBA",
+    },
+    bannerImage:
+      bannerImage || "https://placehold.co/1200x400/a78bfa/ffffff?text=Event",
+    cardImage:
+      cardImage || bannerImage || "https://placehold.co/600x400/a78bfa/ffffff?text=Event",
+    date: formatDisplayDate(start, venueName),
+    startDate: start ? Timestamp.fromDate(start) : null,
+    endDate: end ? Timestamp.fromDate(end) : null,
+    rewardPointsGoal,
+    status: finalStatus,
+    updatedAt: FieldValue.serverTimestamp(),
+    source,
+    ...extraData,
+  };
+}
+
+/**
  * An HTTP-triggered Cloud Function that:
  * 1. Fetches events from the Jambase API.
- * 2. Transforms them into our app's data structure.
+ * 2. Adds curated QuestPass events.
  * 3. Saves them to the 'events' collection in Firestore.
  */
 exports.populateEventsFromJambase = functions
@@ -52,36 +144,94 @@ exports.populateEventsFromJambase = functions
 
       // 2. Loop through and transform each event
       apiEvents.forEach((apiEvent) => {
-        
         const artist = apiEvent.performer?.[0]?.name || "Various Artists";
         const venue = apiEvent._embedded?.venues?.[0];
-        const venueName = venue?.name || "TBA";
+        const venueName = venue?.name || "Venue TBA";
         const venueLocation = venue?.city?.name
           ? `${venue.city.name}, ${venue.state?.name || ""}`
-          : "TBA";
-        
+          : "Location TBA";
+
         const bannerImage =
           apiEvent.images?.find((img) => img.url)?.url ||
           "https://placehold.co/1200x400/a78bfa/ffffff?text=Event";
+        const cardImage =
+          apiEvent.images?.find((img) => img.width >= 640)?.url || bannerImage;
 
-        const newEvent = {
-          jambaseId: apiEvent.id,
+        const startDateTime =
+          apiEvent.dates?.start?.dateTime ||
+          `${apiEvent.dates?.start?.localDate}T${
+            apiEvent.dates?.start?.localTime || "18:00:00"
+          }`;
+        const startDate = startDateTime ? new Date(startDateTime) : null;
+        const endDateTime = apiEvent.dates?.end?.dateTime;
+        const endDate = endDateTime ? new Date(endDateTime) : null;
+
+        const newEvent = buildEventDocument({
+          id: apiEvent.id,
           title: apiEvent.name,
-          date: `${apiEvent.dates.start.localDate} at ${venueName}`,
           description: apiEvent.description || `See ${artist} live at ${venueName}!`,
           artistName: artist,
-          venue: {
-            name: venueName,
-            location: venueLocation,
-          },
-          bannerImage: bannerImage,
-          rewardPointsGoal: 1000, 
-          rewardCode: null,
-        };
+          venueName,
+          venueLocation,
+          bannerImage,
+          cardImage,
+          startDate,
+          endDate,
+        });
 
         // 3. Save to Firestore
-        const eventRef = db.collection("events").doc(apiEvent.id);
+        const eventRef = db.collection("events").doc(String(apiEvent.id));
         batch.set(eventRef, newEvent, { merge: true });
+        processedCount++;
+      });
+
+      const curatedEvents = [
+        {
+          id: "questpass-live-night",
+          title: "QuestPass Live: Midnight Encore",
+          description:
+            "Join fellow fans for an exclusive QuestPass takeover featuring live sets, trivia quests, and limited-time rewards.",
+          artistName: "QuestPass Collective",
+          venueName: "QuestPass Arena",
+          venueLocation: "Virtual Stage",
+          bannerImage:
+            "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=80",
+          cardImage:
+            "https://images.unsplash.com/photo-1512427691650-1e0c0d57589f?auto=format&fit=crop&w=1200&q=80",
+          startDate: new Date(Date.now() - 30 * 60 * 1000),
+          endDate: new Date(Date.now() + 2 * 60 * 60 * 1000),
+          status: "current",
+          source: "questpass",
+          extraData: {
+            spotlight: true,
+          },
+        },
+        {
+          id: "questpass-meetup-city",
+          title: "QuestPass City Meetup",
+          description:
+            "Connect with other QuestPass explorers in your city for a night of music quests, rewards, and exclusive drops.",
+          artistName: "Community DJs",
+          venueName: "Downtown Listening Lounge",
+          venueLocation: "Singapore",
+          bannerImage:
+            "https://images.unsplash.com/photo-1525182008055-f88b95ff7980?auto=format&fit=crop&w=1600&q=80",
+          cardImage:
+            "https://images.unsplash.com/photo-1492683513054-55277abccd50?auto=format&fit=crop&w=1200&q=80",
+          startDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+          endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000),
+          status: "upcoming",
+          source: "questpass",
+          extraData: {
+            spotlight: true,
+          },
+        },
+      ];
+
+      curatedEvents.forEach((event) => {
+        const curatedDoc = buildEventDocument(event);
+        const eventRef = db.collection("events").doc(event.id);
+        batch.set(eventRef, curatedDoc, { merge: true });
         processedCount++;
       });
 

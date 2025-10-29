@@ -1,15 +1,47 @@
 <template>
   <main class="container py-5">
     <!-- header and search bar -->
-    <header class="d-flex justify-content-between align-items-center mb-4">
+    <header class="page-header mb-4">
       <h1 class="mb-0">Upcoming Events</h1>
-      <div class="col-md-4">
-        <input
-          type="search"
-          class="form-control"
-          placeholder="Search events..."
-          v-model="searchQuery"
-        />
+      <div class="search-filter-group">
+        <div class="search-wrapper">
+          <label
+            for="event-search"
+            class="visually-hidden"
+            >Search events</label
+          >
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fas fa-search" aria-hidden="true"></i>
+            </span>
+            <input
+              id="event-search"
+              type="search"
+              class="form-control"
+              placeholder="Search events..."
+              v-model="searchQuery"
+            />
+          </div>
+        </div>
+        <div class="filter-bar">
+          <FilterSelect
+            label="Date"
+            :options="dateRangeOptions"
+            v-model="selectedDateRange"
+          />
+          <FilterSelect
+            label="Genre"
+            :options="genreFilterOptions"
+            v-model="selectedGenre"
+            placeholder="All genres"
+          />
+          <FilterSelect
+            label="Location"
+            :options="locationFilterOptions"
+            v-model="selectedLocation"
+            placeholder="All locations"
+          />
+        </div>
       </div>
     </header>
 
@@ -30,11 +62,11 @@
 
     <!-- event grid -->
     <section v-else>
-      <div class="row g-4">
+      <div class="event-grid">
         <div
           v-for="event in filteredEvents"
           :key="event.id"
-          class="col-md-6 col-lg-4"
+          class="event-grid-item"
         >
           <!--
             this <router-link> is the vue-way of doing <a> tags.
@@ -45,9 +77,9 @@
           <router-link
             v-if="event.id"
             :to="{ name: 'EventDetails', params: { id: event.id } }"
-            class="text-decoration-none text-dark"
+            class="event-card-link"
           >
-            <div class="card h-100 event-card shadow-sm border-0">
+            <div class="card event-card shadow-sm border-0">
               <img
                 :src="event.image"
                 class="card-img-top"
@@ -66,8 +98,8 @@
             </div>
           </router-link>
 
-          <div v-else class="text-decoration-none text-dark">
-            <div class="card h-100 event-card shadow-sm border-0">
+          <div v-else class="event-card-link">
+            <div class="card event-card shadow-sm border-0">
               <img
                 :src="event.image"
                 class="card-img-top"
@@ -107,14 +139,25 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
+import FilterSelect from './FilterSelect.vue';
 // Firebase imports are no longer needed here
 // import { db } from '@/firebase.js';
 // import { collection, getDocs } from 'firebase/firestore';
 
 // page state
 const searchQuery = ref('');
+const selectedLocation = ref('all');
+const selectedDateRange = ref('all');
+const selectedGenre = ref('all');
 const allEvents = ref([]);
 const isLoading = ref(true);
+
+const dateRangeOptions = [
+  { value: 'all', label: 'Any time' },
+  { value: 'today', label: 'Today' },
+  { value: 'week', label: 'This week' },
+  { value: 'month', label: 'This month' },
+];
 
 // Get your secure API key from environment variables
 const apiKey = import.meta.env.VITE_JAMBASE_API_KEY;
@@ -127,16 +170,76 @@ console.log('My API Key is:', apiKey);
 
 // this computed property will automatically update
 // whenever 'searchQuery' or 'allEvents' changes.
-const filteredEvents = computed(() => {
-  if (!searchQuery.value) {
-    return allEvents.value;
+const locationNames = computed(() => {
+  const uniqueLocations = new Set();
+  const options = [];
+
+  for (const event of allEvents.value) {
+    const location = event.venueCity ?? 'Location TBA';
+    if (!uniqueLocations.has(location)) {
+      uniqueLocations.add(location);
+      options.push(location);
+    }
   }
-  const lowerQuery = searchQuery.value.toLowerCase();
-  return allEvents.value.filter(
-    (event) =>
-      event.title.toLowerCase().includes(lowerQuery) ||
-      event.description.toLowerCase().includes(lowerQuery)
-  );
+
+  return options.sort((a, b) => a.localeCompare(b));
+});
+
+const locationFilterOptions = computed(() => [
+  { value: 'all', label: 'All locations' },
+  ...locationNames.value.map((location) => ({
+    value: location,
+    label: location,
+  })),
+]);
+
+const genreNames = computed(() => {
+  const uniqueGenres = new Set();
+
+  for (const event of allEvents.value) {
+    for (const genre of event.genres ?? []) {
+      uniqueGenres.add(genre);
+    }
+  }
+
+  return Array.from(uniqueGenres).sort((a, b) => a.localeCompare(b));
+});
+
+const genreFilterOptions = computed(() => [
+  { value: 'all', label: 'All genres' },
+  ...genreNames.value.map((genre) => ({
+    value: genre,
+    label: genre,
+  })),
+]);
+
+const filteredEvents = computed(() => {
+  const lowerQuery = searchQuery.value.trim().toLowerCase();
+
+  return allEvents.value.filter((event) => {
+    const matchesSearch =
+      !lowerQuery ||
+      [
+        event.title,
+        event.description,
+        event.venueName,
+        event.venueCity,
+      ]
+        .filter(Boolean)
+        .some((field) => field.toLowerCase().includes(lowerQuery));
+
+    const matchesLocation =
+      selectedLocation.value === 'all' ||
+      event.venueCity === selectedLocation.value;
+
+    const matchesGenre =
+      selectedGenre.value === 'all' ||
+      (event.genres ?? []).includes(selectedGenre.value);
+
+    const matchesDate = matchesDateRange(event.startDate);
+
+    return matchesSearch && matchesLocation && matchesGenre && matchesDate;
+  });
 });
 
 // this runs when the component is first loaded
@@ -197,6 +300,20 @@ async function loadEvents() {
         apiEvent.venue?.address?.addressLocality ?? 'Location TBA';
       const performerName = apiEvent.performer?.[0]?.name;
 
+      const directGenres = apiEvent.genres ?? [];
+      const performerGenres = (apiEvent.performer ?? [])
+        .flatMap((performer) => performer.genres ?? [])
+        .map((genre) => (typeof genre === 'string' ? genre : genre?.name))
+        .filter(Boolean);
+
+      const normalizedDirectGenres = directGenres
+        .map((genre) => (typeof genre === 'string' ? genre : genre?.name))
+        .filter(Boolean);
+
+      const eventGenres = [...normalizedDirectGenres, ...performerGenres];
+
+      const uniqueEventGenres = [...new Set(eventGenres)];
+
       return {
         id: apiEvent.id,
         title: apiEvent.name,
@@ -208,6 +325,10 @@ async function loadEvents() {
             ? `See ${performerName} live!`
             : 'Check out this event!'), // Use a fallback description
         image: apiEvent.image ?? null, // Handle missing images
+        startDate: apiEvent.startDate,
+        venueName,
+        venueCity: venueLocation,
+        genres: uniqueEventGenres,
       };
     });
 
@@ -223,11 +344,142 @@ async function loadEvents() {
 function onImageError(event) {
   event.target.src = 'https://placehold.co/400x200/a78bfa/ffffff?text=Event';
 }
+
+function matchesDateRange(startDate) {
+  if (selectedDateRange.value === 'all') {
+    return true;
+  }
+
+  if (!startDate) {
+    return false;
+  }
+
+  const eventDate = new Date(startDate);
+
+  if (Number.isNaN(eventDate.getTime())) {
+    return false;
+  }
+
+  const now = new Date();
+  const todayStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+
+  switch (selectedDateRange.value) {
+    case 'today': {
+      const tomorrowStart = new Date(todayStart);
+      tomorrowStart.setDate(todayStart.getDate() + 1);
+      return eventDate >= todayStart && eventDate < tomorrowStart;
+    }
+    case 'week': {
+      const weekAhead = new Date(todayStart);
+      weekAhead.setDate(todayStart.getDate() + 7);
+      return eventDate >= todayStart && eventDate < weekAhead;
+    }
+    case 'month': {
+      const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      return eventDate >= todayStart && eventDate < nextMonthStart;
+    }
+    default:
+      return true;
+  }
+}
 </script>
 
 <style scoped>
 /* styles from your original index.html */
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.search-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.search-wrapper .input-group-text {
+  border-right: 0;
+  background: #fff;
+  color: var(--primary-1);
+}
+
+.search-wrapper .form-control {
+  border-left: 0;
+}
+
+.search-wrapper .input-group {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color, #ced4da);
+  background-color: #fff;
+}
+
+.search-wrapper .input-group-text,
+.search-wrapper .form-control {
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  border: 0;
+  box-shadow: none;
+}
+
+.search-wrapper .input-group-text {
+  border-radius: 0.75rem 0 0 0.75rem;
+}
+
+.search-wrapper .form-control {
+  border-radius: 0 0.75rem 0.75rem 0;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .search-filter-group {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+
+  .search-wrapper {
+    flex: 1 1 auto;
+  }
+
+  .filter-bar {
+    flex: 0 0 auto;
+  }
+}
+
+
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.event-grid-item {
+  height: 100%;
+}
+
+.event-card-link {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
 .event-card {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -241,8 +493,19 @@ function onImageError(event) {
 }
 
 .card-img-top {
-  height: 200px;
+  width: 100%;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
+}
+
+.event-card .card-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.event-card .description-truncate {
+  margin-top: auto;
 }
 
 /* new style to truncate long descriptions */

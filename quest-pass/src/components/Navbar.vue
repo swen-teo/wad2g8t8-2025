@@ -3,7 +3,7 @@
     <div class="container">
       <router-link
         class="navbar-brand fw-bold"
-        :to="userStore.isLoggedIn ? { name: 'Home' } : { name: 'LandingPage' }"
+        :to="{ name: 'LandingPage' }"
       >
         <font-awesome-icon :icon="['fas','ticket-alt']" class="me-2" />QuestPass
       </router-link>
@@ -12,6 +12,9 @@
         type="button"
         data-bs-toggle="collapse"
         data-bs-target="#navbarNav"
+        aria-controls="navbarNav"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
       >
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -56,17 +59,9 @@
           class="navbar-nav ms-auto"
           v-if="userStore.currentUser"
         >
-          <li class="nav-item me-2 d-flex align-items-center">
-            <span class="navbar-text d-flex align-items-center">
-              <i class = "fas fa-star text-warning me-1"></i>
-              <!-- This was already safe, but it's good practice -->
-              <span class="fw-semibold">{{ userStore.currentUser?.totalPoints ?? 0 }}</span>
-              <span class="ms-1 text-muted small">PTS</span>
-            </span>
-          </li>
           <li class="nav-item dropdown">
             <button
-              class="nav-link dropdown-toggle d-flex align-items-center btn btn-link"
+              class="nav-link dropdown-toggle d-flex align-items-center btn btn-link gap-2 user-dropdown-toggle"
               id="navbarUserDropdown"
               type="button"
               :aria-expanded="isDropdownOpen"
@@ -81,8 +76,16 @@
                 alt="User Avatar"
                 style ="object-fit: cover"
               />
-              <!-- This is now safe because of the parent v-if -->
-              <span class="d-none d-sm-inline">{{ userStore.currentUser.name }}</span>
+              <span class="user-meta d-inline-flex align-items-center gap-2">
+                <span class="user-name fw-semibold text-nowrap text-truncate">
+                  {{ userStore.currentUser.name }}
+                </span>
+                <span class="user-points-badge d-inline-flex align-items-center gap-1">
+                  <i class="fas fa-star"></i>
+                  <span>{{ userStore.currentUser?.totalPoints ?? 0 }}</span>
+                  <span class="text-uppercase">pts</span>
+                </span>
+              </span>
             </button>
             <ul
               class="dropdown-menu dropdown-menu-end"
@@ -105,10 +108,16 @@
               <li><hr class="dropdown-divider" /></li>
               <li>
                 <a
-                  class="dropdown-item"
+                  class="dropdown-item logout-item d-flex align-items-center"
                   href="#"
                   @click.prevent="() => { closeDropdown(); handleLogout(); }"
-                  >Logout</a
+                  >
+                  <font-awesome-icon
+                    :icon="['fas', 'sign-out-alt']"
+                    class="me-2"
+                  />
+                  Logout
+                </a
                 >
               </li>
             </ul>
@@ -189,5 +198,106 @@ async function handleLogout() {
 .nav-link.active {
   font-weight: 600;
   color: var(--primary-1) !important;
+}
+
+.navbar-nav.ms-auto {
+  margin-left: auto !important;
+  align-items: center;
+}
+
+.nav-item.dropdown {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.navbar-nav.ms-auto .dropdown-menu {
+  margin-top: 0;
+  left: auto;
+  right: -0.85rem;
+  min-width: 0;
+  width: calc(100% + 1.7rem);
+  border-radius: 0.75rem;
+  padding: 0.25rem 0;
+  overflow: hidden;
+  top: calc(100% + 0.5rem);
+  transform: none !important;
+}
+
+.navbar-nav.ms-auto .dropdown-menu .dropdown-item,
+.navbar-nav.ms-auto .dropdown-menu .dropdown-divider {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.navbar-nav.ms-auto .dropdown-menu .logout-item {
+  color: #b23b3b;
+  font-weight: 600;
+}
+
+.navbar-nav.ms-auto .dropdown-menu .logout-item :deep(svg) {
+  color: inherit;
+}
+
+.navbar-nav.ms-auto .dropdown-menu .logout-item:hover,
+.navbar-nav.ms-auto .dropdown-menu .logout-item:focus {
+  color: #b23b3b;
+  background-color: rgba(178, 59, 59, 0.08);
+}
+
+.user-dropdown-toggle {
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  color: #ffffff !important;
+  border: none;
+  box-shadow: 0 10px 20px rgba(96, 165, 250, 0.25);
+  width: auto;
+  margin: 0;
+  margin-left: 0;
+}
+
+.user-dropdown-toggle:hover,
+.user-dropdown-toggle:focus {
+  color: #ffffff !important;
+  text-decoration: none;
+  box-shadow: 0 12px 26px rgba(96, 165, 250, 0.35);
+}
+
+.user-meta {
+  max-width: 12rem;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.user-name {
+  max-width: 7.5rem;
+}
+
+.user-points-badge {
+  background-color: rgba(255, 193, 7, 0.2);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.user-points-badge i {
+  color: #ffe082;
+}
+
+@media (max-width: 575.98px) {
+  .user-meta {
+    max-width: none;
+  }
+
+  .user-name {
+    max-width: 6.5rem;
+  }
 }
 </style>

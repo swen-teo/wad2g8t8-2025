@@ -244,6 +244,7 @@ const error = ref(null);
 const event = ref(null);
 const artistName = ref('the artist');
 const rewardModal = ref(null);
+const FALLBACK_BANNER_IMAGE = 'https://placehold.co/1200x400/a78bfa/ffffff?text=Event';
 
 // --- NEW state for showing overlays ---
 const showMusicQuest = ref(false);
@@ -313,9 +314,21 @@ async function loadEventDetails() {
   try {
     const docSnap = await getDoc(eventDocRef);
     if (docSnap.exists()) {
-      event.value = docSnap.data();
+      const data = docSnap.data();
+      const startDate = data.startDate?.toDate ? data.startDate.toDate() : null;
+      const endDate = data.endDate?.toDate ? data.endDate.toDate() : null;
+      event.value = {
+        id: docSnap.id,
+        ...data,
+        startDate,
+        endDate,
+        bannerImage:
+          data.bannerImage || data.cardImage || FALLBACK_BANNER_IMAGE,
+      };
       artistName.value =
-        event.value.performer?.[0]?.name || event.value.title;
+        event.value.artistName ||
+        event.value.performer?.[0]?.name ||
+        event.value.title;
     } else {
       error.value = 'this event does not exist.';
     }
