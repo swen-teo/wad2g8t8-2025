@@ -31,10 +31,11 @@
     v-else-if="event"
     class="event-details-page"
   >
+  <!-- :style="{ backgroundImage: `url(${event.bannerImage})` }" -->
     <!-- header banner -->
     <header
       class="event-banner"
-      :style="{ backgroundImage: `url(${event.bannerImage})` }"
+      :style="{ backgroundImage: 'url(' + (event.bannerImage || FALLBACK_BANNER_IMAGE) + ')' }"
     >
       <div class="container p-5">
         <h1 class="display-4 fw-bold text-white mb-3">
@@ -171,7 +172,7 @@
                 {{ event.rewardCode || 'REWARD-123' }}
               </div>
               <button
-                classs="btn btn-success btn-lg mt-4"
+                class="btn btn-success btn-lg mt-4"
                 data-bs-dismiss="modal"
               >
                 Awesome!
@@ -230,13 +231,16 @@ const MUSIC_MAX = 300;
 const TRIVIA_AWARD = 200;
 const TRIVIA_QS = 5; // Need this for the card text
 const POINT_GOAL = MUSIC_MAX + TRIVIA_AWARD;
+// Jambase API key (same as Home.vue)
+const apiKey = import.meta.env.VITE_JAMBASE_API_KEY;
 
 // --- component setup ---
 const props = defineProps({ id: { type: [String, Number], required: false } });
 const route = useRoute();
 const userStore = useUserStore();
 const eventId = props.id ?? route.params.id;
-const userId = userStore.currentUser ? userStore.currentUser.uid : null;
+// const userId = userStore.currentUser ? userStore.currentUser.uid : null;
+const userId = computed(() => userStore.currentUser?.uid || null);
 
 // --- local state ---
 const isLoading = ref(true);
@@ -275,80 +279,264 @@ const isTriviaQuestDone = computed(() => quests.value.trivia.completed);
 
 // --- database path helpers ---
 const eventDocRef = doc(db, 'events', eventId);
-const progressDocRef = doc(
-  db,
-  'users',
-  userId,
-  'eventProgress',
-  eventId
-);
+// const progressDocRef = doc(
+//   db,
+//   'users',
+//   userId,
+//   'eventProgress',
+//   eventId
+// );
+function getProgressDocRef() {
+  if (!userId.value) return null;
+  return doc(db, 'users', userId.value, 'eventProgress', eventId);
+}
 
 // --- lifecycle ---
-onMounted(async () => {
-  if (!userId) {
-    error.value = 'you must be logged in to view this page.';
-    isLoading.value = false;
-    return;
-  }
+// onMounted(async () => {
+//   if (!userId) {
+//     error.value = 'you must be logged in to view this page.';
+//     isLoading.value = false;
+//     return;
+//   }
   
-  rewardModal.value = new Modal(document.getElementById('rewardModal'));
+//   rewardModal.value = new Modal(document.getElementById('rewardModal'));
 
-  await loadEventDetails();
+//   await loadEventDetails();
 
-  if (event.value) {
-    await loadProgress();
+//   if (event.value) {
+//     await loadProgress();
+//   }
+
+//   // Check for spotify redirect *on load*
+//   // If the user is returning from Spotify, show the MusicQuest overlay immediately.
+//   const params = new URLSearchParams(window.location.search);
+//   if (params.has('code')) {
+//     showMusicQuest.value = true;
+//   }
+
+//   isLoading.value = false;
+// });
+
+onMounted(async () => {
+  try {
+    // rewardModal.value = new Modal(document.getElementById('rewardModal'));
+    const modalEl = document.getElementById('rewardModal');
+try {
+  if (modalEl && typeof Modal === 'function') {
+    rewardModal.value = new Modal(modalEl);
   }
+} catch (e) {
+  console.warn('Could not init modal:', e);
+}
 
-  // Check for spotify redirect *on load*
-  // If the user is returning from Spotify, show the MusicQuest overlay immediately.
-  const params = new URLSearchParams(window.location.search);
-  if (params.has('code')) {
-    showMusicQuest.value = true;
+    // Load event details (Firestore or Jambase)
+    await loadEventDetails();
+
+    // Only try to load/save progress if the user is logged in
+    if (event.value && userId.value) {
+      await loadProgress();
+    }
+
+    // If returning from Spotify, open overlay
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('code')) {
+      showMusicQuest.value = true;
+    }
+  } finally {
+    // Ensure spinner clears even if anything above throws
+    isLoading.value = false;
   }
-
-  isLoading.value = false;
 });
 
+function mapJambaseEvent(apiEvent) {
+  if (!apiEvent) return null;
+
+  const venueName = apiEvent.venue?.name ?? 'Venue TBA';
+  const venueCity = apiEvent.venue?.address?.addressLocality ?? 'Location TBA';
+  const startDate = apiEvent.startDate ? new Date(apiEvent.startDate) : null;
+  const endDate = apiEvent.endDate ? new Date(apiEvent.endDate) : null;
+
+  const dateStr = startDate
+    ? startDate.toLocaleString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      })
+    : 'Date TBA';
+
+  return {
+    id: apiEvent.id,
+    title: apiEvent.name,
+    date: `${dateStr} at ${venueName}, ${venueCity}`,
+    startDate,
+    endDate,
+    venueName,
+    venueCity,
+    description:
+      apiEvent.description ||
+      (apiEvent.performer?.[0]?.name
+        ? `See ${apiEvent.performer?.[0]?.name} live!`
+        : 'Check out this event!'),
+    bannerImage: apiEvent.image || apiEvent.cardImage || FALLBACK_BANNER_IMAGE,
+    rewardCode: null,
+    artistName:
+      apiEvent.artistName ||
+      apiEvent.performer?.[0]?.name ||
+      apiEvent.name ||
+      'the artist',
+  };
+}
+
+async function fetchJambaseEventFlexible(idOrName) {
+  if (!apiKey) {
+    console.error('Missing VITE_JAMBASE_API_KEY');
+    return null;
+  }
+
+  const url = `https://www.jambase.com/jb-api/v1/events?apikey=${apiKey}&geoCountryIso2=SG`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  const list = data.events || [];
+
+  const raw = String(idOrName);
+  const decoded = decodeURIComponent(raw);
+
+  // Try by numeric/string id first; if not found, try by name/title match
+  const match =
+    list.find((e) => String(e.id) === raw) ||
+    list.find((e) => e.name === decoded);
+
+  return mapJambaseEvent(match);
+}
+
+
+
+
 // --- data loading functions ---
+// async function loadEventDetails() {
+//   try {
+//     const docSnap = await getDoc(eventDocRef);
+//     if (docSnap.exists()) {
+//       const data = docSnap.data();
+//       const startDate = data.startDate?.toDate ? data.startDate.toDate() : null;
+//       const endDate = data.endDate?.toDate ? data.endDate.toDate() : null;
+//       event.value = {
+//         id: docSnap.id,
+//         ...data,
+//         startDate,
+//         endDate,
+//         bannerImage:
+//           data.bannerImage || data.cardImage || FALLBACK_BANNER_IMAGE,
+//       };
+//       artistName.value =
+//         event.value.artistName ||
+//         event.value.performer?.[0]?.name ||
+//         event.value.title;
+//     } else {
+//       error.value = 'this event does not exist.';
+//     }
+//   } catch (e) {
+//     console.error('error loading event:', e);
+//     error.value = 'could not load event details. please try again.';
+//   }
+// }
+
 async function loadEventDetails() {
+  // 1) Try Firestore first, but don't abort if it errors
+  let fsDoc = null;
   try {
     const docSnap = await getDoc(eventDocRef);
     if (docSnap.exists()) {
-      const data = docSnap.data();
-      const startDate = data.startDate?.toDate ? data.startDate.toDate() : null;
-      const endDate = data.endDate?.toDate ? data.endDate.toDate() : null;
-      event.value = {
-        id: docSnap.id,
-        ...data,
-        startDate,
-        endDate,
-        bannerImage:
-          data.bannerImage || data.cardImage || FALLBACK_BANNER_IMAGE,
-      };
-      artistName.value =
-        event.value.artistName ||
-        event.value.performer?.[0]?.name ||
-        event.value.title;
-    } else {
-      error.value = 'this event does not exist.';
+      fsDoc = docSnap;
     }
   } catch (e) {
-    console.error('error loading event:', e);
-    error.value = 'could not load event details. please try again.';
+    console.warn('Firestore read failed — falling back to Jambase:', e);
   }
+
+  if (fsDoc) {
+    const data = fsDoc.data();
+    const startDate = data.startDate?.toDate ? data.startDate.toDate() : null;
+    const endDate = data.endDate?.toDate ? data.endDate.toDate() : null;
+
+    event.value = {
+      id: fsDoc.id,
+      ...data,
+      startDate,
+      endDate,
+      bannerImage: data.bannerImage || data.cardImage || FALLBACK_BANNER_IMAGE,
+      // ensure we always have a displayable date string
+      date:
+        startDate
+          ? `${startDate.toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })} at ${data.venueName ?? 'Venue TBA'}, ${data.venueCity ?? 'Location TBA'}`
+          : 'Date TBA',
+    };
+
+    artistName.value =
+      event.value.artistName ||
+      event.value.performer?.[0]?.name ||
+      event.value.title;
+
+    return; // done (we got Firestore)
+  }
+
+  // 2) Firestore not available or no doc — try Jambase by id OR title
+  try {
+    const jb = await fetchJambaseEventFlexible(eventId);
+    if (jb) {
+      event.value = jb;
+      artistName.value = jb.artistName;
+      return;
+    }
+  } catch (e) {
+    console.warn('Jambase fetch failed:', e);
+  }
+
+  // 3) Nothing matched anywhere
+  error.value = 'could not load event details. please try again.';
 }
 
+
+
+// async function loadProgress() {
+//   try {
+//     const docSnap = await getDoc(progressDocRef);
+//     if (docSnap.exists()) {
+//       const progress = docSnap.data();
+//       if (progress.music) quests.value.music = progress.music;
+//       if (progress.trivia) quests.value.trivia = progress.trivia;
+      
+//       if (progress.rewardClaimed) {
+//          quests.value.music.points = MUSIC_MAX;
+//          quests.value.trivia.points = TRIVIA_AWARD;
+//       }
+//     } else {
+//       await saveProgress();
+//     }
+//   } catch (e) {
+//     console.error('error loading progress:', e);
+//   }
+// }
+
 async function loadProgress() {
+  const progressDocRef = getProgressDocRef();
+  if (!progressDocRef) return; // skip if user not logged in
+
   try {
     const docSnap = await getDoc(progressDocRef);
     if (docSnap.exists()) {
       const progress = docSnap.data();
       if (progress.music) quests.value.music = progress.music;
       if (progress.trivia) quests.value.trivia = progress.trivia;
-      
+
       if (progress.rewardClaimed) {
-         quests.value.music.points = MUSIC_MAX;
-         quests.value.trivia.points = TRIVIA_AWARD;
+        quests.value.music.points = MUSIC_MAX;
+        quests.value.trivia.points = TRIVIA_AWARD;
       }
     } else {
       await saveProgress();
@@ -358,7 +546,23 @@ async function loadProgress() {
   }
 }
 
+
+// async function saveProgress() {
+//   try {
+//     await setDoc(progressDocRef, {
+//       music: quests.value.music,
+//       trivia: quests.value.trivia,
+//       lastUpdated: Timestamp.now(),
+//     });
+//   } catch (e) {
+//     console.error('failed to save progress:', e);
+//   }
+// }
+
 async function saveProgress() {
+  const progressDocRef = getProgressDocRef();
+  if (!progressDocRef) return; // skip if no user
+
   try {
     await setDoc(progressDocRef, {
       music: quests.value.music,
@@ -395,14 +599,24 @@ async function handleTriviaProgress(progress) {
 }
 
 // --- reward logic ---
+// async function checkForCompletion() {
+//   if (isComplete.value) {
+//     await setDoc(progressDocRef, 
+//       { rewardClaimed: true }, 
+//       { merge: true }
+//     );
+//     rewardModal.value.show();
+//   }
+// }
 async function checkForCompletion() {
-  if (isComplete.value) {
-    await setDoc(progressDocRef, 
-      { rewardClaimed: true }, 
-      { merge: true }
-    );
-    rewardModal.value.show();
-  }
+  if (!isComplete.value) return;
+
+  const progressDocRef = getProgressDocRef();
+  if (!progressDocRef) return; // skip if no user
+
+  await setDoc(progressDocRef, { rewardClaimed: true }, { merge: true });
+  rewardModal.value.show();
 }
+
 </script>
 

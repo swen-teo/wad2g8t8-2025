@@ -42,6 +42,41 @@
           -->
           <!-- If event.id is present make the card a router-link, otherwise render a non-clickable div
                This prevents Vue Router from throwing "Missing required param 'id'" when id is undefined. -->
+          <!-- event card with CTA -->
+          <div class="card event-card shadow-sm border-0">
+            <img
+              :src="event.image"
+              class="card-img-top"
+              alt="Event Image"
+              @error="onImageError"
+            />
+          <div class="card-body d-flex flex-column">
+              <h5 class="card-title fw-bold">{{ event.title }}</h5>
+              <p class="card-text text-muted small">
+                {{ event.date }}
+              </p>
+              <p class="card-text description-truncate flex-grow-1">
+                {{ event.description }}
+              </p>
+
+              <!-- CTA button -->
+              <div class="mt-3">
+                <router-link
+                  v-if="event && event.id"
+                  :to="{ name: 'EventDetails', params: { id: event.id } }"
+                  class="btn btn-primary w-100 event-cta"
+                >
+                  View Details & Start Quests →
+                </router-link>
+                <button v-else class="btn btn-secondary w-100" disabled>
+                  Details unavailable
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+<!-- 
           <router-link
             v-if="event.id"
             :to="{ name: 'EventDetails', params: { id: event.id } }"
@@ -65,7 +100,6 @@
               </div>
             </div>
           </router-link>
-
           <div v-else class="event-card-link">
             <div class="card event-card shadow-sm border-0">
               <img
@@ -86,7 +120,8 @@
             </div>
           </div>
         </div>
-      </div>
+      </div> -->
+
       <!-- no events found message -->
       <div v-if="!isLoading && filteredEvents.length === 0" class="text-center py-5 text-muted">
         <i class="fas fa-search fa-3x mb-3" aria-hidden="true"></i>
@@ -278,7 +313,8 @@ async function loadEvents() {
       const uniqueEventGenres = [...new Set(eventGenres)];
 
       return {
-        id: apiEvent.id,
+        // id: apiEvent.id,
+        id: apiEvent.id ?? apiEvent.name ?? Math.random().toString(36).slice(2, 9),
         title: apiEvent.name,
         // Use our new safe variables
         date: `${eventDate} at ${venueName}, ${venueLocation}`,
