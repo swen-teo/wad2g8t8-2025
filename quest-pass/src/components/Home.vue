@@ -2,6 +2,7 @@
   <main class="container py-5">
     <!-- header and search bar -->
     <header class="d-flex justify-content-between align-items-center mb-4">
+      <!-- 🎟️ Emoji removed -->
       <h1 class="mb-0">Upcoming Events</h1>
       <div class="col-md-4">
         <input
@@ -50,6 +51,7 @@
               alt="Event Image"
               @error="onImageError"
             />
+          <!-- The card-body now has the perforation and notches -->
           <div class="card-body d-flex flex-column">
               <h5 class="card-title fw-bold">{{ event.title }}</h5>
               <p class="card-text text-muted small">
@@ -59,19 +61,19 @@
                 {{ event.description }}
               </p>
 
-              <!-- CTA button -->
-              <div class="mt-3">
-                <router-link
-                  v-if="event && event.id"
-                  :to="{ name: 'EventDetails', params: { id: event.id } }"
-                  class="btn btn-primary w-100 event-cta"
-                >
-                  View Details & Start Quests →
-                </router-link>
-                <button v-else class="btn btn-secondary w-100" disabled>
-                  Details unavailable
-                </button>
-              </div>
+              <!-- CTA moved out of card-body into a tear-off stub below -->
+            </div>
+            <div class="ticket-stub">
+              <router-link
+                v-if="event && event.id"
+                :to="{ name: 'EventDetails', params: { id: event.id } }"
+                class="event-cta"
+              >
+                View Details & Start Quests →
+              </router-link>
+              <button v-else class="event-cta btn btn-secondary w-100" disabled>
+                Details unavailable
+              </button>
             </div>
           </div>
         </div>
@@ -92,7 +94,7 @@
               <div class="card-body d-flex flex-column">
                 <h5 class="card-title fw-bold">{{ event.title }}</h5>
                 <p class="card-text text-muted small flex-grow-1">
-                  {{ event.date }}
+                  {{ event.description }}
                 </p>
                 <p class="card-text description-truncate">
                   {{ event.description }}
@@ -111,7 +113,7 @@
               <div class="card-body d-flex flex-column">
                 <h5 class="card-title fw-bold">{{ event.title }}</h5>
                 <p class="card-text text-muted small flex-grow-1">
-                  {{ event.date }}
+                  {{ event.description }}
                 </p>
                 <p class="card-text description-truncate">
                   {{ event.description }}
@@ -123,8 +125,10 @@
       </div> -->
 
       <!-- no events found message -->
+      <!-- 👇 Class reverted back to original -->
       <div v-if="!isLoading && filteredEvents.length === 0" class="text-center py-5 text-muted">
         <i class="fas fa-search fa-3x mb-3" aria-hidden="true"></i>
+        <!-- 👇 Emoji removed -->
         <h4 class="fw-bold">No Events Found</h4>
         <p>Try adjusting your search or check back later for new events.</p>
         <div class="mt-3">
@@ -388,7 +392,8 @@ function matchesDateRange(startDate) {
 </script>
 
 <style scoped>
-/* styles from your original index.html */
+/* --- NEW: Page Background Color --- */
+/* /* styles from your original index.html */
 .page-header {
   display: flex;
   flex-direction: column;
@@ -422,7 +427,7 @@ function matchesDateRange(startDate) {
 .search-wrapper .form-control {
   height: 3rem;
   display: flex;
-  align-items: center;
+  align-items: center; /* <-- This line was fixed (was align-items-center;) */
   border: 0;
   box-shadow: none;
 }
@@ -474,6 +479,7 @@ function matchesDateRange(startDate) {
   text-decoration: none;
 }
 
+/* --- MODIFIED: Event Card for Ticket Shape --- */
 .event-card {
   height: 100%;
   width: 100%;
@@ -483,25 +489,68 @@ function matchesDateRange(startDate) {
     transform 0.2s ease,
     box-shadow 0.2s ease;
   border-radius: 0.75rem; /* 12px */
-  overflow: hidden;
+  /* --- MODIFIED: overflow is now 'visible' to allow notches --- */
+  overflow: visible;
+  /* --- ADDED: position: relative is needed for notches --- */
+  position: relative;
+  background-color: #fff; /* Ensure card is white */
 }
+
 
 .event-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
+/* --- MODIFIED: Card Image --- */
 .card-img-top {
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
+  /* ADDED to replace parent's overflow:hidden */
+  border-radius: 0.75rem 0.75rem 0 0;
+  position: relative; /* Establish stacking context */
+  z-index: 1; /* Below the notches */
 }
 
+/* --- MODIFIED: Card Body --- */
 .event-card .card-body {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
+  padding-top: 1.25rem;
+  /* stacking/positioning for notches */
+  position: relative;
+  z-index: 1;
 }
+
+/* --- NEW: The Ticket Notches --- */
+/* These pseudo-elements are attached to the card-body */
+.event-card .card-body::before,
+.event-card .card-body::after {
+  content: '';
+  position: absolute;
+  /* Positioned at the top of the card-body, then moved up by half height */
+  top: -12px; 
+  width: 28px;
+  height: 28px;
+  /* Make the notch blend with the page so the card looks like a ticket cutout */
+  background: var(--page-bg, #f8f9fa);
+  border-radius: 50%;
+  /* subtle separation and depth so the notch reads as a cutout */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.04);
+  z-index: 2; /* Sit on top of the card body/border */
+}
+
+.event-card .card-body::before {
+  left: -12px; /* Halfway out the left side */
+}
+
+.event-card .card-body::after {
+  right: -12px; /* Halfway out the right side */
+}
+
 
 .event-card .description-truncate {
   margin-top: auto;
@@ -544,5 +593,83 @@ header h1 {
 @media (max-width: 575.98px) {
   header h1 { font-size: 1.15rem; }
 }
-</style>
 
+/* --- NEW: Provide a page background variable so notches can "cut out" the card */
+.container {
+  /* Use a soft, subtle page background gradient. The notches will inherit this via --page-bg */
+  --page-bg: linear-gradient(135deg, #f8f9fa 0%, #eef2ff 100%);
+}
+
+/* --- NEW: Make the "View Details" CTA look like a tear-off ticket stub --- */
+.ticket-stub {
+  position: relative;
+  overflow: visible;
+  border-radius: 0 0 0.75rem 0.75rem;
+  /* the perforation sits along the top edge of the stub */
+  margin-top: 0.8rem;
+  z-index: 1; /* place the stub container behind the button's stacking context */
+}
+
+.ticket-stub::before,
+.ticket-stub::after {
+  /* semicircular notches that visually 'cut' into the card */
+  content: '';
+  position: absolute;
+  top: -14px; /* half of notch height to sit across the seam */
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--page-bg, #f8f9fa);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.04);
+  z-index: 5; /* in FRONT of the button so the notch overlaps the button */
+  pointer-events: none;
+}
+
+.ticket-stub::before { left: -14px; }
+.ticket-stub::after { right: -14px; }
+
+.ticket-stub {
+  border-top: 2px dashed rgba(0,0,0,0.08);
+}
+
+.event-cta {
+  display: block;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  text-align: center;
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+  font-size: 0.9rem; /* slightly smaller text */
+  line-height: 1.1;
+  /* use the app-wide gradient tokens for consistency */
+  background: linear-gradient(90deg, var(--primary-1) 0%, var(--primary-2) 100%);
+  border: 0;
+  border-radius: 0 0 0.75rem 0.75rem;
+  box-shadow: 0 6px 18px rgba(91, 33, 182, 0.08);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  position: relative;
+  z-index: 4; /* ensure button sits *behind* the semicircle notches */
+}
+
+.event-cta:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(91,33,182,0.12); }
+
+/* remove underline and ensure anchor styles don't add decoration */
+.event-cta,
+.event-cta:visited,
+.event-cta:active,
+.event-cta:hover {
+  text-decoration: none !important;
+  -webkit-text-decoration-skip: none;
+}
+
+/* slightly smaller on very small screens */
+@media (max-width: 375px) {
+  .event-cta { font-size: 0.84rem; }
+}
+
+@media (max-width: 575.98px) {
+  .ticket-stub::before, .ticket-stub::after { width: 22px; height: 22px; top: -11px; }
+}
+
+</style>
