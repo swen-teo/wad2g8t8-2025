@@ -1,47 +1,15 @@
 <template>
   <main class="container py-5">
     <!-- header and search bar -->
-    <header class="page-header mb-4">
+    <header class="d-flex justify-content-between align-items-center mb-4">
       <h1 class="mb-0">Upcoming Events</h1>
-      <div class="search-filter-group">
-        <div class="search-wrapper">
-          <label
-            for="event-search"
-            class="visually-hidden"
-            >Search events</label
-          >
-          <div class="input-group">
-            <span class="input-group-text">
-              <i class="fas fa-search" aria-hidden="true"></i>
-            </span>
-            <input
-              id="event-search"
-              type="search"
-              class="form-control"
-              placeholder="Search events..."
-              v-model="searchQuery"
-            />
-          </div>
-        </div>
-        <div class="filter-bar">
-          <FilterSelect
-            label="Date"
-            :options="dateRangeOptions"
-            v-model="selectedDateRange"
-          />
-          <FilterSelect
-            label="Genre"
-            :options="genreFilterOptions"
-            v-model="selectedGenre"
-            placeholder="All genres"
-          />
-          <FilterSelect
-            label="Location"
-            :options="locationFilterOptions"
-            v-model="selectedLocation"
-            placeholder="All locations"
-          />
-        </div>
+      <div class="col-md-4">
+        <input
+          type="search"
+          class="form-control"
+          placeholder="Search events..."
+          v-model="searchQuery"
+        />
       </div>
     </header>
 
@@ -120,18 +88,13 @@
         </div>
       </div>
       <!-- no events found message -->
-      <div
-        v-if="!isLoading && filteredEvents.length === 0"
-        class="text-center py-5 text-muted"
-      >
-        <i
-          class="fas fa-search fa-3x mb-3"
-          aria-hidden="true"
-        ></i>
+      <div v-if="!isLoading && filteredEvents.length === 0" class="text-center py-5 text-muted">
+        <i class="fas fa-search fa-3x mb-3" aria-hidden="true"></i>
         <h4 class="fw-bold">No Events Found</h4>
-        <p>
-          Try adjusting your search or check back later for new events.
-        </p>
+        <p>Try adjusting your search or check back later for new events.</p>
+        <div class="mt-3">
+          <button class="btn btn-outline-primary btn-lg">Refresh</button>
+        </div>
       </div>
     </section>
   </main>
@@ -518,6 +481,32 @@ function matchesDateRange(startDate) {
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* New decorative styles for Home cards */
+.description-truncate {
+  /* Use the WebKit box model for multi-line truncation */
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* show 2 lines */
+  /* standard (future) property for compatibility */
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* small adjustments for small screens */
+@media (max-width: 575.98px) {
+  .card-img-top { height: 160px; }
+}
+
+/* reduce the size of the page header (Upcoming Events) slightly */
+header h1 {
+  font-size: 1.45rem; /* slightly smaller than before */
+  font-weight: 600;
+}
+@media (max-width: 575.98px) {
+  header h1 { font-size: 1.15rem; }
 }
 </style>
 

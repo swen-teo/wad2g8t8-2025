@@ -480,3 +480,77 @@ width: 2.5rem;  /* Changed from 1rem */
 height: 2.5rem; /* Changed from 1rem */
 fill: currentColor;
 }
+
+/* =========================================================
+   Responsive tweaks (global)
+   These small adjustments improve layout across breakpoints
+   without changing component structure. They rely on Bootstrap
+   grid but tune paddings, font-sizes and mobile behaviour.
+   ========================================================= */
+
+/* Responsive base font sizing */
+html { font-size: 16px; }
+@media (min-width: 1200px) {
+  html { font-size: 18px; }
+}
+@media (max-width: 575.98px) {
+  html { font-size: 15px; }
+}
+
+/* Container padding tweaks so content breathes on small screens */
+.container {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+@media (min-width: 768px) {
+  .container { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+
+/* Navbar spacing and type scaling for mobile */
+.navbar {
+  padding: 0.75rem 1rem;
+}
+@media (min-width: 768px) {
+  .navbar { padding: 1rem 1.5rem; }
+}
+.navbar-brand { font-size: 1.15rem; }
+@media (max-width: 575.98px) {
+  .navbar-brand { font-size: 1rem; }
+  .navbar .nav-link { font-size: .95rem; margin-left: 8px; }
+}
+
+/* Ensure dropdown menus appear above other content */
+.dropdown-menu { z-index: 2000; }
+
+/* Make profile progress a bit smaller on cramped screens */
+@media (max-width: 575.98px) {
+  .profile-progress { height: 28px; }
+}
+
+/* Images and cards behave better on small screens */
+img { max-width: 100%; height: auto; display: block; }
+.card { word-wrap: break-word; }
+
+/* Slightly tighter spacing for smaller screens */
+@media (max-width: 575.98px) {
+  .main-content { padding-top: 1rem; }
+  .hero-section { padding: 1.5rem 0; }
+}
+
+/* Ensure profile avatar stays square even though global img rules set height:auto */
+.avatar-wrap .profile-avatar {
+  width: 150px;
+  height: 150px;
+  max-width: 150px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+}
+@media (max-width: 575.98px) {
+  .avatar-wrap .profile-avatar {
+    width: 96px;
+    height: 96px;
+    max-width: 96px;
+    aspect-ratio: 1 / 1;
+  }
+}

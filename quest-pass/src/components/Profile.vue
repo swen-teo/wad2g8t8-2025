@@ -7,13 +7,23 @@
     >
       <div class="card-body p-4 p-md-5">
         <div class="row align-items-center">
-          <div class="col-md-3 text-center mb-4 mb-md-0">
-            <img
-              :src="userStore.currentUser.avatar || 'https://placehold.co/150/a78bfa/ffffff?text=User'"
-              class="img-fluid rounded-circle"
-              alt="Profile Avatar"
-              style="width: 150px; height: 150px; object-fit: cover"
-            />
+          <div class="col-12 col-md-3 text-center mb-3 mb-md-0">
+            <div class="avatar-wrap d-inline-block">
+              <img
+                :src="userStore.currentUser.avatar || 'https://placehold.co/150/a78bfa/ffffff?text=User'"
+                class="img-fluid rounded-circle profile-avatar shadow-sm"
+                alt="Profile Avatar"
+              />
+              <!-- tier pill: shows tier name and color, nicer than a single dot -->
+              <div
+                v-if="userStore.currentUser.currentTier"
+                class="tier-pill d-inline-flex align-items-center justify-content-center"
+                :style="{ backgroundColor: userStore.currentTier.bg, color: userStore.currentTier.color, borderColor: userStore.currentTier.color }"
+                :title="userStore.currentUser.currentTier + ' tier'"
+              >
+                <small class="fw-semibold">{{ userStore.currentUser.currentTier }}</small>
+              </div>
+            </div>
           </div>
           <div class="col-md-9">
             <div
@@ -45,42 +55,52 @@
                 </button>
             </div>
             <hr class="my-4" />
-            <div class="row text-center">
-              <div class="col-4">
-                <h5 class="text-muted small text-uppercase">
+            <div class="row gx-3">
+              <div class="col-12 col-md-4 mb-3 mb-md-0 d-flex flex-column align-items-center align-items-md-start">
+                <h5 class="text-muted small text-uppercase mb-1 d-flex align-items-center justify-content-center justify-content-md-start">
+                  <font-awesome-icon :icon="['fas','star']" class="me-2 text-warning" />
                   Total Points
                 </h5>
-                <h3 class="fw-bold">
-                  {{ userStore.currentUser.totalPoints }}
+                <h3 class="fw-bold mb-0 d-flex align-items-center gap-2 justify-content-center justify-content-md-start w-100">
+                  <span class="stat-pill">{{ userStore.currentUser.totalPoints }}</span>
                 </h3>
               </div>
-              <div class="col-4">
-                <h5 class="text-muted small text-uppercase">
+              <div class="col-12 col-md-4 mb-3 mb-md-0 d-flex flex-column align-items-center align-items-md-start">
+                <h5 class="text-muted small text-uppercase mb-1 d-flex align-items-center justify-content-center justify-content-md-start">
+                  <font-awesome-icon :icon="['fas','shield-alt']" class="me-2 text-primary-2" />
                   Level
                 </h5>
-                <h3 class="fw-bold">
-                  {{ userStore.currentUser.level }}
+                <h3 class="fw-bold mb-0 d-flex align-items-center gap-2 justify-content-center justify-content-md-start w-100">
+                  <span class="stat-pill">{{ userStore.currentUser.level }}</span>
                 </h3>
               </div>
-              <div class="col-4">
-                <h5 class="text-muted small text-uppercase">
+              <div class="col-12 col-md-4 d-flex flex-column align-items-center align-items-md-start">
+                <h5 class="text-muted small text-uppercase mb-1 d-flex align-items-center justify-content-center justify-content-md-start">
+                  <font-awesome-icon :icon="['fas','flag-checkered']" class="me-2 text-success" />
                   Quests Done
                 </h5>
-                <h3 class="fw-bold">
-                  {{ completedQuests.length }}
+                <h3 class="fw-bold mb-0 d-flex align-items-center gap-2 justify-content-center justify-content-md-start w-100">
+                  <span class="stat-pill">{{ completedQuests.length }}</span>
                 </h3>
               </div>
             </div>
-            <div class="progress mt-4" style="height: 20px">
-              <div
-                class="progress-bar"
-                role="progressbar"
-                :style="{ width: userStore.levelProgress + '%' }"
-                :aria-valuenow="userStore.levelProgress"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              >
-                {{ userStore.levelProgress }}% to next level
+            <div class="mt-4">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                      <h5 class="text-muted small text-uppercase d-flex align-items-center gap-2">
+                        <font-awesome-icon :icon="['fas','tachometer-alt']" class="me-1 text-muted" />
+                        Progress to next level
+                      </h5>
+                      <div class="small text-muted fw-semibold">{{ userStore.levelProgress }}%</div>
+                    </div>
+              <div class="progress profile-progress">
+                <div
+                  class="progress-bar"
+                  role="progressbar"
+                  :style="{ width: userStore.levelProgress + '%' }"
+                  :aria-valuenow="userStore.levelProgress"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                ></div>
               </div>
             </div>
           </div>
@@ -115,17 +135,16 @@
           class="card card-body"
         >
           <div class="list-group list-group-flush">
-            <div
-              v-for="badge in userStore.currentUser.badges"
-              :key="badge"
-              class="list-group-item d-flex align-items-center"
-            >
-              <i
-                class="fas fa-trophy fa-2x me-3"
-                style="color: var(--primary-1)"
-              ></i>
-              <span class="fw-bold">{{ badge }}</span>
-            </div>
+              <div
+                v-for="badge in userStore.currentUser.badges"
+                :key="badge"
+                class="list-group-item d-flex align-items-center"
+              >
+                <div class="badge-icon me-3">
+                  <font-awesome-icon :icon="['fas','trophy']" class="text-white" />
+                </div>
+                <span class="fw-bold">{{ badge }}</span>
+              </div>
           </div>
         </div>
         <p
@@ -148,22 +167,26 @@
             role="status"
           ></span>
         </div>
-        <ul
-          v-else-if="completedQuests.length > 0"
-          class="list-group"
-        >
+        <ul v-else-if="completedQuests.length > 0" class="list-group">
           <li
-            class="list-group-item d-flex justify-content-between align-items-center"
             v-for="quest in completedQuests"
             :key="quest.id"
+            class="list-group-item"
           >
-            <div>
-              <strong>{{ quest.title }}</strong>
-              <p class="mb-0 text-muted small">
-                +{{ quest.points }} XP
-              </p>
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-3">
+                <div class="quest-icon bg-light rounded-circle d-inline-flex align-items-center justify-content-center">
+                  <font-awesome-icon :icon="['fas','check']" class="text-success" />
+                </div>
+                <div>
+                  <strong>{{ quest.title }}</strong>
+                  <div class="text-muted small">+{{ quest.points }} XP</div>
+                </div>
+              </div>
+              <div class="text-success">
+                <font-awesome-icon :icon="['fas','angle-right']" />
+              </div>
             </div>
-            <i class="fas fa-check-circle text-success"></i>
           </li>
         </ul>
         <p
@@ -249,8 +272,146 @@ async function handleLogout() {
   background-color: #ffffff;
 }
 
+.profile-avatar {
+  width: 150px;
+  height: 150px;
+  max-width: 150px;
+  object-fit: cover;
+  aspect-ratio: 1 / 1;
+  display: block; /* avoid inline image layout differences */
+}
+
+/* Avatar wrapper allows decorative halo and positioned tier pill */
+.avatar-wrap { position: relative; display: inline-block; }
+.avatar-wrap::after {
+  /* subtle halo ring */
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 20%, rgba(167,139,250,0.12), transparent 30%);
+  filter: blur(8px);
+  opacity: 0.9;
+  z-index: 0;
+}
+.avatar-wrap .profile-avatar { position: relative; z-index: 1; }
+
+.tier-pill {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  padding: .25rem .5rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 6px 18px rgba(96,75,200,0.12);
+  font-size: .7rem;
+  transform: translate(20%, 20%);
+  z-index: 2;
+}
+
 .progress-bar {
   background-color: var(--primary-1);
   transition: width 0.5s ease-in-out;
 }
+
+/* Make the profile page progress bar thicker and vertically centered */
+.profile-progress {
+  height: 36px; /* thicker */
+  border-radius: 12px;
+  overflow: hidden; /* keep inner bar rounded */
+}
+.profile-progress .progress-bar {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #fff;
+  border-radius: 12px; /* match container */
+}
+
+/* Make the header card look more premium */
+.profile-header-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaff 100%);
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+.stat-pill {
+  background: linear-gradient(90deg, rgba(167,139,250,0.12), rgba(96,165,250,0.08));
+  padding: .25rem .6rem;
+  border-radius: 999px;
+  font-size: 1rem;
+}
+
+.badge-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  display: inline-grid;
+  place-items: center;
+}
+.badge-icon .svg-inline--fa { width: 20px; height: 20px; }
+
+.quest-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.list-group-item { display: flex; align-items: center; }
+.list-group-item + .list-group-item { border-top: 1px solid #f1eefb; }
+
+
+/* Wrapper that holds the bar and the label */
+.profile-progress-wrapper {
+  gap: .75rem;
+}
+.progress-label {
+  min-width: 140px;
+  text-align: right;
+  color: var(--ink-muted);
+}
+
+/* Responsive: on very small screens stack the label below the bar */
+@media (max-width: 575.98px) {
+  .profile-progress-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .progress-label {
+    text-align: left;
+    min-width: 0;
+  }
+}
+
+/* Responsive adjustments specific to profile page */
+@media (max-width: 575.98px) {
+  .profile-avatar {
+    width: 96px;
+    height: 96px;
+    max-width: 96px;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+  }
+  .profile-header-card .card-body {
+    padding: 1.25rem;
+  }
+  .profile-header-card h1 { font-size: 1.25rem; }
+  /* Make the small stat pills expand and center on very small screens */
+  .stat-pill {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: .5rem 0;
+    font-size: 1.05rem;
+    border-radius: 12px;
+  }
+}
+
+/* Spacing tweaks for badges and lists */
+.list-group-item { padding-top: .75rem; padding-bottom: .75rem; }
+.card.card-body { padding: 1rem; }
+
 </style>
+
+
