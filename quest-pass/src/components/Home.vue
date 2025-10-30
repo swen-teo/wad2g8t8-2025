@@ -29,8 +29,11 @@
       <p class="mt-3 text-muted">Loading events...</p>
     </div>
 
-    <!-- event grid -->
+    <!-- event discovery + grid -->
     <section v-else>
+      <!-- Fun discovery widget: random event picker based on current filters -->
+      <EventPicker :events="filteredEvents" />
+
       <div class="event-grid">
         <div
           v-for="event in filteredEvents"
@@ -142,6 +145,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import FilterSelect from './FilterSelect.vue';
+import EventPicker from './EventPicker.vue';
 // Firebase imports are no longer needed here
 // import { db } from '@/firebase.js';
 // import { collection, getDocs } from 'firebase/firestore';
