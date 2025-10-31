@@ -123,24 +123,24 @@ const letters = word.split('');
 onMounted(() => {
   isWordRevealed.value = true;
 
-  const perLetterDelay = 0.06;
-  const letterAnimDuration = 0.6;
-  const totalStagger = letters.length * perLetterDelay + letterAnimDuration;
-  const heroRevealDelay = totalStagger * 1000 + 80;
+  const perLetterDelay = 0.03;          // was 0.06
+const letterAnimDuration = 0.35;      // was 0.6
+const totalStagger = Math.min(0.6, letters.length * perLetterDelay + letterAnimDuration); // cap at 0.6s
+const heroRevealDelay = totalStagger * 1000 + 40; // was +80
 
   setTimeout(() => {
     heroStyle.value = {
       opacity: 1,
       transform: 'scale(1) translateY(0)',
-      transition: 'opacity 520ms ease, transform 520ms ease',
+      transition: 'opacity 360ms ease, transform 360ms ease',
     };
   }, heroRevealDelay);
 
-  const buttonRevealDelay = heroRevealDelay + 540;
+  const buttonRevealDelay = heroRevealDelay + 180;
   setTimeout(() => {
     buttonStyle.value = {
       opacity: 1,
-      animation: 'reveal-button 1s ease forwards',
+      animation: 'reveal-button 480ms ease forwards',
     };
   }, buttonRevealDelay);
 });

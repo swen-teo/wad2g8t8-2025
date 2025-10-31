@@ -129,13 +129,11 @@
                   +{{ quests.music.points }} / {{ MUSIC_MAX }} Points
                 </div>
               </div>
-              <button
-                class="btn qp-btn"
-                @click="showMusicQuest = true"
-                :disabled="isMusicQuestDone"
-              >
-                <i class="fas fa-play me-2"></i>
-                {{ isMusicQuestDone ? 'Completed' : 'Start Quest' }}
+                <button class="btn qp-btn"
+              @click="handleStartQuest"
+              :disabled="isMusicQuestDone === true">
+              <i class="fas fa-play me-2"></i>
+              {{ isMusicQuestDone ? 'Completed' : 'Start Quest' }}
               </button>
             </div>
           </div>
@@ -317,6 +315,33 @@ const eventDocRef = doc(db, 'events', eventId);
 //   'eventProgress',
 //   eventId
 // );
+
+
+// Spotify
+const SPOTIFY_CLIENT_ID = 'f3e1635e835b47359c14736ee86068f4'; // your existing client id
+const SPOTIFY_SCOPE = 'user-read-private user-read-email user-read-recently-played';
+const SPOTIFY_REDIRECT_URI = `${window.location.origin}/spotify-callback`;
+
+// Utility: do NOT trust old tokens
+function clearSpotifyStorage(){
+  localStorage.removeItem('spotify_access_token')
+  localStorage.removeItem('spotify_refresh_token')
+  localStorage.removeItem('sp_last_auth_ts')
+  localStorage.removeItem('sp_verifier')
+  sessionStorage.removeItem('sp_state')
+}
+
+// Helpers
+function base64url(ab){const b=new Uint8Array(ab);let s='';for(const x of b)s+=String.fromCharCode(x);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+async function sha256(s){return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))}
+function randomString(n=64){const a='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';let r='';for(let i=0;i<n;i++) r+=a[Math.floor(Math.random()*a.length)];return r}
+function isFreshSpotify(){
+  const t = localStorage.getItem('spotify_access_token')
+  const ts = Number(localStorage.getItem('sp_last_auth_ts')||0)
+  return Boolean(t) && (Date.now()-ts) <= 10*60*1000
+}
+
+
 function getProgressDocRef() {
   if (!userId.value) return null;
   return doc(db, 'users', userId.value, 'eventProgress', eventId);
@@ -369,10 +394,14 @@ try {
     }
 
     // If returning from Spotify, open overlay
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('code')) {
-      showMusicQuest.value = true;
-    }
+    // const params = new URLSearchParams(window.location.search);
+    // if (params.has('code')) {
+    //   showMusicQuest.value = true;
+    // }
+
+    if (route.query.spotify === '1') {
+  showMusicQuest.value = true;
+}
   } finally {
     // Ensure spinner clears even if anything above throws
     isLoading.value = false;
@@ -648,6 +677,95 @@ async function checkForCompletion() {
   await setDoc(progressDocRef, { rewardClaimed: true }, { merge: true });
   rewardModal.value.show();
 }
+
+
+
+
+async function startSpotifyAuth() {
+  clearSpotifyStorage();
+  const w = 520, h = 700;
+  const y = window.top.outerHeight / 2 + window.top.screenY - (h / 2);
+  const x = window.top.outerWidth  / 2 + window.top.screenX - (w / 2);
+  const popup = window.open('about:blank', 'spotify-auth',
+    `width=${w},height=${h},left=${x},top=${y},noopener`);
+  if (!popup) {
+     alert('Please allow popups to connect Spotify.')
+     return
+   }
+
+   const verifier  = randomString(64);
+  const challenge = base64url(await sha256(verifier));
+  localStorage.setItem('sp_verifier', verifier);
+
+  const state = crypto.randomUUID();
+  localStorage.setItem('sp_state', state);
+
+  const auth = new URL('https://accounts.spotify.com/authorize');
+  auth.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
+  auth.searchParams.set('response_type', 'code');
+  auth.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
+  auth.searchParams.set('scope', SPOTIFY_SCOPE);
+  auth.searchParams.set('state', state);
+  auth.searchParams.set('code_challenge_method', 'S256');
+  auth.searchParams.set('code_challenge', challenge);
+  try { popup.location = auth.toString(); } catch {}
+  // wait for callback to tell us success/failure
+  const onMsg = (e) => {
+    if (e.origin !== window.location.origin) return;
+    if (!e.data || e.data.source !== 'spotify') return;
+    window.removeEventListener('message', onMsg);
+    try { popup.close(); } catch {}
+    if (e.data.ok) {
+      // now it’s safe to verify plays
+      verifyRecentPlays();
+    } else {
+      alert('Spotify login failed.');
+      console.warn('Spotify error:', e.data.error);
+    }
+  };
+  window.addEventListener('message', onMsg);
+}
+
+// Only run after a fresh login
+async function verifyRecentPlays() {
+  try {
+    if (!isFreshSpotify()) { alert('Please connect Spotify first.'); return }
+    const token = localStorage.getItem('spotify_access_token')
+
+    const ctl = new AbortController()
+    const to = setTimeout(()=>ctl.abort(), 6000)
+    const res = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=50', {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: ctl.signal
+    })
+    clearTimeout(to)
+    if (!res.ok) throw new Error(await res.text())
+    const data = await res.json()
+
+    const target = (artistName.value || '').toLowerCase().trim()
+    const plays = (data.items||[]).filter(it =>
+      (it.track?.artists||[]).some(a => a.name.toLowerCase().includes(target))
+    )
+
+    if (plays.length >= 5) {
+      quests.value.music.points = 300
+      quests.value.music.completed = true
+      await saveProgress()
+    } else {
+      alert(`Not enough recent plays for ${artistName.value}. Try again later!`)
+    }
+  } catch (e) {
+    console.warn('Spotify check failed:', e)
+    alert('Could not verify Spotify activity. Please try again.')
+  }
+}
+
+
+const handleStartQuest = async () => {
+  if (!isFreshSpotify()) return startSpotifyAuth()
+  await verifyRecentPlays()
+}
+
 
 </script>
 
@@ -1034,7 +1152,7 @@ async function checkForCompletion() {
 
   /* Quest card: make layout wrap so the button goes full-width below text */
   .quest-card .card-body { flex-wrap: wrap; align-items: flex-start; }
-  .quest-card .card-body > button { flex: 1 1 100%; margin-top: 0.75rem; }
+  .quest-card .card-body > button { flex: 1 1 100%; margin-top: 0.75rem;  position: relative;z-index: 2;pointer-events: auto;}
   .quest-card .quest-icon { width: 56px; height: 56px; margin-right: 1rem; }
   .quest-card .quest-icon svg { width: 28px; height: 28px; }
 }
@@ -1105,6 +1223,7 @@ async function checkForCompletion() {
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
   opacity: 0; transition: opacity .25s ease;
+  pointer-events: none; /* add this line */
 }
 .quest-card:hover::before { opacity: 1; }
 

@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <div class="quest-overlay" @click.self="closeQuest">
     <div class="card quest-card-modal quest-card-glass shadow-lg">
       <button class="btn-close-overlay btn-close-white" @click="closeQuest">&times;</button>
@@ -305,4 +305,128 @@ function getButtonText() {
   if (isMusicQuestDone.value) return 'Completed';
   return 'Start Quest';
 }
+</script> -->
+
+<template>
+  <div class="p-4">
+    <h4 class="mb-2">Music Discovery</h4>
+    <p class="text-muted">
+      We’ll check your recently played tracks. If we find songs by
+      <strong>{{ artistName }}</strong> played at least 5 times, you earn
+      <strong>300 points</strong>.
+    </p>
+
+    <div class="mb-3">
+      <div v-if="error" class="alert alert-danger">{{ error }}</div>
+      <div v-else-if="loading" class="alert alert-info">Checking Spotify…</div>
+      <div v-else class="alert alert-light border">
+        Plays detected for <strong>{{ artistName }}</strong>:
+        <strong>{{ plays }}</strong> / 5
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" :disabled="loading" @click="checkSpotify">
+        {{ loading ? 'Checking…' : 'Check Spotify Now' }}
+      </button>
+      <button class="btn btn-outline-secondary" @click="$emit('close')">
+        Close
+      </button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue';
+
+// Props/Emits (compatible with your EventDetails.vue)
+const props = defineProps({
+  artistName: { type: String, required: true },
+  questData:  { type: Object, required: true },
+});
+const emit = defineEmits(['update-progress', 'close']);
+
+// --- Fast-fail settings ---
+const TIMEOUT_MS = 7000; // abort Spotify check after 7s
+
+const loading = ref(false);
+const error   = ref('');
+const plays   = ref(0);
+
+function token() {
+  return localStorage.getItem('spotify_access_token') || '';
+}
+function norm(s) { return (s || '').toString().trim().toLowerCase(); }
+
+async function checkSpotify() {
+  if (loading.value) return; 
+  loading.value = true;
+  error.value = '';
+  plays.value = 0;
+
+  const t = token();
+  if (!t) {
+    error.value = 'Not connected to Spotify. Tap “Start Quest” to connect.';
+    loading.value = false;
+    return;
+  }
+
+  try {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+
+    const res = await fetch(
+      'https://api.spotify.com/v1/me/player/recently-played?limit=50',
+      { headers: { Authorization: `Bearer ${t}` }, signal: ctrl.signal }
+    );
+    clearTimeout(timer);
+
+    if (res.status === 401) throw new Error('Spotify login expired. Please try again.');
+    if (!res.ok) throw new Error((await res.text()) || `Spotify error (${res.status})`);
+
+    const data   = await res.json();
+    const target = norm(props.artistName);
+
+    let count = 0;
+    for (const item of (data.items || [])) {
+      const names = (item.track?.artists || []).map(a => norm(a.name));
+      if (names.some(n => n.includes(target))) count++;
+    }
+
+    plays.value = count;
+
+    if (count >= 5) {
+      // Award full points and let EventDetails save & update UI
+      emit('update-progress', { points: 300, completed: true });
+    } else {
+      error.value = `We didn’t find 5 recent plays by “${props.artistName}”. Try again later.`;
+    }
+  } catch (e) {
+    error.value = (e?.name === 'AbortError')
+      ? 'Spotify check timed out. Please try again.'
+      : String(e?.message || e);
+  } finally {
+    loading.value = false;
+  }
+}
+
+// Receive tokens from popup and immediately run a check
+function onMessage(e) {
+  if (e.origin !== window.location.origin) return;
+  const msg = e.data || {};
+  if (msg.type === 'spotify-auth-success') {
+    if (msg.access_token)   localStorage.setItem('spotify_access_token', msg.access_token);
+    if (msg.refresh_token)  localStorage.setItem('spotify_refresh_token', msg.refresh_token);
+    checkSpotify();
+  } else if (msg.type === 'spotify-auth-failed') {
+    error.value = 'Spotify login failed. Please try again.';
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('message', onMessage);
+  // If already connected, auto-check
+  if (token()) checkSpotify();
+});
+onUnmounted(() => window.removeEventListener('message', onMessage));
 </script>

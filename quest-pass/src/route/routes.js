@@ -2,6 +2,7 @@ import { createWebHistory, createRouter } from "vue-router";
 // we need to import auth here so our navigation guard can use it
 import { auth } from '../firebase.js';
 import { onAuthStateChanged } from "firebase/auth";
+import SpotifyCallback from '@/components/SpotifyCallback.vue';
 
 // import "page" components using the correct relative paths
 // fix: you are right! your files are in src/components/
@@ -43,6 +44,13 @@ const routes = [
     // allow the route param `id` to be passed as a prop to the component
     props: true,
   },
+  {
+  path: '/spotify-callback',
+  name: 'SpotifyCallback',
+  component: SpotifyCallback,
+},
+// catch-all LAST:
+  { path: '/:pathMatch(.*)*', redirect: '/' }
 ];
 
 const router = createRouter({
@@ -57,6 +65,8 @@ onAuthStateChanged(auth, (user) => {
   cachedUser = user;
   authReady = true;
 });
+
+
 
 // this is a "navigation guard"
 // it runs before every single page change
