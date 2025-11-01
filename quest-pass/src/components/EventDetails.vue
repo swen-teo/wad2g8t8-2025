@@ -87,6 +87,40 @@
         </div>
       </div>
 
+      <transition name="fade">
+        <div v-if="isComplete && rewardCode" class="row g-3 mb-4">
+          <div class="col-12">
+            <div class="card reward-code-card shadow-sm">
+              <div class="card-body d-flex flex-column flex-lg-row align-items-lg-center gap-3 gap-lg-4">
+                <div class="flex-grow-1 text-center text-lg-start">
+                  <h5 class="fw-bold mb-1">Your Event Access Code</h5>
+                  <p class="text-muted small mb-0">
+                    Show this code to unlock the special perk for {{ artistName }}'s event.
+                  </p>
+                </div>
+
+                <div class="reward-code-display px-3 py-2 rounded text-center fw-bold">
+                  {{ rewardCode }}
+                </div>
+
+                <div class="text-center text-lg-start">
+                  <button
+                    class="btn btn-outline-primary"
+                    type="button"
+                    @click="copyRewardCode"
+                    :disabled="isCopyingCode || !rewardCode"
+                  >
+                    <i class="fas fa-copy me-2"></i>
+                    {{ copyButtonLabel }}
+                  </button>
+                  <div v-if="copyFeedback" :class="['small', feedbackClass, 'mt-2']">{{ copyFeedback }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+
       <!-- Two quest cards side-by-side on md+, stacked on mobile -->
       <div class="row g-4 mt-1">
         <div class="col-12">
@@ -170,7 +204,7 @@
               <div
                 class="display-6 fw-bold text-primary-1 bg-light p-3 rounded border"
               >
-                {{ event.rewardCode || 'REWARD-123' }}
+                {{ rewardCode || 'CODE-LOCKED' }}
               </div>
               <button
                 class="btn btn-success btn-lg mt-4"
@@ -276,6 +310,27 @@ const isComplete = computed(() => totalPoints.value >= POINT_GOAL);
 // Computed props for button disabled state
 const isMusicQuestDone = computed(() => quests.value.music.completed);
 const isTriviaQuestDone = computed(() => quests.value.trivia.completed);
+
+const rewardCode = computed(() => event.value?.rewardCode || null);
+
+const isCopyingCode = ref(false);
+const copyState = ref('idle'); // 'idle' | 'copied' | 'error'
+
+const copyButtonLabel = computed(() => {
+  if (copyState.value === 'copied') return 'Copied!';
+  if (copyState.value === 'error') return 'Try Again';
+  return 'Copy Code';
+});
+
+const copyFeedback = computed(() => {
+  if (copyState.value === 'copied') return 'Code copied to clipboard.';
+  if (copyState.value === 'error') return 'Could not copy the code. Please try again.';
+  return '';
+});
+
+const feedbackClass = computed(() =>
+  copyState.value === 'error' ? 'text-danger' : 'text-success'
+);
 
 
 // --- database path helpers ---
@@ -587,10 +642,21 @@ async function saveProgress() {
 // --- quest handlers ---
 async function handleMusicProgress(progress) {
   if (progress.points > quests.value.music.points) {
+    const previousPoints = quests.value.music.points;
+    const delta = Math.max(progress.points - previousPoints, 0);
+
+    if (delta > 0) {
+      try {
+        await userStore.awardPoints(delta);
+      } catch (error) {
+        console.error('Failed to award music quest points:', error);
+      }
+    }
+
     quests.value.music.points = progress.points;
     quests.value.music.completed = progress.completed;
     await saveProgress();
-    checkForCompletion();
+    await checkForCompletion();
   }
   // Close the overlay
   showMusicQuest.value = false;
@@ -598,10 +664,21 @@ async function handleMusicProgress(progress) {
 
 async function handleTriviaProgress(progress) {
   if (progress.points > quests.value.trivia.points) {
+    const previousPoints = quests.value.trivia.points;
+    const delta = Math.max(progress.points - previousPoints, 0);
+
+    if (delta > 0) {
+      try {
+        await userStore.awardPoints(delta);
+      } catch (error) {
+        console.error('Failed to award trivia quest points:', error);
+      }
+    }
+
     quests.value.trivia.points = progress.points;
     quests.value.trivia.completed = progress.completed;
     await saveProgress();
-    checkForCompletion();
+    await checkForCompletion();
   }
   // Close the overlay
   showTriviaQuest.value = false;
@@ -624,7 +701,38 @@ async function checkForCompletion() {
   if (!progressDocRef) return; // skip if no user
 
   await setDoc(progressDocRef, { rewardClaimed: true }, { merge: true });
-  rewardModal.value.show();
+  if (rewardModal.value?.show) {
+    rewardModal.value.show();
+  }
+}
+
+async function copyRewardCode() {
+  if (!rewardCode.value || isCopyingCode.value) return;
+
+  try {
+    isCopyingCode.value = true;
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(rewardCode.value);
+    } else if (typeof document !== 'undefined') {
+      const tempInput = document.createElement('input');
+      tempInput.value = rewardCode.value;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+    } else {
+      throw new Error('No clipboard API available');
+    }
+    copyState.value = 'copied';
+  } catch (error) {
+    console.error('Failed to copy reward code:', error);
+    copyState.value = 'error';
+  } finally {
+    isCopyingCode.value = false;
+    setTimeout(() => {
+      copyState.value = 'idle';
+    }, 2500);
+  }
 }
 
 
@@ -832,6 +940,33 @@ async function checkForCompletion() {
   border-radius: 0.75rem;
   background: #fff;
   box-shadow: var(--card-elev);
+}
+
+.reward-code-card {
+  border: 0;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--card-elev);
+}
+
+.reward-code-display {
+  font-family: 'Fira Code', 'SFMono-Regular', ui-monospace, 'DejaVu Sans Mono', monospace;
+  letter-spacing: 0.08em;
+  font-size: 1.1rem;
+  background: rgba(96, 165, 250, 0.12);
+  color: var(--bs-primary, #0d6efd);
+  border: 1px dashed rgba(96, 165, 250, 0.45);
+  min-width: 220px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 /* 4. Quest Card Enhancements */

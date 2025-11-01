@@ -254,17 +254,27 @@ exports.populateEventsFromJambase = functions
  * document is created in the 'events' collection.
  */
 
-// Helper function to generate a random code
-const generateRandomCode = () => {
-  // Using chars that aren't easy to mix up (e.g., no 'O' or '0')
-  const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
-  let result = 'QUEST-';
-  for (let i = 0; i < 8; i++) {
-    if (i === 4) result += '-';
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+// Normalize the artist name into a safe, uppercase code prefix
+function buildArtistPrefix(artistName, fallback = "QUESTPASS") {
+  if (!artistName) {
+    return fallback;
   }
-  return result;
-};
+
+  const normalized = artistName
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "") // strip diacritics
+    .replace(/[^a-zA-Z0-9]/g, "") // keep only alphanumeric
+    .toUpperCase();
+
+  return normalized.substring(0, 18) || fallback;
+}
+
+// Helper function to generate an artist-based reward code
+function generateRewardCode(eventData = {}) {
+  const prefix = buildArtistPrefix(eventData.artistName || eventData.title);
+  const randomFiveDigit = Math.floor(Math.random() * 90000) + 10000; // 10000-99999
+  return `${prefix}-${randomFiveDigit}`;
+}
 
 exports.generateRewardCodeOnEventCreate = functions.firestore
   .document('events/{eventId}')
@@ -281,7 +291,7 @@ exports.generateRewardCodeOnEventCreate = functions.firestore
     }
 
     // 3. Generate a new, unique code
-    const newCode = generateRandomCode();
+    const newCode = generateRewardCode(eventData);
     console.log(`Generated code ${newCode} for event ${eventId}.`);
 
     // 4. Update the event document with the new code
