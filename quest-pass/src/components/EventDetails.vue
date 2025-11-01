@@ -142,10 +142,17 @@
                   <strong>{{ MUSIC_MAX }} points</strong>.
                 </p>
                 <div class="text-primary-1 fw-bold mb-2">+{{ quests.music.points }} / {{ MUSIC_MAX }} Points</div>
-                <button class="btn qp-btn" @click="showMusicQuest = true" :disabled="isMusicQuestDone === true">
+                <!-- <button class="btn qp-btn" @click="showMusicQuest = true" :disabled="isMusicQuestDone === true">
                   <i class="fas fa-play me-2"></i>
                   {{ isMusicQuestDone ? 'Completed' : 'Start Quest' }}
-                </button>
+                </button> -->
+                <MusicQuestButton
+                  @start-quest="showMusicQuest = true"
+                  :is-disabled="isMusicQuestDone"
+                  :button-text="isMusicQuestDone ? 'Completed' : 'Start Quest'"
+                  :icon-class="'fas fa-play me-2'"
+                  class="qp-btn"
+                />
               </div>
             </div>
           </div>
@@ -164,10 +171,17 @@
                   Score a perfect {{ TRIVIA_QS }} / {{ TRIVIA_QS }} on the artist trivia.
                 </p>
                 <div class="text-primary-1 fw-bold mb-2">+{{ quests.trivia.points }} / {{ TRIVIA_AWARD }} Points</div>
-                <button class="btn qp-btn" @click="showTriviaQuest = true" :disabled="isTriviaQuestDone">
+                <!-- <button class="btn qp-btn" @click="showTriviaQuest = true" :disabled="isTriviaQuestDone">
                   <i class="fas fa-pencil-alt me-2"></i>
                   {{ isTriviaQuestDone ? 'Completed' : 'Start Trivia' }}
-                </button>
+                </button> -->
+                <MusicQuestButton
+                  @start-quest="showTriviaQuest = true"
+                  :is-disabled="isTriviaQuestDone"
+                  :button-text="isTriviaQuestDone ? 'Completed' : 'Start Trivia'"
+                  :icon-class="'fas fa-pencil-alt me-2'"
+                  class="qp-btn"
+                />
               </div>
             </div>
           </div>
@@ -260,6 +274,7 @@ import { Modal } from 'bootstrap';
 // (Assuming they are in the same 'components' folder)
 import MusicQuest from './MusicQuest.vue';
 import TriviaQuest from './TriviaQuest.vue';
+import MusicQuestButton from '@/components/MusicQuestButton.vue';
 
 // --- configuration ---
 const MUSIC_MAX = 300;
@@ -1253,6 +1268,20 @@ async function copyRewardCode() {
   .score-number { font-size: 1.75rem; }
 }
 
+</style>
+
+<style>
+/* This unscoped block makes the animation globally available */
+@keyframes float-and-fade {
+    0% {
+        opacity: 1;
+        transform: translate(calc(-50% + var(--translate-x, 0)), -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--translate-x, 0)), -70px) scale(0.5);
+    }
+}
 </style>
 
 
