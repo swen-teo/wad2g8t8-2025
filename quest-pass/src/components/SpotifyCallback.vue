@@ -4,20 +4,22 @@
     <p v-if="msg">{{ msg }}</p>
   </div>
 </template>
-
 <script setup>
 import { onMounted, ref } from 'vue';
 
-// Must match EventDetails.vue AND Spotify dashboard
+// ✅ keep this exactly the same value you build in EventDetails.vue
 const SPOTIFY_REDIRECT_URI = `${window.location.origin}/spotify-callback`;
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
 
 const msg = ref('Exchanging code for tokens…');
 
+// ✅ send the *actual* ok flag + error text back to the opener
 function postBack(ok, errorText = '') {
   try {
-    // ✅ use the ok we were passed (don’t hardcode true)
-    window.opener?.postMessage({ source: 'spotify', ok, error: errorText }, window.location.origin);
+    window.opener?.postMessage(
+      { source: 'spotify', ok, error: errorText },   // <— ok is not hardcoded now
+      window.location.origin
+    );
   } catch {}
   window.close();
 }
@@ -36,9 +38,8 @@ onMounted(async () => {
       return postBack(false, 'NO_CODE');
     }
 
-    // ✅ read state from sessionStorage (that’s where you saved it)
-    const expectedState = sessionStorage.getItem('sp_state');
-    window.opener?.postMessage({ source: 'spotify', ok, error: errorText }, window.location.origin); // ✅
+    // ✅ use localStorage (shared across windows)
+    const expectedState = localStorage.getItem('sp_state');
     if (!state || !expectedState || state !== expectedState) {
       msg.value = 'State mismatch.';
       return postBack(false, 'STATE_MISMATCH');
@@ -72,18 +73,12 @@ onMounted(async () => {
     }
 
     const json = await res.json();
-    if (!json.access_token) {
-      msg.value = 'Spotify token missing.';
-      return postBack(false, 'NO_ACCESS_TOKEN');
-    }
 
-    // Store tokens
+    // ✅ store & clean
     localStorage.setItem('spotify_access_token', json.access_token);
     if (json.refresh_token) localStorage.setItem('spotify_refresh_token', json.refresh_token);
     localStorage.setItem('sp_last_auth_ts', String(Date.now()));
-
-    // cleanup
-    sessionStorage.removeItem('sp_state');   // ✅ sessionStorage, not local
+    localStorage.removeItem('sp_state');
     localStorage.removeItem('sp_verifier');
 
     msg.value = 'Connected! You can close this window.';

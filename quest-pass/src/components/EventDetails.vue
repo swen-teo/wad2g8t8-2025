@@ -334,7 +334,12 @@ function clearSpotifyStorage(){
 // Helpers
 function base64url(ab){const b=new Uint8Array(ab);let s='';for(const x of b)s+=String.fromCharCode(x);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 async function sha256(s){return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))}
-function randomString(n=64){const a='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';let r='';for(let i=0;i<n;i++) r+=a[Math.floor(Math.random()*a.length)];return r}
+function randomString(n = 64) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  let out = '';
+  for (let i = 0; i < n; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
 function isFreshSpotify(){
   const t = localStorage.getItem('spotify_access_token')
   const ts = Number(localStorage.getItem('sp_last_auth_ts')||0)
@@ -679,72 +684,80 @@ async function checkForCompletion() {
 }
 
 async function startSpotifyAuth() {
-  // 0) start clean
-  clearSpotifyStorage?.();
+  // 0) reset any stale state/tokens
+  clearSpotifyStorage();
 
-  // 1) Open popup **synchronously** on the click. No awaits yet.
+  // 1) PKCE values
+  const verifier  = randomString(64);
+  const challenge = base64url(await sha256(verifier));
+  localStorage.setItem('sp_verifier', verifier);
+
+  // 2) CSRF state (store in localStorage so popup can read it)
+  const state = crypto.randomUUID();
+  localStorage.setItem('sp_state', state);
+
+  // 3) Build the authorize URL
+  const auth = new URL('https://accounts.spotify.com/authorize');
+  auth.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
+  auth.searchParams.set('response_type', 'code');
+  auth.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
+  auth.searchParams.set('scope', SPOTIFY_SCOPE);
+  auth.searchParams.set('state', state);
+  auth.searchParams.set('code_challenge_method', 'S256');
+  auth.searchParams.set('code_challenge', challenge);
+
+  // 4) Open centered popup (must be from this user click)
   const w = 520, h = 700;
-  const y = window.top.outerHeight / 2 + window.top.screenY - h / 2;
-  const x = window.top.outerWidth  / 2 + window.top.screenX - w / 2;
-  // ⚠️ Do NOT include "noopener" here — we need window.opener in the callback.
-  const popup = window.open('about:blank', 'spotify-auth',
-    `width=${w},height=${h},left=${x},top=${y},resizable=yes,scrollbars=yes`);
+  const y = window.top.outerHeight / 2 + window.top.screenY - (h / 2);
+  const x = window.top.outerWidth  / 2 + window.top.screenX - (w / 2);
+  const popup = window.open(
+    auth.toString(),
+    'spotify-auth',
+    `width=${w},height=${h},left=${x},top=${y},resizable,scrollbars,noopener`
+  );
   if (!popup) {
     alert('Please allow popups to connect Spotify.');
     return;
   }
-  try {
-    // Optional: give the user something to look at while we compute PKCE
-    popup.document.write('<p style="font:14px system-ui;margin:16px">Opening Spotify…</p>');
 
-    // 2) PKCE values (no DOM interaction that would lose user gesture)
-    const verifier  = randomString(64);
-    const challenge = base64url(await sha256(verifier));
-    localStorage.setItem('sp_verifier', verifier);
-
-    // 3) CSRF state in **sessionStorage**
-    const state = crypto.randomUUID();
-    sessionStorage.setItem('sp_state', state);
-
-    // 4) Build the authorize URL
-    const auth = new URL('https://accounts.spotify.com/authorize');
-    auth.searchParams.set('client_id', 'f3e1635e835b47359c14736ee86068f4');
-    auth.searchParams.set('response_type', 'code');
-    auth.searchParams.set('redirect_uri', `${window.location.origin}/spotify-callback`); // EXACT match
-    auth.searchParams.set('scope', 'user-read-private user-read-email user-read-recently-played');
-    auth.searchParams.set('state', state);
-    auth.searchParams.set('code_challenge_method', 'S256');
-    auth.searchParams.set('code_challenge', challenge);
-
-    // 5) Now navigate the popup
-    popup.location.href = auth.toString();
-
-    // 6) Listen for the callback message and time out if it never arrives
-    const onMsg = (e) => {
-      if (e.origin !== window.location.origin) return;
-      if (!e.data || e.data.source !== 'spotify') return;
-      window.removeEventListener('message', onMsg);
-      try { popup.close(); } catch {}
-      if (e.data.ok) {
-        // mark fresh so verifyRecentPlays() is allowed to run
-        localStorage.setItem('sp_last_auth_ts', String(Date.now()));
-        verifyRecentPlays();
-      } else {
-        alert('Spotify login failed. ' + (e.data.error || 'Try again.'));
-      }
-    };
-    window.addEventListener('message', onMsg);
-
-    // Hard timeout safety (15s)
-    setTimeout(() => {
-      window.removeEventListener('message', onMsg);
-      try { popup.close(); } catch {}
-    }, 15000);
-  } catch (err) {
+  // 5) Wait for the popup /callback page to message us back
+  let settled = false;
+  const finish = (ok, err = '') => {
+    if (settled) return;
+    settled = true;
+    window.removeEventListener('message', onMsg);
     try { popup.close(); } catch {}
-    console.warn('Auth init failed:', err);
-    alert('Could not start Spotify auth: ' + (err?.message || err));
-  }
+    if (ok) {
+      // popup already saved tokens to localStorage
+      localStorage.setItem('sp_last_auth_ts', String(Date.now()));
+      verifyRecentPlays(); // <-- your checker runs now (only after success)
+    } else {
+      alert('Spotify login failed. ' + err);
+    }
+  };
+
+  const onMsg = (e) => {
+    if (e.origin !== window.location.origin) return;
+    const d = e.data || {};
+    if (d.source !== 'spotify') return;
+    // read the actual flag the popup sends back
+    finish(Boolean(d.ok), d.error || '');
+  };
+  window.addEventListener('message', onMsg);
+
+  // 6) Timeout / user closes popup
+  const start = Date.now();
+  const timer = setInterval(() => {
+    if (popup.closed) {
+      clearInterval(timer);
+      finish(false, 'CLOSED');
+      return;
+    }
+    if (Date.now() - start > 20000) { // 20s hard timeout
+      clearInterval(timer);
+      finish(false, 'TIMEOUT');
+    }
+  }, 300);
 }
 
 // Only run after a fresh login
