@@ -2,6 +2,10 @@
 
     <div id="sparkle-container"></div>
 
+    <div id="scroll-indicator">
+        <i class="fa fa-angle-down" aria-hidden="true"></i>
+    </div>
+
     <div class="container d-block text-center mt-5 mb-5 hero-section">
         <div class="qp-logo-badge">
             <i class="fa fa-music" aria-hidden="true"></i>
@@ -157,6 +161,7 @@ onMounted(() => {
 
     // --- Scroll Indicator ---
     // This targets the #scroll-indicator in the main HTML file
+    // THIS CODE IS NOW ACTIVE BECAUSE THE ELEMENT EXISTS
     const scrollIndicator = document.getElementById('scroll-indicator');
     if (scrollIndicator) {
         const handleScrollIndicator = () => {
@@ -172,18 +177,19 @@ onMounted(() => {
 
     // --- Intersection Observer for Scroll Animations ---
     // This targets elements rendered by this component's template
+    // THIS CODE IS WHAT MAKES YOUR CARDS FADE IN ON SCROLL
     const sectionsToAnimate = document.querySelectorAll('.fade-in-section, .fade-in-sequential-cards');
     if (sectionsToAnimate.length > 0) {
         const observerOptions = {
             root: null,
-            rootMargin: '0px',
-            threshold: 0.4
+            rootMargin: '0px 0px -150px 0px',
+            threshold: 0.4 // <- Triggers when 40% of the section is visible
         };
 
         const observerCallback = (entries, observer) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
+                    entry.target.classList.add('is-visible'); // <- This class triggers the animation
                     observer.unobserve(entry.target);
                 }
             });
@@ -304,7 +310,13 @@ display: flex;
 flex-direction: column;
 min-height: 300px; /* Adjusted min-height */
 }
-.card:hover { transform: translateY(-4px); box-shadow: var(--elev-1h); }
+
+.card:hover { 
+    transform: translateY(-4px) scale(1.05); 
+    /* Changed opacity from .25 to .4 and from .1 to .2 */
+    box-shadow: 0 20px 45px rgba(90, 90, 200, .4), 0 5px 12px rgba(60, 50, 150, .2) !important;
+    z-index: 10;
+}
 
 .card-body, .card__body {
 padding: 1.5rem;
@@ -348,9 +360,11 @@ border: 1px solid #e8d9ff;
 box-shadow: none;
 backdrop-filter: blur(6px);
 }
+
 .btn-secondary:hover {
 border-color: var(--ring);
-box-shadow: 0 6px 16px rgba(168,85,247,.15);
+/* This is the new, darker shadow you wanted */
+box-shadow: 0 20px 45px rgba(90, 90, 200, .4), 0 5px 12px rgba(60, 50, 150, .2);
 background: #fff;
 color: #7a6fb6;
 }
@@ -561,14 +575,16 @@ filter: drop-shadow(0 0 7px currentColor);
 }
 
 /* --- Scroll Down Indicator --- */
-#scroll-indicator {
+/* THIS CSS WAS ALREADY HERE AND IS NOW BEING USED */
+/* --- Scroll Down Indicator --- */
+#scroll-indicator i {
     position: fixed;
     bottom: 2rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
     color: var(--primary-1);
-    font-size: 1.5rem;
+    font-size: 2.5rem; /* <-- Now this will work */
     opacity: 0.7;
     transition: opacity 0.4s ease, visibility 0.4s ease;
     animation: bounce-down 2s infinite ease-in-out;
