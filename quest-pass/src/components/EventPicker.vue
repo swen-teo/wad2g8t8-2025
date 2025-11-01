@@ -16,7 +16,9 @@
 							<div class="label-text">
 								<span v-if="!isSpinning && !selectedEvent">Spin for an Event</span>
 								<span v-else-if="isSpinning">Finding one…</span>
-								<span v-else>{{ compactTitle(selectedEvent?.title) }}</span>
+								<span v-else class="label-icon-wrap" aria-label="Event ready">
+									<font-awesome-icon :icon="['fas', labelIcon || 'headphones']" />
+								</span>
 							</div>
 						</div>
 						<div class="spindle" />
@@ -96,6 +98,7 @@ const props = defineProps({
 
 const isSpinning = ref(false);
 const selectedEvent = ref(null);
+const labelIcon = ref(null); // random music icon shown on center label once selected
 const fallbackImg = 'https://placehold.co/400x200/a78bfa/ffffff?text=Event';
 
 const hasEvents = computed(() => (props.events?.length ?? 0) > 0);
@@ -106,11 +109,13 @@ watch(
 		// if the previously selected event is no longer in the list, clear it
 		if (!list?.length) {
 			selectedEvent.value = null;
+			labelIcon.value = null;
 		} else if (
 			selectedEvent.value &&
 			!list.find((e) => e.id === selectedEvent.value.id)
 		) {
 			selectedEvent.value = null;
+			labelIcon.value = null;
 		}
 	},
 	{ deep: true }
@@ -142,6 +147,23 @@ function spinForEvent() {
 	window.setTimeout(() => {
 		selectedEvent.value = candidate ?? null;
 		isSpinning.value = false;
+		if (selectedEvent.value) {
+			// pick a random music-related icon (not same twice in a row)
+			const choices = [
+				'microphone',
+				'headphones',
+				'music',
+				'record-vinyl',
+				'guitar',
+				'drum',
+				'compact-disc'
+			];
+			const pool = choices.filter((i) => i !== labelIcon.value);
+			const list = pool.length ? pool : choices; // fallback safety
+			labelIcon.value = list[Math.floor(Math.random() * list.length)];
+		} else {
+			labelIcon.value = null;
+		}
 	}, duration);
 }
 </script>
@@ -238,6 +260,12 @@ function spinForEvent() {
 	line-height: 1.15;
 	text-shadow: 0 1px 2px rgba(0,0,0,0.35);
 	padding: 0 6px;
+}
+
+/* Size the microphone icon nicely inside the center label */
+.label-text svg {
+	width: clamp(18px, 6vw, 28px);
+	height: clamp(18px, 6vw, 28px);
 }
 
 .spindle {

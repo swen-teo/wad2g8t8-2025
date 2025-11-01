@@ -396,8 +396,8 @@ function matchesDateRange(startDate) {
 </script>
 
 <style scoped>
-/* --- NEW: Page Background Color --- */
-/* /* styles from your original index.html */
+
+
 .page-header {
   display: flex;
   flex-direction: column;
@@ -539,12 +539,14 @@ function matchesDateRange(startDate) {
   width: 28px;
   height: 28px;
   /* Make the notch blend with the page so the card looks like a ticket cutout */
-  background: var(--page-bg, #f8f9fa);
+  background:
+    #f4edff;
   border-radius: 50%;
   /* subtle separation and depth so the notch reads as a cutout */
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-  border: 1px solid rgba(0,0,0,0.04);
-  z-index: 2; /* Sit on top of the card body/border */
+  /* box-shadow: 0 1px 2px rgba(0,0,0,0.06); */
+  /* border: 1px solid rgba(0,0,0,0.04); */
+  z-index: 2;
+  
 }
 
 .event-card .card-body::before {
@@ -623,9 +625,11 @@ header h1 {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--page-bg, #f8f9fa);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-  border: 1px solid rgba(0,0,0,0.04);
+  background: #f4edff;
+  border-radius: 50%;
+  /* subtle separation and depth so the notch reads as a cutout */
+  /* box-shadow: 0 1px 2px rgba(0,0,0,0.06); */
+  /* border: 1px solid rgba(0,0,0,0.04); */
   z-index: 5; /* in FRONT of the button so the notch overlaps the button */
   pointer-events: none;
 }
