@@ -12,12 +12,19 @@ import Login from '../components/Login.vue';
 import Profile from '../components/Profile.vue';
 import EventDetails from '../components/EventDetails.vue';
 import LandingPage from "../components/LandingPage.vue";
+import Instructions from "../components/Instructions.vue";
 
 const routes = [
   {
     path: '/',
     name: 'LandingPage',
     component: LandingPage,
+  },
+  
+  {
+    path: '/instructions',
+    name: 'Instructions',
+    component: Instructions,
   },
   {
     path: '/home',
