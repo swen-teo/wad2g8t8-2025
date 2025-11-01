@@ -385,6 +385,10 @@ exports.generateQuiz = functions
       return res.json(normalized);
     } catch (err) {
       console.error("generateQuiz error:", err?.response?.data || err);
+
+
+      
       return res.status(500).json({ error: "Quiz generation failed", details: String(err?.message || err) });
     }
+ 
   });
