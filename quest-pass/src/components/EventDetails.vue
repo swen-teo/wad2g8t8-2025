@@ -678,52 +678,73 @@ async function checkForCompletion() {
   rewardModal.value.show();
 }
 
-
-
-
 async function startSpotifyAuth() {
-  clearSpotifyStorage();
+  // 0) start clean
+  clearSpotifyStorage?.();
+
+  // 1) Open popup **synchronously** on the click. No awaits yet.
   const w = 520, h = 700;
-  const y = window.top.outerHeight / 2 + window.top.screenY - (h / 2);
-  const x = window.top.outerWidth  / 2 + window.top.screenX - (w / 2);
+  const y = window.top.outerHeight / 2 + window.top.screenY - h / 2;
+  const x = window.top.outerWidth  / 2 + window.top.screenX - w / 2;
+  // ⚠️ Do NOT include "noopener" here — we need window.opener in the callback.
   const popup = window.open('about:blank', 'spotify-auth',
-    `width=${w},height=${h},left=${x},top=${y},noopener`);
+    `width=${w},height=${h},left=${x},top=${y},resizable=yes,scrollbars=yes`);
   if (!popup) {
-     alert('Please allow popups to connect Spotify.')
-     return
-   }
+    alert('Please allow popups to connect Spotify.');
+    return;
+  }
+  try {
+    // Optional: give the user something to look at while we compute PKCE
+    popup.document.write('<p style="font:14px system-ui;margin:16px">Opening Spotify…</p>');
 
-   const verifier  = randomString(64);
-  const challenge = base64url(await sha256(verifier));
-  localStorage.setItem('sp_verifier', verifier);
+    // 2) PKCE values (no DOM interaction that would lose user gesture)
+    const verifier  = randomString(64);
+    const challenge = base64url(await sha256(verifier));
+    localStorage.setItem('sp_verifier', verifier);
 
-  const state = crypto.randomUUID();
-  localStorage.setItem('sp_state', state);
+    // 3) CSRF state in **sessionStorage**
+    const state = crypto.randomUUID();
+    sessionStorage.setItem('sp_state', state);
 
-  const auth = new URL('https://accounts.spotify.com/authorize');
-  auth.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
-  auth.searchParams.set('response_type', 'code');
-  auth.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
-  auth.searchParams.set('scope', SPOTIFY_SCOPE);
-  auth.searchParams.set('state', state);
-  auth.searchParams.set('code_challenge_method', 'S256');
-  auth.searchParams.set('code_challenge', challenge);
-  try { popup.location = auth.toString(); } catch {}
-  // wait for callback to tell us success/failure
-  const onMsg = (e) => {
-    if (e.origin !== window.location.origin) return;
-    if (!e.data || e.data.source !== 'spotify') return;
-    window.removeEventListener('message', onMsg);
+    // 4) Build the authorize URL
+    const auth = new URL('https://accounts.spotify.com/authorize');
+    auth.searchParams.set('client_id', 'f3e1635e835b47359c14736ee86068f4');
+    auth.searchParams.set('response_type', 'code');
+    auth.searchParams.set('redirect_uri', `${window.location.origin}/spotify-callback`); // EXACT match
+    auth.searchParams.set('scope', 'user-read-private user-read-email user-read-recently-played');
+    auth.searchParams.set('state', state);
+    auth.searchParams.set('code_challenge_method', 'S256');
+    auth.searchParams.set('code_challenge', challenge);
+
+    // 5) Now navigate the popup
+    popup.location.href = auth.toString();
+
+    // 6) Listen for the callback message and time out if it never arrives
+    const onMsg = (e) => {
+      if (e.origin !== window.location.origin) return;
+      if (!e.data || e.data.source !== 'spotify') return;
+      window.removeEventListener('message', onMsg);
+      try { popup.close(); } catch {}
+      if (e.data.ok) {
+        // mark fresh so verifyRecentPlays() is allowed to run
+        localStorage.setItem('sp_last_auth_ts', String(Date.now()));
+        verifyRecentPlays();
+      } else {
+        alert('Spotify login failed. ' + (e.data.error || 'Try again.'));
+      }
+    };
+    window.addEventListener('message', onMsg);
+
+    // Hard timeout safety (15s)
+    setTimeout(() => {
+      window.removeEventListener('message', onMsg);
+      try { popup.close(); } catch {}
+    }, 15000);
+  } catch (err) {
     try { popup.close(); } catch {}
-    if (e.data.ok) {
-      // now it’s safe to verify plays
-      verifyRecentPlays();
-    } else {
-      alert('Spotify login failed.');
-      console.warn('Spotify error:', e.data.error);
-    }
-  };
-  window.addEventListener('message', onMsg);
+    console.warn('Auth init failed:', err);
+    alert('Could not start Spotify auth: ' + (err?.message || err));
+  }
 }
 
 // Only run after a fresh login
