@@ -63,6 +63,15 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes, // short for `routes: routes`
+
+  scrollBehavior(to, from, savedPosition) {
+    // If a savedPosition exists (e.g., using the browser's back button), use it.
+    if (savedPosition) {
+      return savedPosition;
+    }
+    // Otherwise, always scroll to the top of the page.
+    return { top: 0, left: 0 };
+  },
 });
 
 let cachedUser = null;
