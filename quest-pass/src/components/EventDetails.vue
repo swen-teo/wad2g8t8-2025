@@ -219,8 +219,6 @@ import {
   getDoc,
   setDoc,
   Timestamp,
-  updateDoc,
-  increment,
 } from 'firebase/firestore';
 import { Modal } from 'bootstrap';
 
@@ -234,7 +232,6 @@ const MUSIC_MAX = 300;
 const TRIVIA_AWARD = 200;
 const TRIVIA_QS = 5; // Need this for the card text
 const POINT_GOAL = MUSIC_MAX + TRIVIA_AWARD;
-const POINTS_PER_LEVEL = 500;
 // Jambase API key (same as Home.vue)
 const apiKey = import.meta.env.VITE_JAMBASE_API_KEY;
 
@@ -279,92 +276,6 @@ const isComplete = computed(() => totalPoints.value >= POINT_GOAL);
 // Computed props for button disabled state
 const isMusicQuestDone = computed(() => quests.value.music.completed);
 const isTriviaQuestDone = computed(() => quests.value.trivia.completed);
-
-
-function calculateLevelMeta(totalPoints) {
-  const safePoints = Math.max(0, Number(totalPoints) || 0);
-  const level = Math.max(1, Math.floor(safePoints / POINTS_PER_LEVEL) + 1);
-  const tier = level >= 10 ? 'Gold' : level >= 5 ? 'Silver' : 'Bronze';
-  const progress = Math.min(
-    100,
-    Math.round(((safePoints % POINTS_PER_LEVEL) / POINTS_PER_LEVEL) * 100)
-  );
-
-  return { level, tier, progress };
-}
-
-async function syncUserProgress({
-  questKey,
-  questTitle,
-  newPoints,
-  prevPoints,
-  completed,
-  wasCompleted,
-}) {
-  if (!userId.value) return;
-
-  const pointsDelta = Math.max((Number(newPoints) || 0) - (Number(prevPoints) || 0), 0);
-  const newlyCompleted = !!completed && !wasCompleted;
-
-  if (!pointsDelta && !newlyCompleted) {
-    return;
-  }
-
-  const userRef = doc(db, 'users', userId.value);
-  const current = userStore.currentUser || {};
-  const startingTotal = Number(current.totalPoints) || 0;
-  const updatedTotal = startingTotal + pointsDelta;
-  const meta = calculateLevelMeta(updatedTotal);
-
-  const updates = {};
-  if (pointsDelta > 0) {
-    updates.totalPoints = increment(pointsDelta);
-    updates.level = meta.level;
-    updates.currentTier = meta.tier;
-    updates.levelProgress = meta.progress;
-  }
-  if (newlyCompleted) {
-    updates.completedQuests = increment(1);
-  }
-
-  if (Object.keys(updates).length > 0) {
-    await updateDoc(userRef, updates);
-  }
-
-  if (userStore.currentUser) {
-    userStore.currentUser = {
-      ...userStore.currentUser,
-      totalPoints: updatedTotal,
-      level: meta.level,
-      currentTier: meta.tier,
-      levelProgress: meta.progress,
-      completedQuests:
-        (userStore.currentUser.completedQuests || 0) + (newlyCompleted ? 1 : 0),
-    };
-  }
-
-  if (newlyCompleted) {
-    const completionRef = doc(
-      db,
-      'completedQuests',
-      `${userId.value}-${eventId}-${questKey}`
-    );
-
-    await setDoc(
-      completionRef,
-      {
-        userId: userId.value,
-        eventId,
-        questKey,
-        title: questTitle,
-        eventTitle: event.value?.title || '',
-        points: newPoints,
-        completedAt: Date.now(),
-      },
-      { merge: true }
-    );
-  }
-}
 
 
 // --- database path helpers ---
@@ -661,24 +572,12 @@ async function saveProgress() {
   const progressDocRef = getProgressDocRef();
   if (!progressDocRef) return; // skip if no user
 
-  const venueName = event.value?.venueName || null;
-  const venueCity = event.value?.venueCity || null;
-
   try {
-    await setDoc(
-      progressDocRef,
-      {
-        music: quests.value.music,
-        trivia: quests.value.trivia,
-        pointGoal: POINT_GOAL,
-        eventTitle: event.value?.title || null,
-        eventDate: event.value?.date || null,
-        eventVenueName: venueName,
-        eventVenueCity: venueCity,
-        lastUpdated: Timestamp.now(),
-      },
-      { merge: true }
-    );
+    await setDoc(progressDocRef, {
+      music: quests.value.music,
+      trivia: quests.value.trivia,
+      lastUpdated: Timestamp.now(),
+    });
   } catch (e) {
     console.error('failed to save progress:', e);
   }
@@ -687,44 +586,22 @@ async function saveProgress() {
 
 // --- quest handlers ---
 async function handleMusicProgress(progress) {
-  const previousPoints = quests.value.music.points;
-  const wasCompleted = quests.value.music.completed;
-
-  if (progress.points > previousPoints) {
+  if (progress.points > quests.value.music.points) {
     quests.value.music.points = progress.points;
     quests.value.music.completed = progress.completed;
     await saveProgress();
-    await syncUserProgress({
-      questKey: 'music',
-      questTitle: 'Music Discovery',
-      newPoints: progress.points,
-      prevPoints: previousPoints,
-      completed: progress.completed,
-      wasCompleted,
-    });
-    await checkForCompletion();
+    checkForCompletion();
   }
   // Close the overlay
   showMusicQuest.value = false;
 }
 
 async function handleTriviaProgress(progress) {
-  const previousPoints = quests.value.trivia.points;
-  const wasCompleted = quests.value.trivia.completed;
-
-  if (progress.points > previousPoints) {
+  if (progress.points > quests.value.trivia.points) {
     quests.value.trivia.points = progress.points;
     quests.value.trivia.completed = progress.completed;
     await saveProgress();
-    await syncUserProgress({
-      questKey: 'trivia',
-      questTitle: 'Artist Trivia',
-      newPoints: progress.points,
-      prevPoints: previousPoints,
-      completed: progress.completed,
-      wasCompleted,
-    });
-    await checkForCompletion();
+    checkForCompletion();
   }
   // Close the overlay
   showTriviaQuest.value = false;
@@ -746,154 +623,11 @@ async function checkForCompletion() {
   const progressDocRef = getProgressDocRef();
   if (!progressDocRef) return; // skip if no user
 
-  const venueName = event.value?.venueName || null;
-  const venueCity = event.value?.venueCity || null;
-
-  await setDoc(
-    progressDocRef,
-    {
-      rewardClaimed: true,
-      rewardClaimedAt: Timestamp.now(),
-      eventTitle: event.value?.title || null,
-      eventDate: event.value?.date || null,
-      eventVenueName: venueName,
-      eventVenueCity: venueCity,
-    },
-    { merge: true }
-  );
+  await setDoc(progressDocRef, { rewardClaimed: true }, { merge: true });
   rewardModal.value.show();
 }
 
 
-async function startSpotifyAuth() {
-  // 0) reset any stale state/tokens
-  clearSpotifyStorage();
-
-  // 1) PKCE values
-  const verifier  = randomString(64);
-  const challenge = base64url(await sha256(verifier));
-  localStorage.setItem('sp_verifier', verifier);
-
-  // 2) CSRF state (store in localStorage so popup can read it)
-  const state = crypto.randomUUID();
-  localStorage.setItem('sp_state', state);
-
-  // 3) Build the authorize URL
-  const auth = new URL('https://accounts.spotify.com/authorize');
-  auth.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
-  auth.searchParams.set('response_type', 'code');
-  auth.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
-  auth.searchParams.set('scope', SPOTIFY_SCOPE);
-  auth.searchParams.set('state', state);
-  auth.searchParams.set('code_challenge_method', 'S256');
-  auth.searchParams.set('code_challenge', challenge);
-
-  // 4) Open centered popup (must be from this user click)
-  const w = 520, h = 700;
-  const y = window.top.outerHeight / 2 + window.top.screenY - (h / 2);
-  const x = window.top.outerWidth  / 2 + window.top.screenX - (w / 2);
-  const popup = window.open(
-    auth.toString(),
-    'spotify-auth',
-    `width=${w},height=${h},left=${x},top=${y},resizable,scrollbars,noopener`
-  );
-  if (!popup) {
-    alert('Please allow popups to connect Spotify.');
-    return;
-  }
-
-  // 5) Wait for the popup /callback page to message us back
-  let settled = false;
-  const finish = (ok, err = '') => {
-    if (settled) return;
-    settled = true;
-    window.removeEventListener('message', onMsg);
-    try { popup.close(); } catch {}
-    if (ok) {
-      // popup already saved tokens to localStorage
-      localStorage.setItem('sp_last_auth_ts', String(Date.now()));
-      verifyRecentPlays(); // <-- your checker runs now (only after success)
-    } else {
-      alert('Spotify login failed. ' + err);
-    }
-  };
-
-  const onMsg = (e) => {
-    if (e.origin !== window.location.origin) return;
-    const d = e.data || {};
-    if (d.source !== 'spotify') return;
-    // read the actual flag the popup sends back
-    finish(Boolean(d.ok), d.error || '');
-  };
-  window.addEventListener('message', onMsg);
-
-  // 6) Timeout / user closes popup
-  const start = Date.now();
-  const timer = setInterval(() => {
-    if (popup.closed) {
-      clearInterval(timer);
-      finish(false, 'CLOSED');
-      return;
-    }
-    if (Date.now() - start > 20000) { // 20s hard timeout
-      clearInterval(timer);
-      finish(false, 'TIMEOUT');
-    }
-  }, 300);
-}
-
-// Only run after a fresh login
-async function verifyRecentPlays() {
-  try {
-    if (!isFreshSpotify()) { alert('Please connect Spotify first.'); return }
-    const token = localStorage.getItem('spotify_access_token')
-
-    const ctl = new AbortController()
-    const to = setTimeout(()=>ctl.abort(), 6000)
-    const res = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=50', {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: ctl.signal
-    })
-    clearTimeout(to)
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-
-    const target = (artistName.value || '').toLowerCase().trim()
-    const plays = (data.items||[]).filter(it =>
-      (it.track?.artists||[]).some(a => a.name.toLowerCase().includes(target))
-    )
-
-    if (plays.length >= 5) {
-      const previousPoints = quests.value.music.points
-      const wasCompleted = quests.value.music.completed
-      const awardedPoints = MUSIC_MAX
-
-      quests.value.music.points = awardedPoints
-      quests.value.music.completed = true
-      await saveProgress()
-      await syncUserProgress({
-        questKey: 'music',
-        questTitle: 'Music Discovery',
-        newPoints: awardedPoints,
-        prevPoints: previousPoints,
-        completed: true,
-        wasCompleted,
-      })
-      await checkForCompletion()
-    } else {
-      alert(`Not enough recent plays for ${artistName.value}. Try again later!`)
-    }
-  } catch (e) {
-    console.warn('Spotify check failed:', e)
-    alert('Could not verify Spotify activity. Please try again.')
-  }
-}
-
-
-const handleStartQuest = async () => {
-  if (!isFreshSpotify()) return startSpotifyAuth()
-  await verifyRecentPlays()
-}
 
 
 </script>
