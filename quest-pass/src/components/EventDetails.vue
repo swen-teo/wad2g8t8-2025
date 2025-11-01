@@ -247,6 +247,8 @@ import {
   getDoc,
   setDoc,
   Timestamp,
+  updateDoc,
+  increment,
 } from 'firebase/firestore';
 import { Modal } from 'bootstrap';
 
@@ -260,6 +262,7 @@ const MUSIC_MAX = 300;
 const TRIVIA_AWARD = 200;
 const TRIVIA_QS = 5; // Need this for the card text
 const POINT_GOAL = MUSIC_MAX + TRIVIA_AWARD;
+const POINTS_PER_LEVEL = 500;
 // Jambase API key (same as Home.vue)
 const apiKey = import.meta.env.VITE_JAMBASE_API_KEY;
 
@@ -304,6 +307,92 @@ const isComplete = computed(() => totalPoints.value >= POINT_GOAL);
 // Computed props for button disabled state
 const isMusicQuestDone = computed(() => quests.value.music.completed);
 const isTriviaQuestDone = computed(() => quests.value.trivia.completed);
+
+
+function calculateLevelMeta(totalPoints) {
+  const safePoints = Math.max(0, Number(totalPoints) || 0);
+  const level = Math.max(1, Math.floor(safePoints / POINTS_PER_LEVEL) + 1);
+  const tier = level >= 10 ? 'Gold' : level >= 5 ? 'Silver' : 'Bronze';
+  const progress = Math.min(
+    100,
+    Math.round(((safePoints % POINTS_PER_LEVEL) / POINTS_PER_LEVEL) * 100)
+  );
+
+  return { level, tier, progress };
+}
+
+async function syncUserProgress({
+  questKey,
+  questTitle,
+  newPoints,
+  prevPoints,
+  completed,
+  wasCompleted,
+}) {
+  if (!userId.value) return;
+
+  const pointsDelta = Math.max((Number(newPoints) || 0) - (Number(prevPoints) || 0), 0);
+  const newlyCompleted = !!completed && !wasCompleted;
+
+  if (!pointsDelta && !newlyCompleted) {
+    return;
+  }
+
+  const userRef = doc(db, 'users', userId.value);
+  const current = userStore.currentUser || {};
+  const startingTotal = Number(current.totalPoints) || 0;
+  const updatedTotal = startingTotal + pointsDelta;
+  const meta = calculateLevelMeta(updatedTotal);
+
+  const updates = {};
+  if (pointsDelta > 0) {
+    updates.totalPoints = increment(pointsDelta);
+    updates.level = meta.level;
+    updates.currentTier = meta.tier;
+    updates.levelProgress = meta.progress;
+  }
+  if (newlyCompleted) {
+    updates.completedQuests = increment(1);
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await updateDoc(userRef, updates);
+  }
+
+  if (userStore.currentUser) {
+    userStore.currentUser = {
+      ...userStore.currentUser,
+      totalPoints: updatedTotal,
+      level: meta.level,
+      currentTier: meta.tier,
+      levelProgress: meta.progress,
+      completedQuests:
+        (userStore.currentUser.completedQuests || 0) + (newlyCompleted ? 1 : 0),
+    };
+  }
+
+  if (newlyCompleted) {
+    const completionRef = doc(
+      db,
+      'completedQuests',
+      `${userId.value}-${eventId}-${questKey}`
+    );
+
+    await setDoc(
+      completionRef,
+      {
+        userId: userId.value,
+        eventId,
+        questKey,
+        title: questTitle,
+        eventTitle: event.value?.title || '',
+        points: newPoints,
+        completedAt: Date.now(),
+      },
+      { merge: true }
+    );
+  }
+}
 
 
 // --- database path helpers ---
@@ -628,12 +717,24 @@ async function saveProgress() {
   const progressDocRef = getProgressDocRef();
   if (!progressDocRef) return; // skip if no user
 
+  const venueName = event.value?.venueName || null;
+  const venueCity = event.value?.venueCity || null;
+
   try {
-    await setDoc(progressDocRef, {
-      music: quests.value.music,
-      trivia: quests.value.trivia,
-      lastUpdated: Timestamp.now(),
-    });
+    await setDoc(
+      progressDocRef,
+      {
+        music: quests.value.music,
+        trivia: quests.value.trivia,
+        pointGoal: POINT_GOAL,
+        eventTitle: event.value?.title || null,
+        eventDate: event.value?.date || null,
+        eventVenueName: venueName,
+        eventVenueCity: venueCity,
+        lastUpdated: Timestamp.now(),
+      },
+      { merge: true }
+    );
   } catch (e) {
     console.error('failed to save progress:', e);
   }
@@ -642,22 +743,44 @@ async function saveProgress() {
 
 // --- quest handlers ---
 async function handleMusicProgress(progress) {
-  if (progress.points > quests.value.music.points) {
+  const previousPoints = quests.value.music.points;
+  const wasCompleted = quests.value.music.completed;
+
+  if (progress.points > previousPoints) {
     quests.value.music.points = progress.points;
     quests.value.music.completed = progress.completed;
     await saveProgress();
-    checkForCompletion();
+    await syncUserProgress({
+      questKey: 'music',
+      questTitle: 'Music Discovery',
+      newPoints: progress.points,
+      prevPoints: previousPoints,
+      completed: progress.completed,
+      wasCompleted,
+    });
+    await checkForCompletion();
   }
   // Close the overlay
   showMusicQuest.value = false;
 }
 
 async function handleTriviaProgress(progress) {
-  if (progress.points > quests.value.trivia.points) {
+  const previousPoints = quests.value.trivia.points;
+  const wasCompleted = quests.value.trivia.completed;
+
+  if (progress.points > previousPoints) {
     quests.value.trivia.points = progress.points;
     quests.value.trivia.completed = progress.completed;
     await saveProgress();
-    checkForCompletion();
+    await syncUserProgress({
+      questKey: 'trivia',
+      questTitle: 'Artist Trivia',
+      newPoints: progress.points,
+      prevPoints: previousPoints,
+      completed: progress.completed,
+      wasCompleted,
+    });
+    await checkForCompletion();
   }
   // Close the overlay
   showTriviaQuest.value = false;
@@ -679,7 +802,21 @@ async function checkForCompletion() {
   const progressDocRef = getProgressDocRef();
   if (!progressDocRef) return; // skip if no user
 
-  await setDoc(progressDocRef, { rewardClaimed: true }, { merge: true });
+  const venueName = event.value?.venueName || null;
+  const venueCity = event.value?.venueCity || null;
+
+  await setDoc(
+    progressDocRef,
+    {
+      rewardClaimed: true,
+      rewardClaimedAt: Timestamp.now(),
+      eventTitle: event.value?.title || null,
+      eventDate: event.value?.date || null,
+      eventVenueName: venueName,
+      eventVenueCity: venueCity,
+    },
+    { merge: true }
+  );
   rewardModal.value.show();
 }
 
@@ -782,9 +919,22 @@ async function verifyRecentPlays() {
     )
 
     if (plays.length >= 5) {
-      quests.value.music.points = 300
+      const previousPoints = quests.value.music.points
+      const wasCompleted = quests.value.music.completed
+      const awardedPoints = MUSIC_MAX
+
+      quests.value.music.points = awardedPoints
       quests.value.music.completed = true
       await saveProgress()
+      await syncUserProgress({
+        questKey: 'music',
+        questTitle: 'Music Discovery',
+        newPoints: awardedPoints,
+        prevPoints: previousPoints,
+        completed: true,
+        wasCompleted,
+      })
+      await checkForCompletion()
     } else {
       alert(`Not enough recent plays for ${artistName.value}. Try again later!`)
     }

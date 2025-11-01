@@ -45,6 +45,7 @@ function createDefaultUserProfile(user) {
     streakDays: 1,
     joinDate: now,
     completedQuests: 0,
+    levelProgress: 0,
     purchasedTickets: 0,
     activeQuests: [],
   };
@@ -61,6 +62,7 @@ export const useUserStore = defineStore('user', {
   // getters are like computed properties for stores
   getters: {
     isLoggedIn: (state) => !!state.currentUser,
+    levelProgress: (state) => state.currentUser?.levelProgress ?? 0,
     currentTier: (state) => {
       // (This is from your app(2).js logic)
       const tiers = {
