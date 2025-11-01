@@ -1,89 +1,136 @@
-<!-- <template>
+<template>
   <div class="quest-overlay" @click.self="closeQuest">
     <div class="card quest-card-modal quest-card-glass shadow-lg">
-      <button class="btn-close-overlay btn-close-white" @click="closeQuest">&times;</button>
+      <button class="btn-close-overlay btn-close-white" type="button" @click="closeQuest">
+        &times;
+      </button>
 
-      <div class="card-body p-4 d-flex align-items-center text-white">
-        <i class="fab fa-spotify fa-3x text-success me-4"></i>
-        <div class="flex-grow-1">
-          <h5 class="fw-bold">Music Discovery</h5>
-          <p class="text-white-75 small mb-1">
-            Listen to {{ artistName }} on Spotify to earn points.
-          </p>
-          <div class="text-primary-1 fw-bold">
-            +{{ questData.points }} / {{ MUSIC_MAX }} Points
+      <div class="modal-header border-bottom-0 header-spotify">
+        <div class="d-flex align-items-center gap-3">
+          <span class="spotify-badge">
+            <FontAwesomeIcon :icon="['fab', 'spotify']" />
+          </span>
+          <div>
+            <h5 class="modal-title fw-bold m-0">Music Discovery</h5>
+            <small class="text-muted">Earn {{ MUSIC_MAX }} points by listening to {{ artistName }}</small>
           </div>
         </div>
-        <button
-          class="btn btn-success"
-          @click="startSpotifyQuest"
-          :disabled="isMusicQuestDone || isLoading"
-        >
-          <i v-if="!isLoading" class="fas fa-play me-2"></i>
-          <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
-          {{ getButtonText() }}
-        </button>
       </div>
 
-      <div v-if="isLoading" class="p-4 p-md-5 text-center border-top border-light border-opacity-25">
-        <div class="vinyl-player-container mb-4">
-          <div class="vinyl-record" :class="{ spinning: isLoading }">
-            <div class="vinyl-label"></div>
-          </div>
-          <div class="vinyl-arm"></div>
+      <div class="modal-body p-4 p-md-5">
+        <div class="mb-4 text-muted">
+          We’ll check your recently played tracks. If we find at least five songs by
+          <strong>{{ artistName }}</strong>, you’ll receive {{ MUSIC_MAX }} points.
         </div>
-        <h5 class="mt-3 mb-1 text-white">Connecting to Spotify...</h5>
-        <p class="text-white-75 small">Please wait. You may be redirected.</p>
+
+        <div v-if="isQuestCompleted" class="alert alert-success d-flex align-items-center gap-2" role="status">
+          <i class="fas fa-check-circle"></i>
+          <span>Great news! You’ve already completed this quest.</span>
+        </div>
+
+        <template v-else>
+          <div class="mb-3">
+            <div v-if="error" class="alert alert-danger" role="alert">{{ error }}</div>
+            <div v-else-if="loading" class="alert alert-info d-flex align-items-center gap-2" role="status">
+              <span class="spinner-border spinner-border-sm" role="presentation"></span>
+              <span>Checking your Spotify plays…</span>
+            </div>
+            <div v-else class="alert alert-light border" role="status">
+              Plays detected for <strong>{{ artistName }}</strong>:
+              <strong>{{ plays }}</strong> / 5
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 justify-content-end">
+            <button
+              class="btn btn-primary"
+              type="button"
+              :disabled="loading"
+              @click="token() ? checkSpotify() : startSpotifyAuth()"
+            >
+              <span v-if="loading" class="spinner-border spinner-border-sm me-2" role="presentation"></span>
+              {{ primaryButtonLabel }}
+            </button>
+            <button class="btn btn-outline-secondary" type="button" @click="closeQuest" :disabled="loading">
+              Close
+            </button>
+          </div>
+        </template>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Scoped styles for the overlay */
 .quest-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100vw;
   height: 100vh;
-  /* MODIFICATION: Darker, more subtle background */
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1050; /* Above bootstrap navbar */
-  /* MODIFICATION: Increased blur on the page behind */
+  z-index: 1050;
   backdrop-filter: blur(10px);
 }
 
 .quest-card-modal {
   position: relative;
-  width: 90%;
-  max-width: 600px;
+  width: min(90vw, 560px);
   border: none;
-  animation: fadeIn 0.3s ease-out;
+  border-radius: 1rem;
+  animation: fadeIn 0.25s ease-out;
 }
 
-/* * NEW: Glassmorphism Style
-* This replaces the default white '.card' background
-*/
 .quest-card-glass {
-  /* Dark, semi-transparent background */
-  background: rgba(30, 30, 30, 0.75); 
-  /* Blur the content behind the card */
-  backdrop-filter: blur(15px);
-  /* Subtle white border */
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 0.75rem; /* Match EventDetails style */
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  background: #fff;
+  color: var(--ink, #1f1f1f);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.18);
 }
 
+.header-spotify {
+  background: linear-gradient(135deg, rgba(29, 185, 84, 0.15), rgba(29, 185, 84, 0.05));
+  border-bottom: 1px solid rgba(29, 185, 84, 0.15);
+}
+
+.spotify-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #1db954;
+  color: #fff;
+  font-size: 1.5rem;
+  box-shadow: 0 10px 20px rgba(29, 185, 84, 0.35);
+}
+
+.btn-close-overlay {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  background: transparent;
+  border: none;
+  font-size: 2rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  z-index: 5;
+}
+
+.btn-close-overlay:hover,
+.btn-close-overlay:focus {
+  color: #fff;
+}
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: scale(0.95) translateY(20px);
+    transform: scale(0.96) translateY(12px);
   }
   to {
     opacity: 1;
@@ -91,318 +138,176 @@
   }
 }
 
-.btn-close-overlay {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  background: none;
-  border: none;
-  font-size: 2rem;
-  font-weight: 300;
-  /* MODIFICATION: Changed color to be visible on dark bg */
-  color: #ccc;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0;
-  z-index: 10;
-  opacity: 0.8;
+.alert[role='status'] {
+  margin-bottom: 0;
 }
-.btn-close-overlay:hover {
-  color: #fff;
-  opacity: 1;
-}
-
-/* * NEW: Vinyl Player Styles 
-*/
-.vinyl-player-container {
-  position: relative;
-  width: 200px;
-  height: 200px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.vinyl-record {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  /* Record texture */
-  background: repeating-radial-gradient(
-    circle at center,
-    rgba(20, 20, 20, 0.5) 0,
-    rgba(20, 20, 20, 0.5) 1px,
-    #111 1px,
-    #111 2px
-  );
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Still state */
-  transform: rotate(20deg);
-  transition: transform 0.5s ease-out;
-}
-
-.vinyl-record.spinning {
-  /* Spinning state */
-  transform: rotate(0deg); /* Reset start point */
-  animation: spin 3s linear infinite;
-  transition: none; /* Disable transition when spinning */
-}
-
-.vinyl-label {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  background-color: #1ed760; /* Spotify Green */
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #fff;
-}
-/* Spindle hole */
-.vinyl-label::after {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #111;
-  border: 1px solid #333;
-}
-
-.vinyl-arm {
-  width: 40px;
-  height: 120px;
-  background: #ddd;
-  border-radius: 5px;
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  transform-origin: 20px 20px;
-  transform: rotate(30deg);
-  z-index: 10;
-  border: 2px solid #ccc;
-  /* Stylus head */
-  box-shadow: -5px 5px 10px rgba(0, 0, 0, 0.3);
-}
-.vinyl-arm::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: -10px;
-  width: 20px;
-  height: 20px;
-  background: #aaa;
-  border-radius: 3px;
-}
-.vinyl-record.spinning + .vinyl-arm {
-  /* Animate arm onto record */
-  transform: rotate(55deg);
-  transition: transform 0.5s ease-in-out;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 </style>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-// Import the new service
-import {
-  redirectToSpotifyAuth,
-  handleSpotifyRedirect,
-} from '../services/spotify.js';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
-// --- configuration ---
 const MUSIC_MAX = 300;
 
-// --- component setup ---
-const props = defineProps({
-  artistName: {
-    type: String,
-    required: true,
-  },
-  questData: {
-    type: Object,
-    required: true,
-  },
-});
-
-// Add 'close' to emits
-const emit = defineEmits(['update-progress', 'close']);
-
-// --- local state ---
-const isLoading = ref(false); // To show loading state
-
-// --- computed properties ---
-const isMusicQuestDone = computed(() => props.questData.completed);
-
-// --- lifecycle ---
-onMounted(async () => {
-  // Check if this is a spotify redirect
-  // We check for the 'code' query parameter
-  const params = new URLSearchParams(window.location.search);
-  if (params.has('code')) {
-    isLoading.value = true; // Show loading state inside the overlay
-    try {
-      // The service handles token exchange and validation
-      const progress = await handleSpotifyRedirect(props.artistName);
-      if (progress && progress.points > props.questData.points) {
-        // Emit the new progress
-        emit('update-progress', progress);
-        // Note: The parent component will handle closing this overlay
-      } else {
-        // No progress made, or already completed
-        emit('close');
-      }
-    } catch (e) {
-      console.error('Spotify redirect handling failed:', e);
-      // You could show an error toast here
-      emit('close'); // Close on error
-    } finally {
-      isLoading.value = false;
-    }
-  }
-});
-
-// --- quest 1: spotify ---
-
-async function startSpotifyQuest() {
-  if (isMusicQuestDone.value) return;
-
-  isLoading.value = true; // Show loading state
-  try {
-    // The service handles the entire redirect
-    await redirectToSpotifyAuth();
-  } catch (e) {
-    console.error('Spotify login failed:', e);
-    isLoading.value = false; // Hide loading state on fail
-  }
-}
-
-// --- New functions ---
-
-function closeQuest() {
-  // Only allow close if not in the middle of redirect logic
-  if (!isLoading.value) {
-    emit('close');
-  }
-}
-
-function getButtonText() {
-  if (isLoading.value) return 'Connecting...';
-  if (isMusicQuestDone.value) return 'Completed';
-  return 'Start Quest';
-}
-</script> -->
-
-<template>
-  <div class="p-4">
-    <h4 class="mb-2">Music Discovery</h4>
-    <p class="text-muted">
-      We’ll check your recently played tracks. If we find songs by
-      <strong>{{ artistName }}</strong> played at least 5 times, you earn
-      <strong>300 points</strong>.
-    </p>
-
-    <div class="mb-3">
-      <div v-if="error" class="alert alert-danger">{{ error }}</div>
-      <div v-else-if="loading" class="alert alert-info">Checking Spotify…</div>
-      <div v-else class="alert alert-light border">
-        Plays detected for <strong>{{ artistName }}</strong>:
-        <strong>{{ plays }}</strong> / 5
-      </div>
-    </div>
-
-    <div class="d-flex gap-2">
-      <button class="btn btn-primary" :disabled="loading" @click="checkSpotify">
-        {{ loading ? 'Checking…' : 'Check Spotify Now' }}
-      </button>
-      <button class="btn btn-outline-secondary" @click="$emit('close')">
-        Close
-      </button>
-    </div>
-  </div>
-</template>
-
-<script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-
-// Props/Emits (compatible with your EventDetails.vue)
 const props = defineProps({
   artistName: { type: String, required: true },
-  questData:  { type: Object, required: true },
+  questData: { type: Object, required: true },
 });
 const emit = defineEmits(['update-progress', 'close']);
 
-// --- Fast-fail settings ---
-const TIMEOUT_MS = 7000; // abort Spotify check after 7s
-
 const loading = ref(false);
-const error   = ref('');
-const plays   = ref(0);
+const error = ref('');
+const plays = ref(0);
+
+const isQuestCompleted = computed(() => props.questData?.completed === true);
+const primaryButtonLabel = computed(() => {
+  if (loading.value) return 'Please wait…';
+  return token() ? 'Check Spotify Now' : 'Connect Spotify';
+});
 
 function token() {
   return localStorage.getItem('spotify_access_token') || '';
 }
-function norm(s) { return (s || '').toString().trim().toLowerCase(); }
+function norm(s) {
+  return (s || '').toString().trim().toLowerCase();
+}
+
+const TIMEOUT_MS = 7000;
+const SPOTIFY_CLIENT_ID = 'f3e1635e835b47359c14736ee86068f4';
+const SPOTIFY_SCOPE = 'user-read-private user-read-email user-read-recently-played';
+const SPOTIFY_REDIRECT_URI =
+  import.meta.env.VITE_SPOTIFY_REDIRECT_URI || `${window.location.origin}/spotify-callback`;
+
+function base64url(ab) {
+  const b = new Uint8Array(ab);
+  let s = '';
+  for (const x of b) s += String.fromCharCode(x);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+async function sha256(s) {
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+}
+function randomString(n = 64) {
+  const a = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  let r = '';
+  for (let i = 0; i < n; i += 1) r += a[Math.floor(Math.random() * a.length)];
+  return r;
+}
+
+async function startSpotifyAuth(options = {}) {
+  const { preserveError = false, autoLoading = true } = options;
+  try {
+    if (!preserveError) error.value = '';
+    if (autoLoading) loading.value = true;
+
+    const verifier = randomString(64);
+    const challenge = base64url(await sha256(verifier));
+    localStorage.setItem('sp_verifier', verifier);
+
+    const state = crypto.randomUUID();
+    localStorage.setItem('sp_state', state);
+
+    const auth = new URL('https://accounts.spotify.com/authorize');
+    auth.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
+    auth.searchParams.set('response_type', 'code');
+    auth.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
+    auth.searchParams.set('scope', SPOTIFY_SCOPE);
+    auth.searchParams.set('state', state);
+    auth.searchParams.set('code_challenge_method', 'S256');
+    auth.searchParams.set('code_challenge', challenge);
+
+    const w = 520;
+    const h = 700;
+    const y = window.top.outerHeight / 2 + window.top.screenY - h / 2;
+    const x = window.top.outerWidth / 2 + window.top.screenX - w / 2;
+    const popup = window.open(
+      auth.toString(),
+      'spotify-auth',
+      `width=${w},height=${h},left=${x},top=${y},resizable,scrollbars`,
+    );
+    if (!popup) {
+      error.value = 'Please allow popups to connect Spotify.';
+      loading.value = false;
+      return;
+    }
+    try {
+      popup.focus();
+    } catch (e) {
+      /* no-op */
+    }
+
+    setTimeout(() => {
+      try {
+        if (!popup.closed) popup.close();
+      } catch (e) {
+        /* no-op */
+      }
+    }, 20000);
+  } catch (e) {
+    error.value = 'Could not start Spotify auth.';
+    loading.value = false;
+  }
+}
+
+async function handleExpiredSpotifySession() {
+  localStorage.removeItem('spotify_access_token');
+  localStorage.removeItem('spotify_refresh_token');
+  localStorage.removeItem('sp_last_auth_ts');
+
+  loading.value = false;
+  await startSpotifyAuth({ autoLoading: false });
+  if (!error.value) {
+    error.value = 'Spotify login expired. Please complete the Spotify login popup.';
+  }
+}
 
 async function checkSpotify() {
-  if (loading.value) return; 
+  if (loading.value) return;
   loading.value = true;
   error.value = '';
   plays.value = 0;
 
   const t = token();
   if (!t) {
-    error.value = 'Not connected to Spotify. Tap “Start Quest” to connect.';
+    error.value = 'Not connected to Spotify. Tap “Connect Spotify” to start.';
     loading.value = false;
     return;
   }
 
   try {
-    const ctrl  = new AbortController();
+    const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
 
     const res = await fetch(
       'https://api.spotify.com/v1/me/player/recently-played?limit=50',
-      { headers: { Authorization: `Bearer ${t}` }, signal: ctrl.signal }
+      { headers: { Authorization: `Bearer ${t}` }, signal: ctrl.signal },
     );
     clearTimeout(timer);
 
-    if (res.status === 401) throw new Error('Spotify login expired. Please try again.');
+    if (res.status === 401) {
+      await handleExpiredSpotifySession();
+      return;
+    }
     if (!res.ok) throw new Error((await res.text()) || `Spotify error (${res.status})`);
 
-    const data   = await res.json();
+    const data = await res.json();
     const target = norm(props.artistName);
 
     let count = 0;
-    for (const item of (data.items || [])) {
-      const names = (item.track?.artists || []).map(a => norm(a.name));
-      if (names.some(n => n.includes(target))) count++;
+    for (const item of data.items || []) {
+      const names = (item.track?.artists || []).map((a) => norm(a.name));
+      if (names.some((n) => n.includes(target))) count += 1;
     }
 
     plays.value = count;
 
     if (count >= 5) {
-      // Award full points and let EventDetails save & update UI
-      emit('update-progress', { points: 300, completed: true });
+      emit('update-progress', { points: MUSIC_MAX, completed: true });
     } else {
       error.value = `We didn’t find 5 recent plays by “${props.artistName}”. Try again later.`;
     }
   } catch (e) {
-    error.value = (e?.name === 'AbortError')
+    error.value = e?.name === 'AbortError'
       ? 'Spotify check timed out. Please try again.'
       : String(e?.message || e);
   } finally {
@@ -410,22 +315,32 @@ async function checkSpotify() {
   }
 }
 
-// Receive tokens from popup and immediately run a check
 function onMessage(e) {
   if (e.origin !== window.location.origin) return;
   const msg = e.data || {};
-  if (msg.type === 'spotify-auth-success') {
-    if (msg.access_token)   localStorage.setItem('spotify_access_token', msg.access_token);
-    if (msg.refresh_token)  localStorage.setItem('spotify_refresh_token', msg.refresh_token);
-    checkSpotify();
-  } else if (msg.type === 'spotify-auth-failed') {
-    error.value = 'Spotify login failed. Please try again.';
+  if (msg.source === 'spotify') {
+    if (msg.ok) {
+      loading.value = false;
+      error.value = '';
+      // Give the popup a moment to persist refreshed tokens before checking plays again.
+      requestAnimationFrame(() => {
+        if (!loading.value) checkSpotify();
+      });
+    } else {
+      error.value = 'Spotify login failed. Please try again.';
+      loading.value = false;
+    }
+  }
+}
+
+function closeQuest() {
+  if (!loading.value) {
+    emit('close');
   }
 }
 
 onMounted(() => {
   window.addEventListener('message', onMessage);
-  // If already connected, auto-check
   if (token()) checkSpotify();
 });
 onUnmounted(() => window.removeEventListener('message', onMessage));

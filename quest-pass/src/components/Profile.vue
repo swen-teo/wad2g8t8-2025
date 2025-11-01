@@ -77,10 +77,10 @@
               <div class="col-12 col-md-4 d-flex flex-column align-items-center align-items-md-start">
                 <h5 class="text-muted small text-uppercase mb-1 d-flex align-items-center justify-content-center justify-content-md-start">
                   <font-awesome-icon :icon="['fas','flag-checkered']" class="me-2 text-success" />
-                  Quests Done
+                  Events Unlocked
                 </h5>
                 <h3 class="fw-bold mb-0 d-flex align-items-center gap-2 justify-content-center justify-content-md-start w-100">
-                  <span class="stat-pill">{{ completedQuests.length }}</span>
+                  <span class="stat-pill">{{ unlockedEvents.length }}</span>
                 </h3>
               </div>
             </div>
@@ -157,9 +157,9 @@
 
       <!-- right column: completed quests -->
       <div class="col-lg-8">
-        <h4 class="mb-3">Recent Quest Completions</h4>
+        <h4 class="mb-3">Events Unlocked</h4>
         <div
-          v-if="isLoadingQuests"
+          v-if="isLoadingEvents"
           class="text-center"
         >
           <span
@@ -167,10 +167,10 @@
             role="status"
           ></span>
         </div>
-        <ul v-else-if="completedQuests.length > 0" class="list-group">
+        <ul v-else-if="unlockedEvents.length > 0" class="list-group">
           <li
-            v-for="quest in completedQuests"
-            :key="quest.id"
+            v-for="event in unlockedEvents"
+            :key="event.id"
             class="list-group-item"
           >
             <div class="d-flex align-items-center justify-content-between">
@@ -179,8 +179,9 @@
                   <font-awesome-icon :icon="['fas','check']" class="text-success" />
                 </div>
                 <div>
-                  <strong>{{ quest.title }}</strong>
-                  <div class="text-muted small">+{{ quest.points }} XP</div>
+                  <strong>{{ event.title }}</strong>
+                  <div v-if="event.subtitle" class="text-muted small">{{ event.subtitle }}</div>
+                  <div v-if="event.unlockedAtLabel" class="text-muted small">Unlocked {{ event.unlockedAtLabel }}</div>
                 </div>
               </div>
               <div class="text-success">
@@ -193,7 +194,7 @@
           v-else
           class="text-muted"
         >
-          No quests completed yet.
+          No events unlocked yet.
         </p>
       </div>
     </div>
@@ -201,10 +202,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useUserStore } from '@/store/user.js';
 import { db } from '@/firebase.js';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { useRouter } from 'vue-router';
 
 // get our user data from the store
@@ -212,37 +213,110 @@ const userStore = useUserStore();
 const router = useRouter();
 
 // local state for this page
-const completedQuests = ref([]);
-const isLoadingQuests = ref(false);
+const unlockedEvents = ref([]);
+const isLoadingEvents = ref(false);
 
-// fetches the list of quests this user has completed
-async function loadCompletedQuests(userId) {
+function asDate(value) {
+  if (!value) return null;
+  if (typeof value.toDate === 'function') {
+    return value.toDate();
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatDateLabel(date) {
+  if (!date) return null;
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
+  } catch (error) {
+    console.warn('Unable to format date label', error);
+    return null;
+  }
+}
+
+// fetches the list of events this user has unlocked by completing all quests
+async function loadUnlockedEvents(userId) {
   if (!userId) return; // can't fetch if we don't know who the user is
 
-  isLoadingQuests.value = true;
-  completedQuests.value = [];
+  isLoadingEvents.value = true;
+  unlockedEvents.value = [];
   try {
-    //
-    // this query looks for documents in a "completedQuests" collection
-    // where the 'userId' field matches our logged-in user's id.
-    //
     const q = query(
-      collection(db, 'completedQuests'),
-      where('userId', '==', userId)
+      collection(db, 'users', userId, 'eventProgress'),
+      where('rewardClaimed', '==', true)
     );
     const querySnapshot = await getDocs(q);
 
-    const quests = [];
-    querySnapshot.forEach((doc) => {
-      quests.push({ id: doc.id, ...doc.data() });
-    });
-    // sort by date, newest first (optional)
-    quests.sort((a, b) => b.completedAt - a.completedAt);
-    completedQuests.value = quests;
+    const events = await Promise.all(
+      querySnapshot.docs.map(async (snapshot) => {
+        const progress = snapshot.data();
+        const eventId = snapshot.id;
+
+        const unlockedAt =
+          asDate(progress.rewardClaimedAt) || asDate(progress.lastUpdated);
+
+        let eventDetails;
+        try {
+          const eventDoc = await getDoc(doc(db, 'events', eventId));
+          if (eventDoc.exists()) {
+            eventDetails = eventDoc.data();
+          }
+        } catch (eventError) {
+          console.warn('Unable to load event details', eventId, eventError);
+        }
+
+        const title =
+          eventDetails?.title ||
+          progress.eventTitle ||
+          `Unlocked Event ${eventId}`;
+
+        const venueName =
+          eventDetails?.venueName || progress.eventVenueName || null;
+        const venueCity =
+          eventDetails?.venueCity || progress.eventVenueCity || null;
+
+        const subtitleParts = [];
+        if (eventDetails?.date || progress.eventDate) {
+          subtitleParts.push(eventDetails?.date || progress.eventDate);
+        }
+        const venueText = [venueName, venueCity]
+          .filter(Boolean)
+          .join(', ');
+        if (venueText) {
+          subtitleParts.push(venueText);
+        }
+
+        return {
+          id: eventId,
+          title,
+          subtitle: subtitleParts.join(' • ') || null,
+          unlockedAt,
+          unlockedAtLabel: formatDateLabel(unlockedAt),
+        };
+      })
+    );
+
+    unlockedEvents.value = events
+      .filter(Boolean)
+      .sort((a, b) => {
+        const aTime = a.unlockedAt ? a.unlockedAt.getTime() : 0;
+        const bTime = b.unlockedAt ? b.unlockedAt.getTime() : 0;
+        return bTime - aTime;
+      })
+      .map(({ unlockedAt, ...rest }) => rest);
   } catch (error) {
-    console.error('Error fetching completed quests:', error);
+    console.error('Error fetching unlocked events:', error);
+  } finally {
+    isLoadingEvents.value = false;
   }
-  isLoadingQuests.value = false;
 }
 
 // 'watch' for the userStore to finish loading the user
@@ -253,7 +327,9 @@ watch(
   (newUser) => {
     // the function to run when it changes
     if (newUser) {
-      loadCompletedQuests(newUser.uid);
+      loadUnlockedEvents(newUser.uid);
+    } else {
+      unlockedEvents.value = [];
     }
   },
   { immediate: true } // run this immediately on load, just in case

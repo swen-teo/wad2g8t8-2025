@@ -254,17 +254,27 @@ exports.populateEventsFromJambase = functions
  * document is created in the 'events' collection.
  */
 
-// Helper function to generate a random code
-const generateRandomCode = () => {
-  // Using chars that aren't easy to mix up (e.g., no 'O' or '0')
-  const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
-  let result = 'QUEST-';
-  for (let i = 0; i < 8; i++) {
-    if (i === 4) result += '-';
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+// Normalize the artist name into a safe, uppercase code prefix
+function buildArtistPrefix(artistName, fallback = "QUESTPASS") {
+  if (!artistName) {
+    return fallback;
   }
-  return result;
-};
+
+  const normalized = artistName
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "") // strip diacritics
+    .replace(/[^a-zA-Z0-9]/g, "") // keep only alphanumeric
+    .toUpperCase();
+
+  return normalized.substring(0, 18) || fallback;
+}
+
+// Helper function to generate an artist-based reward code
+function generateRewardCode(eventData = {}) {
+  const prefix = buildArtistPrefix(eventData.artistName || eventData.title);
+  const randomFiveDigit = Math.floor(Math.random() * 90000) + 10000; // 10000-99999
+  return `${prefix}-${randomFiveDigit}`;
+}
 
 exports.generateRewardCodeOnEventCreate = functions.firestore
   .document('events/{eventId}')
@@ -281,7 +291,7 @@ exports.generateRewardCodeOnEventCreate = functions.firestore
     }
 
     // 3. Generate a new, unique code
-    const newCode = generateRandomCode();
+    const newCode = generateRewardCode(eventData);
     console.log(`Generated code ${newCode} for event ${eventId}.`);
 
     // 4. Update the event document with the new code
@@ -291,5 +301,90 @@ exports.generateRewardCodeOnEventCreate = functions.firestore
     } catch (error) {
       console.error('Failed to update event with reward code:', error);
       return null;
+    }
+  });
+
+/**
+ * Generate a 5-question multiple-choice quiz using Gemini.
+ * POST { artist: string } -> [{ question, options: string[], correctAnswer }]
+ * Uses secret GEMINI_API_KEY; falls back to VITE_GEMINI_API_KEY in local .env for convenience.
+ */
+exports.generateQuiz = functions
+  .runWith({
+    timeoutSeconds: 20,
+    memory: "256MB",
+    secrets: ["GEMINI_API_KEY"],
+  })
+  .https.onRequest(async (req, res) => {
+    // Basic CORS (adjust for your hosting as needed)
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
+
+    try {
+      const artist = String((req.body && req.body.artist) || "").trim();
+      if (!artist) return res.status(400).json({ error: "Missing artist" });
+
+      const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+
+      const prompt = `You are a music trivia generator. Create exactly 5 multiple-choice questions about the artist "${artist}". Return ONLY a JSON array with items of the form: {"question": string, "options": [string, string, string, string], "correctAnswer": string}. Avoid duplicates; ensure the correctAnswer is one of the options. Keep questions concise.`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const { data } = await axios.post(
+        url,
+        {
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }],
+            },
+          ],
+          generationConfig: {
+            // Prefer snake_case per Generative Language API HTTP spec
+            temperature: 0.7,
+            max_output_tokens: 1024,
+            response_mime_type: "application/json",
+          },
+        },
+        { timeout: 15000 }
+      );
+
+      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      // Remove code fences if present
+      const text = String(raw).replace(/```json|```/g, '').trim();
+      let quiz;
+      try {
+        quiz = JSON.parse(text);
+      } catch (_) {
+        try {
+          const match = text.match(/\[[\s\S]*\]/);
+          quiz = match ? JSON.parse(match[0]) : null;
+        } catch {
+          quiz = null;
+        }
+      }
+
+      if (!Array.isArray(quiz) || quiz.length === 0) {
+        return res.status(502).json({ error: "Invalid model response" });
+      }
+
+      const normalized = quiz
+        .slice(0, 5)
+        .map((q) => ({
+          question: String(q.question || q.prompt || "").trim(),
+          options: Array.isArray(q.options || q.choices)
+            ? (q.options || q.choices).map(String)
+            : [],
+          correctAnswer: String(q.correctAnswer || q.answer || "").trim(),
+        }))
+        .filter((q) => q.question && q.options.length >= 2);
+
+      return res.json(normalized);
+    } catch (err) {
+      console.error("generateQuiz error:", err?.response?.data || err);
+      return res.status(500).json({ error: "Quiz generation failed", details: String(err?.message || err) });
     }
   });

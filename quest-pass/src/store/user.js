@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia';
 import { auth, db } from '@/firebase.js'; // Import from our firebase.js
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  increment,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 // fix: remove useRouter, it's not reliable to use it inside a pinia store.
 // We will call router.push() from the component *after* logout completes.
@@ -45,6 +52,7 @@ function createDefaultUserProfile(user) {
     streakDays: 1,
     joinDate: now,
     completedQuests: 0,
+    levelProgress: 0,
     purchasedTickets: 0,
     activeQuests: [],
   };
@@ -61,6 +69,7 @@ export const useUserStore = defineStore('user', {
   // getters are like computed properties for stores
   getters: {
     isLoggedIn: (state) => !!state.currentUser,
+    levelProgress: (state) => state.currentUser?.levelProgress ?? 0,
     currentTier: (state) => {
       // (This is from your app(2).js logic)
       const tiers = {
@@ -149,6 +158,50 @@ export const useUserStore = defineStore('user', {
     clearUser() {
       this.currentUser = null;
       this.loading = false;
+    },
+
+    /**
+     * Adds `points` to the signed-in user's total points and persists it.
+     * Accepts positive values only; silently ignores falsy/negative values.
+     */
+    async awardPoints(points) {
+      if (!this.currentUser) return;
+      const value = Number(points);
+      if (!Number.isFinite(value) || value <= 0) return;
+
+      const uid = this.currentUser.uid;
+      if (!uid) return;
+
+      const previousTotal = this.currentUser.totalPoints ?? 0;
+      const newTotal = previousTotal + value;
+      // Optimistically update the local store so the UI reacts immediately.
+      this.currentUser = { ...this.currentUser, totalPoints: newTotal };
+
+      const userDocRef = doc(db, 'users', uid);
+
+      try {
+        await updateDoc(userDocRef, {
+          totalPoints: increment(value),
+          lastPointsUpdate: serverTimestamp(),
+        });
+      } catch (error) {
+        console.warn('Increment update failed, trying to merge setDoc:', error);
+        try {
+          await setDoc(
+            userDocRef,
+            {
+              totalPoints: newTotal,
+              lastPointsUpdate: serverTimestamp(),
+            },
+            { merge: true }
+          );
+        } catch (secondError) {
+          console.error('Failed to persist points:', secondError);
+          // Revert optimistic update if the write ultimately fails.
+          this.currentUser = { ...this.currentUser, totalPoints: previousTotal };
+          throw secondError;
+        }
+      }
     },
   },
 });

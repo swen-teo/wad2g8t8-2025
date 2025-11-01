@@ -58,111 +58,117 @@
       - This new class pulls the content up to overlap the banner
     -->
     <main class="container-lg main-content-wrapper pb-5 px-3 px-md-0">
-      <div class="row g-4">
-        <!-- left column: progress -->
-        <div class="col-lg-4 mb-4 mb-lg-0">
-          <!-- 
-            MODIFICATION:
-            - Removed 'mt-n5' (now handled by main-content-wrapper)
-            - Added 'progress-card' class
-            - Added 'style="top: 2rem;"' for better sticky positioning
-            - ADDED 'animate-float-in' class for animation
-          -->
-          <div
-            class="card shadow position-sticky progress-card animate-float-in"
-            style="top: 2rem"
-          >
-            <div class="card-body p-4 text-center">
-              <h5 class="fw-bold">Your Quest Progress</h5>
-              <p class="text-muted small">
-                Complete quests to unlock a final reward.
-              </p>
+      <!-- Full-width progress summary below banner, above quests -->
+      <div class="row g-4 mb-2">
+        <div class="col-12">
+          <div class="card shadow progress-summary-card animate-float-in">
+            <div class="card-body p-4 p-md-5 text-center">
+              <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-4">
+                <div class="text-start flex-grow-1">
+                  <h5 class="fw-bold mb-1">Your Quest Progress</h5>
+                  <p class="text-muted small mb-0">Complete quests to unlock a final reward.</p>
+                </div>
 
-              <!-- Score ring driven by progressPercent -->
-              <div class="score-ring mx-auto my-2" :style="{ '--p': progressPercent + '%' }">
-                <div class="score-number gradient-text fw-bold">{{ totalPoints }}</div>
-              </div>
-              <div class="text-muted small">of {{ POINT_GOAL }} points</div>
-
-              <div
-                class="progress mt-3 mb-2"
-                style="height: 20px"
-              >
-                <!-- MODIFICATION: Added animated stripes for a dynamic feel -->
-                <div
-                  class="progress-bar fw-bold progress-bar-striped progress-bar-animated"
-                  role="progressbar"
-                  :style="{ width: `${progressPercent}%` }"
-                >
-                  {{ progressPercent }}%
+                <div class="d-flex align-items-center gap-4">
+                  <div class="score-ring" :style="{ '--p': progressPercent + '%' }">
+                    <div class="score-number gradient-text fw-bold">{{ totalPoints }}</div>
+                  </div>
+                  <div class="text-start">
+                    <div class="text-muted small">of {{ POINT_GOAL }} points</div>
+                    <div class="progress mt-2" style="height: 14px; min-width: 220px;">
+                      <div class="progress-bar fw-bold progress-bar-striped progress-bar-animated" role="progressbar" :style="{ width: `${progressPercent}%` }">{{ progressPercent }}%</div>
+                    </div>
+                    <div v-if="isComplete" class="badge bg-success mt-2">Quest Complete!</div>
+                  </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-              <div
-                v-if="isComplete"
-                class="alert alert-success mt-3"
-              >
-                <strong>Quest Complete!</strong><br />
-                You've unlocked the final reward.
+      <transition name="fade">
+        <div v-if="isComplete && rewardCode" class="row g-3 mb-4">
+          <div class="col-12">
+            <div class="card reward-code-card shadow-sm">
+              <div class="card-body d-flex flex-column flex-lg-row align-items-lg-center gap-3 gap-lg-4">
+                <div class="flex-grow-1 text-center text-lg-start">
+                  <h5 class="fw-bold mb-1">Your Event Access Code</h5>
+                  <p class="text-muted small mb-0">
+                    Show this code to unlock the special perk for {{ artistName }}'s event.
+                  </p>
+                </div>
+
+                <div class="reward-code-display px-3 py-2 rounded text-center fw-bold">
+                  {{ rewardCode }}
+                </div>
+
+                <div class="text-center text-lg-start">
+                  <button
+                    class="btn btn-outline-primary"
+                    type="button"
+                    @click="copyRewardCode"
+                    :disabled="isCopyingCode || !rewardCode"
+                  >
+                    <i class="fas fa-copy me-2"></i>
+                    {{ copyButtonLabel }}
+                  </button>
+                  <div v-if="copyFeedback" :class="['small', feedbackClass, 'mt-2']">{{ copyFeedback }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Two quest cards side-by-side on md+, stacked on mobile -->
+      <div class="row g-4 mt-1">
+        <div class="col-12">
+          <h2 class="fw-bold mb-2">Available Quests</h2>
+        </div>
+
+        <!-- Music Quest Card -->
+        <div class="col-12 col-md-6 d-flex">
+          <div class="card quest-card quest-music h-100 w-100 shadow-sm">
+            <div class="card-body p-4 d-flex align-items-center">
+              <div class="quest-icon" aria-hidden="true">
+                <font-awesome-icon :icon="['fab','spotify']" />
+              </div>
+              <div class="flex-grow-1">
+                <h5 class="fw-bold mb-1">Music Discovery</h5>
+                <p class="text-muted mb-2">
+                  We’ll check your recently played tracks. If we find songs by
+                  <strong>{{ artistName }}</strong> played at least 5 times, you earn
+                  <strong>{{ MUSIC_MAX }} points</strong>.
+                </p>
+                <div class="text-primary-1 fw-bold mb-2">+{{ quests.music.points }} / {{ MUSIC_MAX }} Points</div>
+                <button class="btn qp-btn" @click="showMusicQuest = true" :disabled="isMusicQuestDone === true">
+                  <i class="fas fa-play me-2"></i>
+                  {{ isMusicQuestDone ? 'Completed' : 'Start Quest' }}
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- right column: quests -->
-        <div class="col-lg-8">
-          <h2 class="fw-bold mb-3">Available Quests</h2>
-
-          <!-- quest 1: music card -->
-          <div class="card quest-card mb-3 shadow-sm">
+        <!-- Trivia Quest Card -->
+        <div class="col-12 col-md-6 d-flex">
+          <div class="card quest-card quest-trivia h-100 w-100 shadow-sm">
             <div class="card-body p-4 d-flex align-items-center">
-              <!-- MODIFICATION: Icon on the left (SVG via font-awesome component) -->
-              <div class="quest-icon bg-success" aria-hidden="true">
-                <font-awesome-icon :icon="['fab','spotify']" />
+              <div class="quest-icon" aria-hidden="true">
+                <i class="fas fa-record-vinyl"></i>
               </div>
               <div class="flex-grow-1">
-                <h5 class="fw-bold">Music Discovery</h5>
-                <p class="text-muted small mb-1">
-                  Listen to {{ artistName }} on Spotify to earn points.
+                <h5 class="fw-bold mb-1">Artist Trivia</h5>
+                <p class="text-muted small mb-2">
+                  Score a perfect {{ TRIVIA_QS }} / {{ TRIVIA_QS }} on the artist trivia.
                 </p>
-                <div class="text-primary-1 fw-bold">
-                  +{{ quests.music.points }} / {{ MUSIC_MAX }} Points
-                </div>
+                <div class="text-primary-1 fw-bold mb-2">+{{ quests.trivia.points }} / {{ TRIVIA_AWARD }} Points</div>
+                <button class="btn qp-btn" @click="showTriviaQuest = true" :disabled="isTriviaQuestDone">
+                  <i class="fas fa-pencil-alt me-2"></i>
+                  {{ isTriviaQuestDone ? 'Completed' : 'Start Trivia' }}
+                </button>
               </div>
-                <button class="btn qp-btn"
-              @click="handleStartQuest"
-              :disabled="isMusicQuestDone === true">
-              <i class="fas fa-play me-2"></i>
-              {{ isMusicQuestDone ? 'Completed' : 'Start Quest' }}
-              </button>
-            </div>
-          </div>
-
-          <!-- quest 2: trivia card -->
-          <div class="card quest-card mb-3 shadow-sm">
-            <div class="card-body p-4 d-flex align-items-center">
-              <!-- MODIFICATION: Icon on the left (SVG via font-awesome component) -->
-              <div class="quest-icon bg-warning" aria-hidden="true">
-                <font-awesome-icon :icon="['fas','question-circle']" />
-              </div>
-              <div class="flex-grow-1">
-                <h5 class="fw-bold">Artist Trivia</h5>
-                <p class="text-muted small mb-1">
-                  Score a perfect {{ TRIVIA_QS }} / {{ TRIVIA_QS }} on the artist
-                  trivia.
-                </p>
-                <div class="text-primary-1 fw-bold">
-                  +{{ quests.trivia.points }} / {{ TRIVIA_AWARD }} Points
-                </div>
-              </div>
-              <button
-                class="btn qp-btn"
-                @click="showTriviaQuest = true"
-                :disabled="isTriviaQuestDone"
-              >
-                <i class="fas fa-pencil-alt me-2"></i>
-                {{ isTriviaQuestDone ? 'Completed' : 'Start Trivia' }}
-              </button>
             </div>
           </div>
         </div>
@@ -198,7 +204,7 @@
               <div
                 class="display-6 fw-bold text-primary-1 bg-light p-3 rounded border"
               >
-                {{ event.rewardCode || 'REWARD-123' }}
+                {{ rewardCode || 'CODE-LOCKED' }}
               </div>
               <button
                 class="btn btn-success btn-lg mt-4"
@@ -305,6 +311,27 @@ const isComplete = computed(() => totalPoints.value >= POINT_GOAL);
 const isMusicQuestDone = computed(() => quests.value.music.completed);
 const isTriviaQuestDone = computed(() => quests.value.trivia.completed);
 
+const rewardCode = computed(() => event.value?.rewardCode || null);
+
+const isCopyingCode = ref(false);
+const copyState = ref('idle'); // 'idle' | 'copied' | 'error'
+
+const copyButtonLabel = computed(() => {
+  if (copyState.value === 'copied') return 'Copied!';
+  if (copyState.value === 'error') return 'Try Again';
+  return 'Copy Code';
+});
+
+const copyFeedback = computed(() => {
+  if (copyState.value === 'copied') return 'Code copied to clipboard.';
+  if (copyState.value === 'error') return 'Could not copy the code. Please try again.';
+  return '';
+});
+
+const feedbackClass = computed(() =>
+  copyState.value === 'error' ? 'text-danger' : 'text-success'
+);
+
 
 // --- database path helpers ---
 const eventDocRef = doc(db, 'events', eventId);
@@ -316,35 +343,7 @@ const eventDocRef = doc(db, 'events', eventId);
 //   eventId
 // );
 
-
-// Spotify
-const SPOTIFY_CLIENT_ID = 'f3e1635e835b47359c14736ee86068f4'; // your existing client id
-const SPOTIFY_SCOPE = 'user-read-private user-read-email user-read-recently-played';
-const SPOTIFY_REDIRECT_URI = `${window.location.origin}/spotify-callback`;
-
-// Utility: do NOT trust old tokens
-function clearSpotifyStorage(){
-  localStorage.removeItem('spotify_access_token')
-  localStorage.removeItem('spotify_refresh_token')
-  localStorage.removeItem('sp_last_auth_ts')
-  localStorage.removeItem('sp_verifier')
-  sessionStorage.removeItem('sp_state')
-}
-
-// Helpers
-function base64url(ab){const b=new Uint8Array(ab);let s='';for(const x of b)s+=String.fromCharCode(x);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
-async function sha256(s){return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))}
-function randomString(n = 64) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-  let out = '';
-  for (let i = 0; i < n; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
-function isFreshSpotify(){
-  const t = localStorage.getItem('spotify_access_token')
-  const ts = Number(localStorage.getItem('sp_last_auth_ts')||0)
-  return Boolean(t) && (Date.now()-ts) <= 10*60*1000
-}
+// (MusicQuest component owns Spotify auth/check flow)
 
 
 function getProgressDocRef() {
@@ -643,10 +642,21 @@ async function saveProgress() {
 // --- quest handlers ---
 async function handleMusicProgress(progress) {
   if (progress.points > quests.value.music.points) {
+    const previousPoints = quests.value.music.points;
+    const delta = Math.max(progress.points - previousPoints, 0);
+
+    if (delta > 0) {
+      try {
+        await userStore.awardPoints(delta);
+      } catch (error) {
+        console.error('Failed to award music quest points:', error);
+      }
+    }
+
     quests.value.music.points = progress.points;
     quests.value.music.completed = progress.completed;
     await saveProgress();
-    checkForCompletion();
+    await checkForCompletion();
   }
   // Close the overlay
   showMusicQuest.value = false;
@@ -654,10 +664,21 @@ async function handleMusicProgress(progress) {
 
 async function handleTriviaProgress(progress) {
   if (progress.points > quests.value.trivia.points) {
+    const previousPoints = quests.value.trivia.points;
+    const delta = Math.max(progress.points - previousPoints, 0);
+
+    if (delta > 0) {
+      try {
+        await userStore.awardPoints(delta);
+      } catch (error) {
+        console.error('Failed to award trivia quest points:', error);
+      }
+    }
+
     quests.value.trivia.points = progress.points;
     quests.value.trivia.completed = progress.completed;
     await saveProgress();
-    checkForCompletion();
+    await checkForCompletion();
   }
   // Close the overlay
   showTriviaQuest.value = false;
@@ -680,125 +701,41 @@ async function checkForCompletion() {
   if (!progressDocRef) return; // skip if no user
 
   await setDoc(progressDocRef, { rewardClaimed: true }, { merge: true });
-  rewardModal.value.show();
-}
-
-async function startSpotifyAuth() {
-  // 0) reset any stale state/tokens
-  clearSpotifyStorage();
-
-  // 1) PKCE values
-  const verifier  = randomString(64);
-  const challenge = base64url(await sha256(verifier));
-  localStorage.setItem('sp_verifier', verifier);
-
-  // 2) CSRF state (store in localStorage so popup can read it)
-  const state = crypto.randomUUID();
-  localStorage.setItem('sp_state', state);
-
-  // 3) Build the authorize URL
-  const auth = new URL('https://accounts.spotify.com/authorize');
-  auth.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
-  auth.searchParams.set('response_type', 'code');
-  auth.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
-  auth.searchParams.set('scope', SPOTIFY_SCOPE);
-  auth.searchParams.set('state', state);
-  auth.searchParams.set('code_challenge_method', 'S256');
-  auth.searchParams.set('code_challenge', challenge);
-
-  // 4) Open centered popup (must be from this user click)
-  const w = 520, h = 700;
-  const y = window.top.outerHeight / 2 + window.top.screenY - (h / 2);
-  const x = window.top.outerWidth  / 2 + window.top.screenX - (w / 2);
-  const popup = window.open(
-    auth.toString(),
-    'spotify-auth',
-    `width=${w},height=${h},left=${x},top=${y},resizable,scrollbars,noopener`
-  );
-  if (!popup) {
-    alert('Please allow popups to connect Spotify.');
-    return;
+  if (rewardModal.value?.show) {
+    rewardModal.value.show();
   }
-
-  // 5) Wait for the popup /callback page to message us back
-  let settled = false;
-  const finish = (ok, err = '') => {
-    if (settled) return;
-    settled = true;
-    window.removeEventListener('message', onMsg);
-    try { popup.close(); } catch {}
-    if (ok) {
-      // popup already saved tokens to localStorage
-      localStorage.setItem('sp_last_auth_ts', String(Date.now()));
-      verifyRecentPlays(); // <-- your checker runs now (only after success)
-    } else {
-      alert('Spotify login failed. ' + err);
-    }
-  };
-
-  const onMsg = (e) => {
-    if (e.origin !== window.location.origin) return;
-    const d = e.data || {};
-    if (d.source !== 'spotify') return;
-    // read the actual flag the popup sends back
-    finish(Boolean(d.ok), d.error || '');
-  };
-  window.addEventListener('message', onMsg);
-
-  // 6) Timeout / user closes popup
-  const start = Date.now();
-  const timer = setInterval(() => {
-    if (popup.closed) {
-      clearInterval(timer);
-      finish(false, 'CLOSED');
-      return;
-    }
-    if (Date.now() - start > 20000) { // 20s hard timeout
-      clearInterval(timer);
-      finish(false, 'TIMEOUT');
-    }
-  }, 300);
 }
 
-// Only run after a fresh login
-async function verifyRecentPlays() {
+async function copyRewardCode() {
+  if (!rewardCode.value || isCopyingCode.value) return;
+
   try {
-    if (!isFreshSpotify()) { alert('Please connect Spotify first.'); return }
-    const token = localStorage.getItem('spotify_access_token')
-
-    const ctl = new AbortController()
-    const to = setTimeout(()=>ctl.abort(), 6000)
-    const res = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=50', {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: ctl.signal
-    })
-    clearTimeout(to)
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-
-    const target = (artistName.value || '').toLowerCase().trim()
-    const plays = (data.items||[]).filter(it =>
-      (it.track?.artists||[]).some(a => a.name.toLowerCase().includes(target))
-    )
-
-    if (plays.length >= 5) {
-      quests.value.music.points = 300
-      quests.value.music.completed = true
-      await saveProgress()
+    isCopyingCode.value = true;
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(rewardCode.value);
+    } else if (typeof document !== 'undefined') {
+      const tempInput = document.createElement('input');
+      tempInput.value = rewardCode.value;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
     } else {
-      alert(`Not enough recent plays for ${artistName.value}. Try again later!`)
+      throw new Error('No clipboard API available');
     }
-  } catch (e) {
-    console.warn('Spotify check failed:', e)
-    alert('Could not verify Spotify activity. Please try again.')
+    copyState.value = 'copied';
+  } catch (error) {
+    console.error('Failed to copy reward code:', error);
+    copyState.value = 'error';
+  } finally {
+    isCopyingCode.value = false;
+    setTimeout(() => {
+      copyState.value = 'idle';
+    }, 2500);
   }
 }
 
 
-const handleStartQuest = async () => {
-  if (!isFreshSpotify()) return startSpotifyAuth()
-  await verifyRecentPlays()
-}
 
 
 </script>
@@ -997,6 +934,41 @@ const handleStartQuest = async () => {
   transition: width 0.6s ease;
 }
 
+/* Progress summary card (full-width under banner) */
+.progress-summary-card {
+  border: 0;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: var(--card-elev);
+}
+
+.reward-code-card {
+  border: 0;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--card-elev);
+}
+
+.reward-code-display {
+  font-family: 'Fira Code', 'SFMono-Regular', ui-monospace, 'DejaVu Sans Mono', monospace;
+  letter-spacing: 0.08em;
+  font-size: 1.1rem;
+  background: rgba(96, 165, 250, 0.12);
+  color: var(--bs-primary, #0d6efd);
+  border: 1px dashed rgba(96, 165, 250, 0.45);
+  min-width: 220px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 /* 4. Quest Card Enhancements */
 .quest-card {
   border: 0;
@@ -1026,46 +998,57 @@ const handleStartQuest = async () => {
 /* New class for the round icons */
 .quest-card .quest-icon {
   flex-shrink: 0;
-  width: 72px;
-  height: 72px;
+  width: 78px;
+  height: 78px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 1.5rem;
-  color: white;
-  /* Add a subtle shadow to the icon background */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  /* MODIFICATION: Added pulse animation */
-  animation: pulse 2.5s infinite ease-in-out;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.12), transparent 20%), linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  margin-right: 1.25rem;
+  color: #fff;
+  position: relative;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+  /* Vinyl disc look */
+  background: radial-gradient(circle at 50% 45%, #262b3a 0%, #0d111a 65%, #0a0e15 100%);
 }
 
-/* size SVG icons inside the round container and make them crisp */
-.quest-card .quest-icon svg {
-  width: 36px;
-  height: 36px;
-  color: white;
+/* Grooves */
+.quest-card .quest-icon::before {
+  content: '';
+  position: absolute; inset: 10%;
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    circle,
+    rgba(255,255,255,0.06) 0px,
+    rgba(255,255,255,0.06) 2px,
+    rgba(255,255,255,0) 3px,
+    rgba(255,255,255,0) 4px
+  );
+  filter: blur(0.2px);
+}
+
+/* Label */
+.quest-card .quest-icon::after {
+  content: '';
+  position: absolute;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: conic-gradient(from 120deg, var(--accent-1), var(--accent-2));
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.25);
+}
+
+/* icon inside label */
+.quest-card .quest-icon svg, .quest-card .quest-icon i {
+  position: relative;
+  z-index: 1;
+  font-size: 18px;
+  width: 18px; height: 18px;
+  color: #fff;
 }
 
 /* playful floating orb behind the icon */
-.quest-card .quest-icon::before {
-  content: '';
-  position: absolute;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.12), transparent 40%);
-  filter: blur(8px);
-  z-index: 0;
-  transform: translate(-6px, -6px);
-  opacity: 0.7;
-}
-
-/* lift the icon a touch on hover for a playful effect */
-.quest-card:hover .quest-icon {
-  transform: translateY(-6px) rotate(-6deg) scale(1.03);
-}
+/* Spin vinyl on hover */
+.quest-card:hover .quest-icon { animation: spin 1.8s linear infinite; }
 
 /* subtle background for quest cards to make them less flat */
 .quest-card {
@@ -1162,6 +1145,9 @@ const handleStartQuest = async () => {
 @media (max-width: 767.98px) {
   .event-details-page::before, .event-details-page::after { display: none; }
   .wave-divider { height: 44px }
+  .progress-summary-card .score-ring { margin: 0 auto; }
+  .progress-summary-card .progress { min-width: 0 !important; }
+  .quest-card .quest-icon { width: 64px; height: 64px; }
 }
 
 /* --- Responsive layout improvements --- */
