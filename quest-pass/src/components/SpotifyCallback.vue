@@ -7,8 +7,8 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 
-// ✅ keep this exactly the same value you build in EventDetails.vue
-const SPOTIFY_REDIRECT_URI = `${window.location.origin}/spotify-callback`;
+// Match the value used when initiating auth (allows env override during dev)
+const SPOTIFY_REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI || `${window.location.origin}/spotify-callback`;
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
 
 const msg = ref('Exchanging code for tokens…');

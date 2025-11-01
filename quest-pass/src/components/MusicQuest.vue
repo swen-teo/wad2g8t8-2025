@@ -326,8 +326,12 @@ function getButtonText() {
     </div>
 
     <div class="d-flex gap-2">
-      <button class="btn btn-primary" :disabled="loading" @click="checkSpotify">
-        {{ loading ? 'Checking…' : 'Check Spotify Now' }}
+      <button
+        class="btn btn-primary"
+        :disabled="loading"
+        @click="token() ? checkSpotify() : startSpotifyAuth()"
+      >
+        {{ loading ? 'Please wait…' : (token() ? 'Check Spotify Now' : 'Connect Spotify') }}
       </button>
       <button class="btn btn-outline-secondary" @click="$emit('close')">
         Close
@@ -357,6 +361,69 @@ function token() {
   return localStorage.getItem('spotify_access_token') || '';
 }
 function norm(s) { return (s || '').toString().trim().toLowerCase(); }
+
+// --- Spotify OAuth (PKCE popup) ---
+const SPOTIFY_CLIENT_ID = 'f3e1635e835b47359c14736ee86068f4';
+const SPOTIFY_SCOPE = 'user-read-private user-read-email user-read-recently-played';
+// Allow override via env for cases where your dev URL isn't the same as the browser origin
+const SPOTIFY_REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI || `${window.location.origin}/spotify-callback`;
+
+function base64url(ab){
+  const b=new Uint8Array(ab); let s='';
+  for (const x of b) s+=String.fromCharCode(x);
+  return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')
+}
+async function sha256(s){
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
+}
+function randomString(n=64){
+  const a='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  let r=''; for(let i=0;i<n;i++) r+=a[Math.floor(Math.random()*a.length)];
+  return r;
+}
+
+async function startSpotifyAuth(){
+  try {
+    error.value = '';
+    loading.value = true;
+
+    const verifier  = randomString(64);
+    const challenge = base64url(await sha256(verifier));
+    localStorage.setItem('sp_verifier', verifier);
+
+    const state = crypto.randomUUID();
+    localStorage.setItem('sp_state', state);
+
+    const auth = new URL('https://accounts.spotify.com/authorize');
+    auth.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
+    auth.searchParams.set('response_type', 'code');
+    auth.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
+    auth.searchParams.set('scope', SPOTIFY_SCOPE);
+    auth.searchParams.set('state', state);
+    auth.searchParams.set('code_challenge_method', 'S256');
+    auth.searchParams.set('code_challenge', challenge);
+
+    const w = 520, h = 700;
+    const y = window.top.outerHeight / 2 + window.top.screenY - h/2;
+    const x = window.top.outerWidth  / 2 + window.top.screenX - w/2;
+    const popup = window.open(auth.toString(), 'spotify-auth',
+      `width=${w},height=${h},left=${x},top=${y},resizable,scrollbars`);
+    if (!popup) {
+      error.value = 'Please allow popups to connect Spotify.';
+      loading.value = false;
+      return;
+    }
+    try { popup.focus(); } catch {}
+
+    // Hard timeout if popup never responds
+    setTimeout(() => {
+      try { if (!popup.closed) popup.close(); } catch {}
+    }, 20000);
+  } catch (e) {
+    error.value = 'Could not start Spotify auth.';
+    loading.value = false;
+  }
+}
 
 async function checkSpotify() {
   if (loading.value) return; 
@@ -414,12 +481,14 @@ async function checkSpotify() {
 function onMessage(e) {
   if (e.origin !== window.location.origin) return;
   const msg = e.data || {};
-  if (msg.type === 'spotify-auth-success') {
-    if (msg.access_token)   localStorage.setItem('spotify_access_token', msg.access_token);
-    if (msg.refresh_token)  localStorage.setItem('spotify_refresh_token', msg.refresh_token);
-    checkSpotify();
-  } else if (msg.type === 'spotify-auth-failed') {
-    error.value = 'Spotify login failed. Please try again.';
+  if (msg.source === 'spotify') {
+    if (msg.ok) {
+      // Tokens were saved in the callback already
+      checkSpotify();
+    } else {
+      error.value = 'Spotify login failed. Please try again.';
+      loading.value = false;
+    }
   }
 }
 

@@ -367,3 +367,88 @@ exports.generateRewardCodeOnEventCreate = functions.firestore
       return null;
     }
   });
+
+/**
+ * Generate a 5-question multiple-choice quiz using Gemini.
+ * POST { artist: string } -> [{ question, options: string[], correctAnswer }]
+ * Uses secret GEMINI_API_KEY; falls back to VITE_GEMINI_API_KEY in local .env for convenience.
+ */
+exports.generateQuiz = functions
+  .runWith({
+    timeoutSeconds: 20,
+    memory: "256MB",
+    secrets: ["GEMINI_API_KEY"],
+  })
+  .https.onRequest(async (req, res) => {
+    // Basic CORS (adjust for your hosting as needed)
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
+
+    try {
+      const artist = String((req.body && req.body.artist) || "").trim();
+      if (!artist) return res.status(400).json({ error: "Missing artist" });
+
+      const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+
+      const prompt = `You are a music trivia generator. Create exactly 5 multiple-choice questions about the artist "${artist}". Return ONLY a JSON array with items of the form: {"question": string, "options": [string, string, string, string], "correctAnswer": string}. Avoid duplicates; ensure the correctAnswer is one of the options. Keep questions concise.`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const { data } = await axios.post(
+        url,
+        {
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }],
+            },
+          ],
+          generationConfig: {
+            // Prefer snake_case per Generative Language API HTTP spec
+            temperature: 0.7,
+            max_output_tokens: 1024,
+            response_mime_type: "application/json",
+          },
+        },
+        { timeout: 15000 }
+      );
+
+      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      // Remove code fences if present
+      const text = String(raw).replace(/```json|```/g, '').trim();
+      let quiz;
+      try {
+        quiz = JSON.parse(text);
+      } catch (_) {
+        try {
+          const match = text.match(/\[[\s\S]*\]/);
+          quiz = match ? JSON.parse(match[0]) : null;
+        } catch {
+          quiz = null;
+        }
+      }
+
+      if (!Array.isArray(quiz) || quiz.length === 0) {
+        return res.status(502).json({ error: "Invalid model response" });
+      }
+
+      const normalized = quiz
+        .slice(0, 5)
+        .map((q) => ({
+          question: String(q.question || q.prompt || "").trim(),
+          options: Array.isArray(q.options || q.choices)
+            ? (q.options || q.choices).map(String)
+            : [],
+          correctAnswer: String(q.correctAnswer || q.answer || "").trim(),
+        }))
+        .filter((q) => q.question && q.options.length >= 2);
+
+      return res.json(normalized);
+    } catch (err) {
+      console.error("generateQuiz error:", err?.response?.data || err);
+      return res.status(500).json({ error: "Quiz generation failed", details: String(err?.message || err) });
+    }
+  });
