@@ -89,9 +89,19 @@
         <div v-else-if="triviaError" class="text-center p-4">
           <h4 class="text-danger">Error</h4>
           <p class="text-muted">{{ triviaError }}</p>
-          <button class="btn btn-primary mt-3" @click="closeQuest">
-            Close
-          </button>
+          <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center mt-3">
+            <button
+              v-if="canRetryTrivia"
+              type="button"
+              class="btn btn-primary"
+              @click="loadTriviaQuestions"
+            >
+              Try Again
+            </button>
+            <button type="button" class="btn btn-outline-secondary" @click="closeQuest">
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -316,6 +326,10 @@ const triviaError = ref(null); // For handling API errors
 // --- computed properties ---
 const currentTriviaQuestion = computed(() => {
   return triviaQuestions.value[triviaCurrentIndex.value] || null;
+});
+const canRetryTrivia = computed(() => {
+  const message = String(triviaError.value || '').toLowerCase();
+  return message.includes('502') || message.includes('invalid model response');
 });
 
 // --- lifecycle ---
