@@ -128,7 +128,10 @@
         </div>
 
         <!-- Music Quest Card -->
-        <div class="col-12 col-md-6 d-flex">
+        <ScrollObserver
+         class="col-12 col-md-6 d-flex"
+         delay="200ms"
+         direction="left">
           <div class="card quest-card quest-music h-100 w-100 shadow-sm">
             <div class="card-body p-4 d-flex align-items-center">
               <div class="quest-icon" aria-hidden="true">
@@ -151,15 +154,18 @@
                   :is-disabled="isMusicQuestDone"
                   :button-text="isMusicQuestDone ? 'Completed' : 'Start Quest'"
                   :icon-class="'fas fa-play me-2'"
-                  class="qp-btn"
+                  class=" qp-btn"
                 />
               </div>
             </div>
           </div>
-        </div>
+        </ScrollObserver>
 
         <!-- Trivia Quest Card -->
-        <div class="col-12 col-md-6 d-flex">
+        <ScrollObserver
+        class="col-12 col-md-6 d-flex"
+        delay="300ms"
+        direction="right">
           <div class="card quest-card quest-trivia h-100 w-100 shadow-sm">
             <div class="card-body p-4 d-flex align-items-center">
               <div class="quest-icon" aria-hidden="true">
@@ -180,12 +186,12 @@
                   :is-disabled="isTriviaQuestDone"
                   :button-text="isTriviaQuestDone ? 'Completed' : 'Start Trivia'"
                   :icon-class="'fas fa-pencil-alt me-2'"
-                  class="qp-btn"
+                  class=" qp-btn"
                 />
               </div>
             </div>
           </div>
-        </div>
+        </ScrollObserver>
       </div>
     </main>
 
@@ -275,6 +281,9 @@ import { Modal } from 'bootstrap';
 import MusicQuest from './MusicQuest.vue';
 import TriviaQuest from './TriviaQuest.vue';
 import MusicQuestButton from '@/components/MusicQuestButton.vue';
+import ScrollObserver from '@/components/ScrollObserver.vue';
+// import ScrollObserver from './ScrollObserver.vue';
+
 
 // --- configuration ---
 const MUSIC_MAX = 300;
