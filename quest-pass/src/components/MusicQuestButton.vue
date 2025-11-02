@@ -5,7 +5,12 @@
     @click="$emit('start-quest')" 
     :disabled="props.isDisabled" 
   >
-    <i :class="props.iconClass" v-if="props.iconClass"></i> 
+    <font-awesome-icon
+      v-if="props.icon"
+      :icon="props.icon"
+      :class="['button-icon', props.iconClass]"
+      aria-hidden="true"
+    />
     
     {{ props.buttonText }}
     
@@ -22,7 +27,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, defineProps, defineEmits } from 'vue';
+import { ref, nextTick } from 'vue';
 
 // --- PROPS (Configuration for the button) ---
 const props = defineProps({
@@ -34,9 +39,13 @@ const props = defineProps({
     type: String,
     default: 'Start Quest'
   },
+  icon: {
+    type: [Array, String, Object],
+    default: null
+  },
   iconClass: {
     type: String,
-    default: ''
+    default: 'me-2'
   }
 });
 
@@ -81,7 +90,7 @@ function triggerNotes() {
 <style scoped>
 /* NOTE: The CSS remains correct and handles the aesthetic and animation */
 .start-quest-button {
-    position: relative; 
+    position: relative;
     overflow: visible;
     padding: 10px 20px;
     border: none;
@@ -90,9 +99,15 @@ function triggerNotes() {
     background: linear-gradient(135deg, #a86cff, #6f86ff); 
     color: white;
     border-radius: 8px;
-    transition: transform 0.1s, box-shadow 0.2s; 
+    transition: transform 0.1s, box-shadow 0.2s;
     /* Add 'btn' styles from your global CSS if needed, or ensure 'btn' is included in your global style setup */
 }
+
+.button-icon {
+    display: inline-flex;
+    align-items: center;
+}
+
 .start-quest-button:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(170, 108, 255, 0.4); 

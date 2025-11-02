@@ -1,246 +1,231 @@
 <template>
-  <!-- loading spinner -->
-  <div
-    v-if="isLoading"
-    class="d-flex justify-content-center align-items-center vh-100"
-  >
-    <!-- MODIFICATION: Replaced Bootstrap spinner with a custom one -->
-    <div class="custom-loader"></div>
-  </div>
+  <Loading :is-loading="isLoading" />
 
-  <!-- error message -->
-  <div
-    v-else-if="error"
-    class="container my-5 text-center"
-  >
+  <template v-if="!isLoading">
+    <!-- error message -->
     <div
-      class="alert alert-danger"
-      role="alert"
+      v-if="error"
+      class="container my-5 text-center"
     >
-      <h4 class="alert-heading">Event Not Found</h4>
-      <p>{{ error }}</p>
-    </div>
-  </div>
-
-  <!-- main event content -->
-  <div
-    v-else-if="event"
-    class="event-details-page"
-  >
-    <!-- header banner -->
-    <header
-      class="event-banner"
-      :style="{ backgroundImage: 'url(' + (event.bannerImage || FALLBACK_BANNER_IMAGE) + ')' }"
-    >
-  <!-- Added container-lg for better responsiveness on large screens -->
-      <div class="container-lg p-4 p-md-5">
-        <h1 class="display-4 fw-bold text-white mb-2">
-          {{ event.title }}
-        </h1>
-        <h4 class="text-white-75 mb-2">{{ event.date }}</h4>
-        <div class="meta-chips d-flex flex-wrap gap-2 mt-2">
-          <span class="chip"><font-awesome-icon :icon="['fas','map-marker-alt']" class="me-1" /> {{ event.venueName }}, {{ event.venueCity }}</span>
-          <span class="chip"><font-awesome-icon :icon="['fas','star']" class="me-1" /> Points to goal: {{ Math.max(POINT_GOAL - totalPoints, 0) }}</span>
-        </div>
+      <div
+        class="alert alert-danger"
+        role="alert"
+      >
+        <h4 class="alert-heading">Event Not Found</h4>
+        <p>{{ error }}</p>
       </div>
-    </header>
-
-    <!-- Decorative wave divider between hero and content (nice visual transition) -->
-    <div class="wave-divider" aria-hidden="true">
-      <svg viewBox="0 0 1440 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M0,32 C220,96 450,0 720,32 C990,64 1220,16 1440,80 L1440,120 L0,120 Z" fill="rgba(255,255,255,0.95)"/>
-      </svg>
     </div>
 
-    <!-- 
-      MODIFICATION:
-      - Changed 'container my-5' to 'container-lg main-content-wrapper pb-5'
-      - This new class pulls the content up to overlap the banner
-    -->
-    <main class="container-lg main-content-wrapper pb-5 px-3 px-md-0">
-      <!-- Full-width progress summary below banner, above quests -->
-      <div class="row g-4 mb-2">
-        <div class="col-12">
-          <div class="card shadow progress-summary-card animate-float-in">
-            <div class="card-body p-4 p-md-5 text-center">
-              <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-4">
-                <div class="text-start flex-grow-1">
-                  <h5 class="fw-bold mb-1">Your Quest Progress</h5>
-                  <p class="text-muted small mb-0">Complete quests to unlock a final reward.</p>
-                </div>
-
-                <div class="d-flex align-items-center gap-4">
-                  <div class="score-ring" :style="{ '--p': progressPercent + '%' }">
-                    <div class="score-number gradient-text fw-bold">{{ totalPoints }}</div>
-                  </div>
-                  <div class="text-start">
-                    <div class="text-muted small">of {{ POINT_GOAL }} points</div>
-                    <div class="progress mt-2" style="height: 14px; min-width: 220px;">
-                      <div class="progress-bar fw-bold progress-bar-striped progress-bar-animated" role="progressbar" :style="{ width: `${progressPercent}%` }">{{ progressPercent }}%</div>
-                    </div>
-                    <div v-if="isComplete" class="badge bg-success mt-2">Quest Complete!</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+    <!-- main event content -->
+    <div
+      v-else-if="event"
+      class="event-details-page"
+    >
+      <!-- header banner -->
+      <header
+        class="event-banner"
+        :style="{ backgroundImage: 'url(' + (event.bannerImage || FALLBACK_BANNER_IMAGE) + ')' }"
+      >
+        <!-- Added container-lg for better responsiveness on large screens -->
+        <div class="container-lg p-4 p-md-5">
+          <h1 class="display-4 fw-bold text-white mb-2">
+            {{ event.title }}
+          </h1>
+          <h4 class="text-white-75 mb-2">{{ event.date }}</h4>
+          <div class="meta-chips d-flex flex-wrap gap-2 mt-2">
+            <span class="chip"><font-awesome-icon :icon="['fas','map-marker-alt']" class="me-1" /> {{ event.venueName }}, {{ event.venueCity }}</span>
+            <span class="chip"><font-awesome-icon :icon="['fas','star']" class="me-1" /> Points to goal: {{ Math.max(POINT_GOAL - totalPoints, 0) }}</span>
           </div>
         </div>
+      </header>
+
+      <!-- Decorative wave divider between hero and content (nice visual transition) -->
+      <div class="wave-divider" aria-hidden="true">
+        <svg viewBox="0 0 1440 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,32 C220,96 450,0 720,32 C990,64 1220,16 1440,80 L1440,120 L0,120 Z" fill="rgba(255,255,255,0.95)"/>
+        </svg>
       </div>
 
-      <transition name="fade">
-        <div v-if="isComplete && rewardCode" class="row g-3 mb-4">
+      <!--
+        MODIFICATION:
+        - Changed 'container my-5' to 'container-lg main-content-wrapper pb-5'
+        - This new class pulls the content up to overlap the banner
+      -->
+      <main class="container-lg main-content-wrapper pb-5 px-3 px-md-0">
+        <!-- Full-width progress summary below banner, above quests -->
+        <div class="row g-4 mb-2">
           <div class="col-12">
-            <div class="card reward-code-card shadow-sm">
-              <div class="card-body d-flex flex-column flex-lg-row align-items-lg-center gap-3 gap-lg-4">
-                <div class="flex-grow-1 text-center text-lg-start">
-                  <h5 class="fw-bold mb-1">Your Event Access Code</h5>
-                  <p class="text-muted small mb-0">
-                    Show this code to unlock the special perk for {{ artistName }}'s event.
+            <div class="card shadow progress-summary-card animate-float-in">
+              <div class="card-body p-4 p-md-5 text-center">
+                <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-4">
+                  <div class="text-start flex-grow-1">
+                    <h5 class="fw-bold mb-1">Your Quest Progress</h5>
+                    <p class="text-muted small mb-0">Complete quests to unlock a final reward.</p>
+                  </div>
+
+                  <div class="d-flex align-items-center gap-4">
+                    <div class="score-ring" :style="{ '--p': progressPercent + '%' }">
+                      <div class="score-number gradient-text fw-bold">{{ totalPoints }}</div>
+                    </div>
+                    <div class="text-start">
+                      <div class="text-muted small">of {{ POINT_GOAL }} points</div>
+                      <div class="progress mt-2" style="height: 14px; min-width: 220px;">
+                        <div class="progress-bar fw-bold progress-bar-striped progress-bar-animated" role="progressbar" :style="{ width: `${progressPercent}%` }">{{ progressPercent }}%</div>
+                      </div>
+                      <div v-if="isComplete" class="badge bg-success mt-2">Quest Complete!</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <transition name="fade">
+          <div v-if="isComplete && rewardCode" class="row g-3 mb-4">
+            <div class="col-12">
+              <div class="card reward-code-card shadow-sm">
+                <div class="card-body d-flex flex-column flex-lg-row align-items-lg-center gap-3 gap-lg-4">
+                  <div class="flex-grow-1 text-center text-lg-start">
+                    <h5 class="fw-bold mb-1">Your Event Access Code</h5>
+                    <p class="text-muted small mb-0">
+                      Show this code to unlock the special perk for {{ artistName }}'s event.
+                    </p>
+                  </div>
+
+                  <div class="reward-code-display px-3 py-2 rounded text-center fw-bold">
+                    {{ rewardCode }}
+                  </div>
+
+                  <div class="text-center text-lg-start">
+                    <button
+                      class="btn btn-outline-primary"
+                      type="button"
+                      @click="copyRewardCode"
+                      :disabled="isCopyingCode || !rewardCode"
+                    >
+                      <i class="fas fa-copy me-2"></i>
+                      {{ copyButtonLabel }}
+                    </button>
+                    <div v-if="copyFeedback" :class="['small', feedbackClass, 'mt-2']">{{ copyFeedback }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Two quest cards side-by-side on md+, stacked on mobile -->
+        <div class="row g-4 mt-1">
+          <div class="col-12">
+            <h2 class="fw-bold mb-2">Available Quests</h2>
+          </div>
+
+          <!-- Music Quest Card -->
+          <ScrollObserver
+            class="col-12 col-md-6 d-flex"
+            delay="200ms"
+            direction="left"
+          >
+            <div class="card quest-card quest-music h-100 w-100 shadow-sm">
+              <div class="card-body p-4 d-flex align-items-center">
+                <div class="quest-icon" aria-hidden="true">
+                  <font-awesome-icon :icon="['fab','spotify']" />
+                </div>
+                <div class="flex-grow-1">
+                  <h5 class="fw-bold mb-1">Music Discovery</h5>
+                  <p class="text-muted mb-2">
+                    We’ll check your recently played tracks. If we find songs by
+                    <strong>{{ artistName }}</strong> played at least 5 times, you earn
+                    <strong>{{ MUSIC_MAX }} points</strong>.
                   </p>
-                </div>
-
-                <div class="reward-code-display px-3 py-2 rounded text-center fw-bold">
-                  {{ rewardCode }}
-                </div>
-
-                <div class="text-center text-lg-start">
-                  <button
-                    class="btn btn-outline-primary"
-                    type="button"
-                    @click="copyRewardCode"
-                    :disabled="isCopyingCode || !rewardCode"
-                  >
-                    <i class="fas fa-copy me-2"></i>
-                    {{ copyButtonLabel }}
-                  </button>
-                  <div v-if="copyFeedback" :class="['small', feedbackClass, 'mt-2']">{{ copyFeedback }}</div>
+                  <div class="text-primary-1 fw-bold mb-2">+{{ quests.music.points }} / {{ MUSIC_MAX }} Points</div>
+                  <MusicQuestButton
+                    @start-quest="showMusicQuest = true"
+                    :is-disabled="isMusicQuestDone"
+                    :button-text="isMusicQuestDone ? 'Completed' : 'Start Quest'"
+                    :icon="['fas', 'play']"
+                    icon-class="me-2"
+                  />
                 </div>
               </div>
             </div>
-          </div>
+          </ScrollObserver>
+
+          <!-- Trivia Quest Card -->
+          <ScrollObserver
+            class="col-12 col-md-6 d-flex"
+            delay="300ms"
+            direction="right"
+          >
+            <div class="card quest-card quest-trivia h-100 w-100 shadow-sm">
+              <div class="card-body p-4 d-flex align-items-center">
+                <div class="quest-icon" aria-hidden="true">
+                  <i class="fas fa-record-vinyl"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h5 class="fw-bold mb-1">Artist Trivia</h5>
+                  <p class="text-muted small mb-2">
+                    Score a perfect {{ TRIVIA_QS }} / {{ TRIVIA_QS }} on the artist trivia.
+                  </p>
+                  <div class="text-primary-1 fw-bold mb-2">+{{ quests.trivia.points }} / {{ TRIVIA_AWARD }} Points</div>
+                  <MusicQuestButton
+                    @start-quest="showTriviaQuest = true"
+                    :is-disabled="isTriviaQuestDone"
+                    :button-text="isTriviaQuestDone ? 'Completed' : 'Start Trivia'"
+                    :icon="['fas', 'pencil-alt']"
+                    icon-class="me-2"
+                  />
+                </div>
+              </div>
+            </div>
+          </ScrollObserver>
         </div>
-      </transition>
+      </main>
 
-      <!-- Two quest cards side-by-side on md+, stacked on mobile -->
-      <div class="row g-4 mt-1">
-        <div class="col-12">
-          <h2 class="fw-bold mb-2">Available Quests</h2>
-        </div>
-
-        <!-- Music Quest Card -->
-        <ScrollObserver
-         class="col-12 col-md-6 d-flex"
-         delay="200ms"
-         direction="left">
-          <div class="card quest-card quest-music h-100 w-100 shadow-sm">
-            <div class="card-body p-4 d-flex align-items-center">
-              <div class="quest-icon" aria-hidden="true">
-                <font-awesome-icon :icon="['fab','spotify']" />
+      <!-- final reward modal -->
+      <div
+        class="modal fade"
+        id="rewardModal"
+        tabindex="-1"
+      >
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content overflow-hidden">
+            <div class="modal-body p-0 text-center">
+              <!-- MODIFICATION: Added a gradient to the modal header -->
+              <div class="p-4 modal-reward-header text-white">
+                <!-- MODIFICATION: Added 'animate-tada' class to the icon -->
+                <i class="fas fa-trophy fa-3x animate-tada"></i>
+                <h2 class="mt-3 mb-0">Quest Complete!</h2>
               </div>
-              <div class="flex-grow-1">
-                <h5 class="fw-bold mb-1">Music Discovery</h5>
-                <p class="text-muted mb-2">
-                  We’ll check your recently played tracks. If we find songs by
-                  <strong>{{ artistName }}</strong> played at least 5 times, you earn
-                  <strong>{{ MUSIC_MAX }} points</strong>.
+              <div class="p-4 p-md-5">
+                <p class="lead">
+                  You've earned {{ totalPoints }} points and unlocked the
+                  final reward!
                 </p>
-                <div class="text-primary-1 fw-bold mb-2">+{{ quests.music.points }} / {{ MUSIC_MAX }} Points</div>
-                <!-- <button class="btn qp-btn" @click="showMusicQuest = true" :disabled="isMusicQuestDone === true">
-                  <i class="fas fa-play me-2"></i>
-                  {{ isMusicQuestDone ? 'Completed' : 'Start Quest' }}
-                </button> -->
-                <MusicQuestButton
-                  @start-quest="showMusicQuest = true"
-                  :is-disabled="isMusicQuestDone"
-                  :button-text="isMusicQuestDone ? 'Completed' : 'Start Quest'"
-                  :icon-class="'fas fa-play me-2'"
-                  class=" qp-btn"
-                />
-              </div>
-            </div>
-          </div>
-        </ScrollObserver>
-
-        <!-- Trivia Quest Card -->
-        <ScrollObserver
-        class="col-12 col-md-6 d-flex"
-        delay="300ms"
-        direction="right">
-          <div class="card quest-card quest-trivia h-100 w-100 shadow-sm">
-            <div class="card-body p-4 d-flex align-items-center">
-              <div class="quest-icon" aria-hidden="true">
-                <i class="fas fa-record-vinyl"></i>
-              </div>
-              <div class="flex-grow-1">
-                <h5 class="fw-bold mb-1">Artist Trivia</h5>
-                <p class="text-muted small mb-2">
-                  Score a perfect {{ TRIVIA_QS }} / {{ TRIVIA_QS }} on the artist trivia.
+                <p class="text-muted">
+                  Use this access code for your special perk:
                 </p>
-                <div class="text-primary-1 fw-bold mb-2">+{{ quests.trivia.points }} / {{ TRIVIA_AWARD }} Points</div>
-                <!-- <button class="btn qp-btn" @click="showTriviaQuest = true" :disabled="isTriviaQuestDone">
-                  <i class="fas fa-pencil-alt me-2"></i>
-                  {{ isTriviaQuestDone ? 'Completed' : 'Start Trivia' }}
-                </button> -->
-                <MusicQuestButton
-                  @start-quest="showTriviaQuest = true"
-                  :is-disabled="isTriviaQuestDone"
-                  :button-text="isTriviaQuestDone ? 'Completed' : 'Start Trivia'"
-                  :icon-class="'fas fa-pencil-alt me-2'"
-                  class=" qp-btn"
-                />
+                <!-- MODIFICATION: Added border to make the code stand out -->
+                <div class="display-6 fw-bold text-primary-1 bg-light p-3 rounded border">
+                  {{ rewardCode || 'CODE-LOCKED' }}
+                </div>
+                <button
+                  class="btn btn-success btn-lg mt-4"
+                  data-bs-dismiss="modal"
+                >
+                  Awesome!
+                </button>
               </div>
-            </div>
-          </div>
-        </ScrollObserver>
-      </div>
-    </main>
-
-    <!-- final reward modal -->
-    <div
-      class="modal fade"
-      id="rewardModal"
-      tabindex="-1"
-    >
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content overflow-hidden">
-          <div class="modal-body p-0 text-center">
-            <!-- MODIFICATION: Added a gradient to the modal header -->
-            <div class="p-4 modal-reward-header text-white">
-              <!-- MODIFICATION: Added 'animate-tada' class to the icon -->
-              <i
-                class="fas fa-trophy fa-3x animate-tada"
-              ></i>
-              <h2 class="mt-3 mb-0">Quest Complete!</h2>
-            </div>
-            <div class="p-4 p-md-5">
-              <p class="lead">
-                You've earned {{ totalPoints }} points and unlocked the
-                final reward!
-              </p>
-              <p class="text-muted">
-                Use this access code for your special perk:
-              </p>
-              <!-- MODIFICATION: Added border to make the code stand out -->
-              <div
-                class="display-6 fw-bold text-primary-1 bg-light p-3 rounded border"
-              >
-                {{ rewardCode || 'CODE-LOCKED' }}
-              </div>
-              <button
-                class="btn btn-success btn-lg mt-4"
-                data-bs-dismiss="modal"
-              >
-                Awesome!
-              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </template>
 
-  <!-- 
-    OVERLAYS 
+  <!--
+    OVERLAYS
     These are now rendered at the root of the component,
     and shown/hidden with v-if
   -->
@@ -281,6 +266,7 @@ import { Modal } from 'bootstrap';
 import MusicQuest from './MusicQuest.vue';
 import TriviaQuest from './TriviaQuest.vue';
 import MusicQuestButton from '@/components/MusicQuestButton.vue';
+import Loading from '@/components/Loading.vue';
 import ScrollObserver from '@/components/ScrollObserver.vue';
 // import ScrollObserver from './ScrollObserver.vue';
 
@@ -840,28 +826,6 @@ async function copyRewardCode() {
   }
   to {
     transform: scale3d(1, 1, 1);
-  }
-}
-
-/* --- ADDED: Custom Loader --- */
-.custom-loader {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: 8px solid #f8f9fa; /* Light gray */
-  /* Using --bs-primary-1 var if available, otherwise fallback */
-  border-top-color: var(--bs-primary-1, #a78bfa);
-  animation: spin 1s linear infinite;
-}
-
-/* Hide the default spinner text if it's still there */
-.spinner-border {
-  display: none;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
   }
 }
 

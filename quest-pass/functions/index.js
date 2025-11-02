@@ -309,6 +309,95 @@ exports.generateRewardCodeOnEventCreate = functions.firestore
  * POST { artist: string } -> [{ question, options: string[], correctAnswer }]
  * Uses secret GEMINI_API_KEY; falls back to VITE_GEMINI_API_KEY in local .env for convenience.
  */
+async function requestGeminiQuiz(apiKey, prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const { data } = await axios.post(
+    url,
+    {
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        max_output_tokens: 1024,
+        responseMimeType: "application/json",
+      },
+    },
+    { timeout: 15000 }
+  );
+
+  const candidate = data?.candidates?.[0];
+  if (!candidate) {
+    return { questions: [], reason: "NO_CANDIDATE" };
+  }
+
+  if (candidate.finishReason && candidate.finishReason !== "STOP") {
+    console.warn("Gemini finishReason", candidate.finishReason);
+  }
+
+  const part = candidate?.content?.parts?.[0] || {};
+  let raw = "";
+  if (part.inlineData?.data) {
+    try {
+      raw = Buffer.from(part.inlineData.data, "base64").toString("utf8");
+    } catch (decodeErr) {
+      console.error("Failed to decode inlineData", decodeErr);
+    }
+  }
+  if (!raw && typeof part.text === "string") {
+    raw = part.text;
+  }
+
+  const text = String(raw).replace(/```json|```/g, '').trim();
+  let quiz;
+  try {
+    quiz = JSON.parse(text);
+  } catch (_) {
+    try {
+      const match = text.match(/\[[\s\S]*\]/);
+      quiz = match ? JSON.parse(match[0]) : null;
+    } catch {
+      quiz = null;
+    }
+  }
+
+  const normalized = Array.isArray(quiz)
+    ? quiz
+    : [];
+
+  const cleaned = normalized
+    .slice(0, 5)
+    .map((q) => ({
+      question: String(q.question || q.prompt || "").trim(),
+      options: Array.isArray(q.options || q.choices)
+        ? (q.options || q.choices).map(String)
+        : [],
+      correctAnswer: String(q.correctAnswer || q.answer || "").trim(),
+    }))
+    .map((q) => {
+      const opts = q.options
+        .map((opt) => opt.trim())
+        .filter(Boolean);
+      if (opts.length && q.correctAnswer && !opts.includes(q.correctAnswer)) {
+        opts[0] = q.correctAnswer || opts[0];
+      }
+      return {
+        question: q.question,
+        options: opts.length >= 2 ? opts.slice(0, 4) : [],
+        correctAnswer: q.correctAnswer,
+      };
+    })
+    .filter((q) => q.question && q.options.length >= 2 && q.correctAnswer);
+
+  return {
+    questions: cleaned,
+    reason: cleaned.length ? null : "INVALID_MODEL_RESPONSE",
+  };
+}
+
 exports.generateQuiz = functions
   .runWith({
     timeoutSeconds: 20,
@@ -332,62 +421,26 @@ exports.generateQuiz = functions
 
       const prompt = `You are a music trivia generator. Create exactly 5 multiple-choice questions about the artist "${artist}". Return ONLY a JSON array with items of the form: {"question": string, "options": [string, string, string, string], "correctAnswer": string}. Avoid duplicates; ensure the correctAnswer is one of the options. Keep questions concise.`;
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const { data } = await axios.post(
-        url,
-        {
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            // Prefer snake_case per Generative Language API HTTP spec
-            temperature: 0.7,
-            max_output_tokens: 1024,
-            response_mime_type: "application/json",
-          },
-        },
-        { timeout: 15000 }
-      );
+      const MAX_ATTEMPTS = 4;
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+        const { questions, reason } = await requestGeminiQuiz(apiKey, prompt);
+        if (questions.length) {
+          if (attempt > 1) {
+            console.info(`Gemini quiz succeeded on retry #${attempt}`);
+          }
+          return res.json(questions);
+        }
 
-      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      // Remove code fences if present
-      const text = String(raw).replace(/```json|```/g, '').trim();
-      let quiz;
-      try {
-        quiz = JSON.parse(text);
-      } catch (_) {
-        try {
-          const match = text.match(/\[[\s\S]*\]/);
-          quiz = match ? JSON.parse(match[0]) : null;
-        } catch {
-          quiz = null;
+        console.warn(`Gemini quiz attempt ${attempt} returned no questions (${reason}).`);
+        if (attempt === MAX_ATTEMPTS) {
+          return res.status(502).json({ error: "Invalid model response" });
         }
       }
-
-      if (!Array.isArray(quiz) || quiz.length === 0) {
-        return res.status(502).json({ error: "Invalid model response" });
-      }
-
-      const normalized = quiz
-        .slice(0, 5)
-        .map((q) => ({
-          question: String(q.question || q.prompt || "").trim(),
-          options: Array.isArray(q.options || q.choices)
-            ? (q.options || q.choices).map(String)
-            : [],
-          correctAnswer: String(q.correctAnswer || q.answer || "").trim(),
-        }))
-        .filter((q) => q.question && q.options.length >= 2);
-
-      return res.json(normalized);
     } catch (err) {
       console.error("generateQuiz error:", err?.response?.data || err);
 
 
-      
+
       return res.status(500).json({ error: "Quiz generation failed", details: String(err?.message || err) });
     }
  

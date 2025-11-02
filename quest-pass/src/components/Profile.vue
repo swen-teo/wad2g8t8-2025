@@ -1,10 +1,13 @@
 <template>
   <div class="container py-5">
-    <!-- user profile header card -->
-    <div
-      v-if="userStore.currentUser"
-      class="card shadow-sm border-0 mb-5 profile-header-card"
-    >
+    <Loading :is-loading="userStore.loading" />
+
+    <template v-if="!userStore.loading">
+      <!-- user profile header card -->
+      <div
+        v-if="userStore.currentUser"
+        class="card shadow-sm border-0 mb-5 profile-header-card"
+      >
       <div class="card-body p-4 p-md-5">
         <div class="row align-items-center">
           <div class="col-12 col-md-3 text-center mb-3 mb-md-0">
@@ -127,27 +130,13 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- loading state -->
-    <div
-      v-else-if="!userStore.authReady"
-      class="text-center py-5"
-    >
-      <div
-        class="spinner-border text-primary-1"
-        role="status"
-        style="width: 3rem; height: 3rem"
-      >
-        <span class="visually-hidden">Loading profile...</span>
       </div>
-    </div>
 
-    <!-- main content: badges and quests -->
-    <div
-      v-if="userStore.isLoggedIn"
-      class="row g-5"
-    >
+      <!-- main content: badges and quests -->
+      <div
+        v-if="userStore.isLoggedIn"
+        class="row g-5"
+      >
       <!-- left column: badges -->
       <div class="col-lg-4">
         <h4 class="mb-3">My Badges</h4>
@@ -218,7 +207,8 @@
           No events unlocked yet.
         </p>
       </div>
-    </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -229,6 +219,7 @@ import { useUserStore } from '@/store/user.js';
 import { db } from '@/firebase.js';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { useRouter } from 'vue-router';
+import Loading from '@/components/Loading.vue';
 
 // get our user data from the store
 const userStore = useUserStore();

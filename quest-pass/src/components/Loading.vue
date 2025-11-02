@@ -16,9 +16,7 @@
 </template>
 
 <script setup>
-import { defineProps } from 'vue';
-
-const props = defineProps({
+defineProps({
   isLoading: {
     type: Boolean,
     default: true

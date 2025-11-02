@@ -80,10 +80,10 @@
                 <span class="user-name fw-semibold text-nowrap text-truncate">
                   {{ userStore.currentUser.name }}
                 </span>
-                <span class="user-points-badge d-inline-flex align-items-center gap-1">
-                  <i class="fas fa-star"></i>
-                  <span>{{ userStore.currentUser?.totalPoints ?? 0 }}</span>
-                  <span class="text-uppercase">pts</span>
+                <span class="user-points d-inline-flex align-items-center gap-1">
+                  <font-awesome-icon :icon="['fas','star']" class="user-points-icon" />
+                  <span class="user-points-value">{{ userStore.currentUser?.totalPoints ?? 0 }}</span>
+                  <span class="text-uppercase user-points-label">pts</span>
                 </span>
               </span>
             </button>
@@ -277,18 +277,20 @@ async function handleLogout() {
   max-width: 7.5rem;
 }
 
-.user-points-badge {
-  background-color: rgba(255, 193, 7, 0.2);
-  color: #fff;
-  font-size: 0.75rem;
+.user-points {
+  font-size: 0.8rem;
   font-weight: 600;
-  padding: 0.25rem 0.65rem;
-  border-radius: 999px;
-  text-transform: uppercase;
+  color: #ffffff;
+  letter-spacing: 0.02em;
 }
 
-.user-points-badge i {
-  color: #ffe082;
+.user-points-icon {
+  color: #ffd54f;
+}
+
+.user-points-value,
+.user-points-label {
+  line-height: 1;
 }
 
 @media (max-width: 575.98px) {
