@@ -1,154 +1,245 @@
 <template>
   <div :class="['loader-overlay', { hidden: !isLoading }]">
-    <div class="loader-box">
-      <div class="image-stack">
-        <img src="https://mir-s3-cdn-cf.behance.net/project_modules/max_1200_webp/d4f896125442961.6119ab33451ce.png" alt="Event preview 1">
-        <img src="https://cdn3.f-cdn.com//files/download/198354575/Ekran%20g%C3%B6r%C3%BCnt%C3%BCs%C3%BC%202023-05-27%20202204.png?width=780&height=1089&fit=crop" alt="Event preview 2">
-        <img src="https://i.ebayimg.com/images/g/xMIAAOSwiHlgmGH8/s-l1200.jpg" alt="Event preview 3">
-        <img src="https://ew.com/thmb/2QtrKxN4hhEB5sMSD4-mPPoAAKc=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/JB_Key_Art_1500x2000-f0bb47f694a1436182c83488c68ec29a.jpg" alt="Event preview 4">
-        <img src="https://png.pngtree.com/png-clipart/20210627/original/pngtree-purple-light-effect-violin-concert-poster-png-image_6457012.jpg" alt="Event preview 5">
-        <img src="https://i.redd.it/uefm2er845da1.jpg" alt="Event preview 6">
+    <div class="loader-content">
+      <div class="turntable" aria-hidden="true">
+        <div class="platter-shadow"></div>
+
+        <div class="vinyl" :class="{ spinning: isLoading }">
+          <div class="cover-stack">
+            <img
+              v-for="(cover, index) in covers"
+              :key="cover"
+              :src="cover"
+              :alt="`Loading artwork ${index + 1}`"
+              class="cover"
+              :style="{ '--cover-index': index }"
+              loading="lazy"
+            >
+          </div>
+          <div class="grooves"></div>
+          <div class="cover-gloss"></div>
+          <div class="spindle"></div>
+        </div>
+
+        <div class="tonearm" :class="{ playing: isLoading }">
+          <div class="head"></div>
+        </div>
       </div>
 
-      <div class="loader-text">Loading...</div>
+      <div class="loader-caption" role="status" aria-live="polite">
+        <span class="caption-title">Spinning up events…</span>
+        <span class="caption-subtitle">Cueing the next experience</span>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-defineProps({
+const { isLoading } = defineProps({
   isLoading: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 });
+
+const covers = [
+  'https://mir-s3-cdn-cf.behance.net/project_modules/max_1200_webp/d4f896125442961.6119ab33451ce.png',
+  'https://cdn3.f-cdn.com//files/download/198354575/Ekran%20g%C3%B6r%C3%BCnt%C3%BCs%C3%BC%202023-05-27%20202204.png?width=780&height=1089&fit=crop',
+  'https://i.ebayimg.com/images/g/xMIAAOSwiHlgmGH8/s-l1200.jpg',
+  'https://ew.com/thmb/2QtrKxN4hhEB5sMSD4-mPPoAAKc=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/JB_Key_Art_1500x2000-f0bb47f694a1436182c83488c68ec29a.jpg',
+  'https://png.pngtree.com/png-clipart/20210627/original/pngtree-purple-light-effect-violin-concert-poster-png-image_6457012.jpg',
+  'https://i.redd.it/uefm2er845da1.jpg',
+];
 </script>
 
-<style>
-/* ----------------------------
-   Fullscreen loading overlay
-   ---------------------------- */
+<style scoped>
 .loader-overlay {
   position: fixed;
   inset: 0;
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, #ffffff, #f7f3ff);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, var(--bg-1) 0%, transparent 50%),
+    radial-gradient(1000px 500px at 90% 10%, var(--bg-2) 0%, transparent 55%),
+    linear-gradient(180deg, var(--bg-3) 0%, #f7f3ff 60%, #f9f6ff 100%);
   z-index: 9999;
   transition: opacity 0.6s ease, visibility 0.6s ease;
   opacity: 1;
   visibility: visible;
-  overflow: hidden;
 }
+
 .loader-overlay.hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
-.loader-box {
+
+.loader-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2.5rem;
-  transition: transform 0.6s ease, opacity 0.6s ease;
-}
-.loader-overlay.hidden .loader-box {
-  opacity: 0;
-  transform: translateY(-20px);
+  color: var(--ink);
+  text-align: center;
 }
 
-/* ----------------------------
-   Text shimmer effect
-   ---------------------------- */
-.loader-text {
+.turntable {
   position: relative;
+  width: clamp(220px, 60vw, 320px);
+  aspect-ratio: 1;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1f2534 0%, #121723 100%);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.45);
+  padding: clamp(1.5rem, 5vw, 2.25rem);
   overflow: hidden;
-  color: #6f6b86;
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.5px;
 }
 
-.loader-text::before {
-  content: '';
+.platter-shadow {
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.7), transparent);
-  animation: shimmer 2.5s infinite;
+  inset: 0;
+  background:
+    radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.08), transparent 55%),
+    radial-gradient(circle at 70% 75%, rgba(255, 255, 255, 0.04), transparent 50%);
+  pointer-events: none;
 }
 
-@keyframes shimmer {
-  0% { left: -100%; }
-  100% { left: 100%; }
-}
-
-/* ----------------------------
-   Image stack
-   ---------------------------- */
-.image-stack {
-  position: relative;
-  width: 300px;
-  height: 390px;
-}
-
-.image-stack img {
+.vinyl {
   position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #262b3a 0%, #0d111a 65%, #090d14 100%);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.55), 0 18px 30px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.vinyl.spinning {
+  animation: spin 7.5s linear infinite;
+}
+
+.cover-stack {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.cover {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-  
   opacity: 0;
-  animation: pile-on 0.6s ease-out forwards;
-  transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55),
-              opacity 0.5s ease-out;
+  animation: coverCycle 12s linear infinite;
+  animation-delay: calc(var(--cover-index) * 2s);
 }
 
-/* Pile transforms */
-.image-stack img:nth-child(1) {
-  animation-delay: 0s;
-  transform: rotate(-8deg) translateX(-15px) translateY(10px);
-}
-.image-stack img:nth-child(2) {
-  animation-delay: 0.5s;
-  transform: rotate(4deg) translateX(8px) translateY(-5px);
-}
-.image-stack img:nth-child(3) {
-  animation-delay: 1s;
-  transform: rotate(10deg) translateX(12px) translateY(15px);
-}
-.image-stack img:nth-child(4) {
-  animation-delay: 1.5s;
-  transform: rotate(-2deg) translateX(-5px) translateY(-10px);
-}
-.image-stack img:nth-child(5) {
-  animation-delay: 2s;
-  transform: rotate(-6deg) translateX(-18px) translateY(8px);
-}
-.image-stack img:nth-child(6) {
-  animation-delay: 2.5s;
-  transform: rotate(5deg) translateX(5px) translateY(-15px);
+.grooves {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background-image: repeating-radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.06) 0px,
+    rgba(255, 255, 255, 0.06) 2px,
+    rgba(255, 255, 255, 0) 3px,
+    rgba(255, 255, 255, 0) 5px
+  );
+  mix-blend-mode: screen;
+  opacity: 0.65;
+  pointer-events: none;
 }
 
-/* Exit animation (move upward & fade) */
-.loader-overlay.hidden .image-stack img {
-  opacity: 0 !important;
-  transform: translateY(-100px) scale(0.9);
+.cover-gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.25), transparent 60%);
+  pointer-events: none;
 }
 
-/* Keyframe for entry */
-@keyframes pile-on {
-  0% {
-    opacity: 0;
-    transform: translateY(-80px) scale(0.8);
+.spindle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, rgba(15, 23, 42, 0.45) 60%, transparent 100%);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.tonearm {
+  position: absolute;
+  right: -24px;
+  top: 18px;
+  width: 160px;
+  height: 12px;
+  background: linear-gradient(#c9ced8, #aeb6c7);
+  border-radius: 6px;
+  transform-origin: left center;
+  transform: rotate(22deg);
+  transition: transform 0.6s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.tonearm.playing {
+  transform: rotate(12deg);
+}
+
+.tonearm .head {
+  position: absolute;
+  right: 0;
+  top: -6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: #1f2937;
+  box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.12), 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.loader-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.caption-title {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.caption-subtitle {
+  font-size: clamp(0.875rem, 2vw, 1rem);
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
   }
-  100% {
+}
+
+@keyframes coverCycle {
+  0%, 20% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+  }
+  28%, 100% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .loader-content {
+    gap: 2rem;
+  }
+
+  .turntable {
+    border-radius: 24px;
   }
 }
 </style>

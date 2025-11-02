@@ -1,7 +1,7 @@
 <template>
-	<section class="event-picker container my-4">
+        <section class="event-picker my-4">
 		<!-- Make the whole picker a card -->
-		<div class="card event-picker-card shadow-sm border-0 p-4">
+                <div class="card event-picker-card shadow-sm border-0 p-4">
 			<div class="row align-items-center g-4">
 			<!-- Turntable / Vinyl -->
 			<div class="col-12 col-md-6 d-flex flex-column align-items-center">
@@ -170,16 +170,18 @@ function spinForEvent() {
 
 <style scoped>
 .event-picker {
-	/* Provide a subtle page-bg so Home notches can blend if needed */
-	/* Match Home's gradient for when cards sit directly on the page */
-	--page-bg: linear-gradient(135deg, #f8f9fa 0%, #eef2ff 100%);
+        width: 100%;
+        /* Provide a subtle page-bg so Home notches can blend if needed */
+        /* Match Home's gradient for when cards sit directly on the page */
+        --page-bg: linear-gradient(135deg, #f8f9fa 0%, #eef2ff 100%);
 }
 
 /* Outer card styling */
 .event-picker-card {
-	border-radius: 16px;
-	background: #fff;
-	/* Ambient background that inner notches should reveal */
+        width: 100%;
+        border-radius: 16px;
+        background: #fff;
+        /* Ambient background that inner notches should reveal */
 	--ambient-bg: #fff;
 }
 

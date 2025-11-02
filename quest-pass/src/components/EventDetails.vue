@@ -1,58 +1,47 @@
 <template>
-  <Loading :is-loading="isLoading" />
+  <div class="event-details-root">
+    <div v-if="isLoading" class="d-flex justify-content-center align-items-center vh-100">
+      <div class="custom-loader"></div>
+    </div>
 
-  <template v-if="!isLoading">
-    <!-- error message -->
-    <div
-      v-if="error"
-      class="container my-5 text-center"
-    >
-      <div
-        class="alert alert-danger"
-        role="alert"
-      >
+    <div v-else-if="error" class="container my-5 text-center">
+      <div class="alert alert-danger" role="alert">
         <h4 class="alert-heading">Event Not Found</h4>
         <p>{{ error }}</p>
       </div>
     </div>
 
-    <!-- main event content -->
-    <div
-      v-else-if="event"
-      class="event-details-page"
-    >
-      <!-- header banner -->
-      <header
+    <div v-else-if="event" class="event-details-page">
+      <section
         class="event-banner"
+        role="banner"
         :style="{ backgroundImage: 'url(' + (event.bannerImage || FALLBACK_BANNER_IMAGE) + ')' }"
       >
-        <!-- Added container-lg for better responsiveness on large screens -->
-        <div class="container-lg p-4 p-md-5">
+        <div class="event-banner__content container-lg p-4 p-md-5">
           <h1 class="display-4 fw-bold text-white mb-2">
             {{ event.title }}
           </h1>
           <h4 class="text-white-75 mb-2">{{ event.date }}</h4>
           <div class="meta-chips d-flex flex-wrap gap-2 mt-2">
-            <span class="chip"><font-awesome-icon :icon="['fas','map-marker-alt']" class="me-1" /> {{ event.venueName }}, {{ event.venueCity }}</span>
-            <span class="chip"><font-awesome-icon :icon="['fas','star']" class="me-1" /> Points to goal: {{ Math.max(POINT_GOAL - totalPoints, 0) }}</span>
+            <div class="chip">
+              <font-awesome-icon :icon="['fas', 'map-marker-alt']" class="me-1" />
+              {{ event.venueName }}, {{ event.venueCity }}
+            </div>
+            <div class="chip">
+              <font-awesome-icon :icon="['fas', 'star']" class="me-1" />
+              Points to goal: {{ pointsRemaining }}
+            </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      <!-- Decorative wave divider between hero and content (nice visual transition) -->
       <div class="wave-divider" aria-hidden="true">
         <svg viewBox="0 0 1440 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0,32 C220,96 450,0 720,32 C990,64 1220,16 1440,80 L1440,120 L0,120 Z" fill="rgba(255,255,255,0.95)"/>
+          <path d="M0,32 C220,96 450,0 720,32 C990,64 1220,16 1440,80 L1440,120 L0,120 Z" fill="rgba(255,255,255,0.95)" />
         </svg>
       </div>
 
-      <!--
-        MODIFICATION:
-        - Changed 'container my-5' to 'container-lg main-content-wrapper pb-5'
-        - This new class pulls the content up to overlap the banner
-      -->
       <main class="container-lg main-content-wrapper pb-5 px-3 px-md-0">
-        <!-- Full-width progress summary below banner, above quests -->
         <div class="row g-4 mb-2">
           <div class="col-12">
             <div class="card shadow progress-summary-card animate-float-in">
@@ -68,11 +57,74 @@
                       <div class="score-number gradient-text fw-bold">{{ totalPoints }}</div>
                     </div>
                     <div class="text-start">
-                      <div class="text-muted small">of {{ POINT_GOAL }} points</div>
+                      <div class="text-muted small">of {{ pointGoal }} points</div>
                       <div class="progress mt-2" style="height: 14px; min-width: 220px;">
-                        <div class="progress-bar fw-bold progress-bar-striped progress-bar-animated" role="progressbar" :style="{ width: `${progressPercent}%` }">{{ progressPercent }}%</div>
+                        <div
+                          class="progress-bar fw-bold progress-bar-striped progress-bar-animated"
+                          role="progressbar"
+                          :style="{ width: `${progressPercent}%` }"
+                        >
+                          {{ progressPercent }}%
+                        </div>
+                      </div>
+                      <div class="small text-muted mt-2">
+                        {{ completedQuestCount }} / {{ totalQuestCount }} quests completed
                       </div>
                       <div v-if="isComplete" class="badge bg-success mt-2">Quest Complete!</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="reward-access-card mt-4"
+                  :class="{
+                    'reward-access-card--locked': !isComplete,
+                    'reward-access-card--pending': isComplete && !isRewardUnlocked,
+                    'reward-access-card--unlocked': isRewardUnlocked,
+                  }"
+                >
+                  <div class="reward-access-card__inner d-flex flex-column flex-lg-row align-items-lg-center gap-3 gap-lg-4">
+                    <div
+                      class="reward-access-card__status d-flex align-items-center text-center text-lg-start gap-3"
+                    >
+                      <div
+                        class="status-icon"
+                        :class="{
+                          'status-icon--pending': isComplete && !isRewardUnlocked,
+                          'status-icon--unlocked': isRewardUnlocked,
+                        }"
+                      >
+                        <font-awesome-icon :icon="rewardStatusIcon" />
+                      </div>
+                      <div>
+                        <div class="status-eyebrow text-uppercase small fw-semibold text-muted mb-1">
+                          Presale Access
+                        </div>
+                        <h5 class="fw-bold mb-1">{{ rewardStatusHeading }}</h5>
+                        <p class="text-muted small mb-0">{{ rewardStatusMessage }}</p>
+                      </div>
+                    </div>
+
+                    <div class="reward-access-card__code text-center text-lg-start ms-lg-auto">
+                      <div class="code-chip" :class="{ 'code-chip--locked': !isRewardUnlocked }">
+                        <span class="code-value">{{ rewardCodeDisplay }}</span>
+                        <button
+                          v-if="isRewardUnlocked"
+                          class="btn btn-primary btn-sm code-copy-btn"
+                          type="button"
+                          :disabled="isCopyingCode"
+                          @click="copyRewardCode"
+                        >
+                          {{ copyButtonLabel }}
+                        </button>
+                      </div>
+                      <p
+                        v-if="isRewardUnlocked && copyState !== 'idle'"
+                        class="small mt-2 mb-0"
+                        :class="feedbackClass"
+                      >
+                        {{ copyFeedback }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -81,56 +133,16 @@
           </div>
         </div>
 
-        <transition name="fade">
-          <div v-if="isComplete && rewardCode" class="row g-3 mb-4">
-            <div class="col-12">
-              <div class="card reward-code-card shadow-sm">
-                <div class="card-body d-flex flex-column flex-lg-row align-items-lg-center gap-3 gap-lg-4">
-                  <div class="flex-grow-1 text-center text-lg-start">
-                    <h5 class="fw-bold mb-1">Your Event Access Code</h5>
-                    <p class="text-muted small mb-0">
-                      Show this code to unlock the special perk for {{ artistName }}'s event.
-                    </p>
-                  </div>
-
-                  <div class="reward-code-display px-3 py-2 rounded text-center fw-bold">
-                    {{ rewardCode }}
-                  </div>
-
-                  <div class="text-center text-lg-start">
-                    <button
-                      class="btn btn-outline-primary"
-                      type="button"
-                      @click="copyRewardCode"
-                      :disabled="isCopyingCode || !rewardCode"
-                    >
-                      <i class="fas fa-copy me-2"></i>
-                      {{ copyButtonLabel }}
-                    </button>
-                    <div v-if="copyFeedback" :class="['small', feedbackClass, 'mt-2']">{{ copyFeedback }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </transition>
-
-        <!-- Two quest cards side-by-side on md+, stacked on mobile -->
-        <div class="row g-4 mt-1">
+        <div class="row g-4">
           <div class="col-12">
             <h2 class="fw-bold mb-2">Available Quests</h2>
           </div>
 
-          <!-- Music Quest Card -->
-          <ScrollObserver
-            class="col-12 col-md-6 d-flex"
-            delay="200ms"
-            direction="left"
-          >
+          <ScrollObserver class="col-12 col-md-6 d-flex" delay="200ms" direction="left">
             <div class="card quest-card quest-music h-100 w-100 shadow-sm">
               <div class="card-body p-4 d-flex align-items-center">
                 <div class="quest-icon" aria-hidden="true">
-                  <font-awesome-icon :icon="['fab','spotify']" />
+                  <font-awesome-icon :icon="['fab', 'spotify']" />
                 </div>
                 <div class="flex-grow-1">
                   <h5 class="fw-bold mb-1">Music Discovery</h5>
@@ -141,23 +153,18 @@
                   </p>
                   <div class="text-primary-1 fw-bold mb-2">+{{ quests.music.points }} / {{ MUSIC_MAX }} Points</div>
                   <MusicQuestButton
+                    class="qp-btn"
                     @start-quest="showMusicQuest = true"
                     :is-disabled="isMusicQuestDone"
                     :button-text="isMusicQuestDone ? 'Completed' : 'Start Quest'"
-                    :icon="['fas', 'play']"
-                    icon-class="me-2"
+                    :icon-class="'fas fa-play me-2'"
                   />
                 </div>
               </div>
             </div>
           </ScrollObserver>
 
-          <!-- Trivia Quest Card -->
-          <ScrollObserver
-            class="col-12 col-md-6 d-flex"
-            delay="300ms"
-            direction="right"
-          >
+          <ScrollObserver class="col-12 col-md-6 d-flex" delay="300ms" direction="right">
             <div class="card quest-card quest-trivia h-100 w-100 shadow-sm">
               <div class="card-body p-4 d-flex align-items-center">
                 <div class="quest-icon" aria-hidden="true">
@@ -170,11 +177,11 @@
                   </p>
                   <div class="text-primary-1 fw-bold mb-2">+{{ quests.trivia.points }} / {{ TRIVIA_AWARD }} Points</div>
                   <MusicQuestButton
+                    class="qp-btn"
                     @start-quest="showTriviaQuest = true"
                     :is-disabled="isTriviaQuestDone"
                     :button-text="isTriviaQuestDone ? 'Completed' : 'Start Trivia'"
-                    :icon="['fas', 'pencil-alt']"
-                    icon-class="me-2"
+                    :icon-class="'fas fa-pencil-alt me-2'"
                   />
                 </div>
               </div>
@@ -182,73 +189,57 @@
           </ScrollObserver>
         </div>
       </main>
+    </div>
 
-      <!-- final reward modal -->
-      <div
-        class="modal fade"
-        id="rewardModal"
-        tabindex="-1"
-      >
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content overflow-hidden">
-            <div class="modal-body p-0 text-center">
-              <!-- MODIFICATION: Added a gradient to the modal header -->
-              <div class="p-4 modal-reward-header text-white">
-                <!-- MODIFICATION: Added 'animate-tada' class to the icon -->
-                <i class="fas fa-trophy fa-3x animate-tada"></i>
-                <h2 class="mt-3 mb-0">Quest Complete!</h2>
+    <div class="modal fade" id="rewardModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content overflow-hidden">
+          <div class="modal-body p-0 text-center">
+            <div class="p-4 modal-reward-header text-white">
+              <i class="fas fa-trophy fa-3x animate-tada"></i>
+              <h2 class="mt-3 mb-0">Quest Complete!</h2>
+            </div>
+            <div class="p-4 p-md-5">
+              <p class="lead">
+                You've earned {{ totalPoints }} points and unlocked the
+                final reward!
+              </p>
+              <p class="text-muted">
+                Use this access code for your special perk:
+              </p>
+              <div class="display-6 fw-bold text-primary-1 bg-light p-3 rounded border">
+                {{ rewardCode || 'CODE-LOCKED' }}
               </div>
-              <div class="p-4 p-md-5">
-                <p class="lead">
-                  You've earned {{ totalPoints }} points and unlocked the
-                  final reward!
-                </p>
-                <p class="text-muted">
-                  Use this access code for your special perk:
-                </p>
-                <!-- MODIFICATION: Added border to make the code stand out -->
-                <div class="display-6 fw-bold text-primary-1 bg-light p-3 rounded border">
-                  {{ rewardCode || 'CODE-LOCKED' }}
-                </div>
-                <button
-                  class="btn btn-success btn-lg mt-4"
-                  data-bs-dismiss="modal"
-                >
-                  Awesome!
-                </button>
-              </div>
+              <button class="btn btn-success btn-lg mt-4" data-bs-dismiss="modal">
+                Awesome!
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </template>
 
-  <!--
-    OVERLAYS
-    These are now rendered at the root of the component,
-    and shown/hidden with v-if
-  -->
-  <MusicQuest
-    v-if="showMusicQuest"
-    :artist-name="artistName"
-    :quest-data="quests.music"
-    @update-progress="handleMusicProgress"
-    @close="showMusicQuest = false"
-  />
+    <MusicQuest
+      v-if="showMusicQuest"
+      :artist-name="artistName"
+      :quest-data="quests.music"
+      @update-progress="handleMusicProgress"
+      @close="showMusicQuest = false"
+    />
 
-  <TriviaQuest
-    v-if="showTriviaQuest"
-    :artist-name="artistName"
-    :quest-data="quests.trivia"
-    @update-progress="handleTriviaProgress"
-    @close="showTriviaQuest = false"
-  />
-
+    <TriviaQuest
+      v-if="showTriviaQuest"
+      :artist-name="artistName"
+      :quest-data="quests.trivia"
+      @update-progress="handleTriviaProgress"
+      @close="showTriviaQuest = false"
+    />
+  </div>
 </template>
 
+
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 // fix: use relative paths instead of '@' alias
 import { useUserStore } from '../store/user.js';
@@ -275,7 +266,11 @@ import ScrollObserver from '@/components/ScrollObserver.vue';
 const MUSIC_MAX = 300;
 const TRIVIA_AWARD = 200;
 const TRIVIA_QS = 5; // Need this for the card text
-const POINT_GOAL = MUSIC_MAX + TRIVIA_AWARD;
+const DEFAULT_POINT_GOAL = MUSIC_MAX + TRIVIA_AWARD;
+const QUEST_MAX_POINTS = {
+  music: MUSIC_MAX,
+  trivia: TRIVIA_AWARD,
+};
 // Jambase API key (same as Home.vue)
 const apiKey = import.meta.env.VITE_JAMBASE_API_KEY;
 
@@ -306,22 +301,45 @@ const quests = ref({
 });
 
 // --- computed properties ---
-const totalPoints = computed(() => {
-  return quests.value.music.points + quests.value.trivia.points;
+const questList = computed(() => Object.values(quests.value));
+
+const totalPoints = computed(() =>
+  questList.value.reduce((sum, quest) => sum + (Number(quest.points) || 0), 0)
+);
+
+const pointGoal = computed(() => {
+  const raw = event.value?.rewardPointsGoal;
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : DEFAULT_POINT_GOAL;
 });
 
 const progressPercent = computed(() => {
-  if (!POINT_GOAL) return 0;
-  return Math.min(Math.round((totalPoints.value / POINT_GOAL) * 100), 100);
+  const goal = pointGoal.value;
+  if (!goal) return 0;
+  return Math.min(Math.round((totalPoints.value / goal) * 100), 100);
 });
 
-const isComplete = computed(() => totalPoints.value >= POINT_GOAL);
+const pointsRemaining = computed(() => Math.max(pointGoal.value - totalPoints.value, 0));
+
+const completedQuestCount = computed(() =>
+  questList.value.filter((quest) => quest.completed === true).length
+);
+
+const totalQuestCount = computed(() => questList.value.length);
+
+const isComplete = computed(() => pointGoal.value > 0 && totalPoints.value >= pointGoal.value);
 
 // Computed props for button disabled state
 const isMusicQuestDone = computed(() => quests.value.music.completed);
 const isTriviaQuestDone = computed(() => quests.value.trivia.completed);
 
-const rewardCode = computed(() => event.value?.rewardCode || null);
+const userRewardCode = ref(null);
+
+const rewardCode = computed(() => userRewardCode.value);
+
+const isRewardUnlocked = computed(
+  () => Boolean(rewardCode.value) && isComplete.value
+);
 
 const isCopyingCode = ref(false);
 const copyState = ref('idle'); // 'idle' | 'copied' | 'error'
@@ -341,6 +359,51 @@ const copyFeedback = computed(() => {
 const feedbackClass = computed(() =>
   copyState.value === 'error' ? 'text-danger' : 'text-success'
 );
+
+const rewardStatusHeading = computed(() => {
+  if (isRewardUnlocked.value) return 'Presale Access Unlocked';
+  if (isComplete.value) return 'Presale Access Pending';
+  return 'Presale Access Locked';
+});
+
+const rewardStatusMessage = computed(() => {
+  if (isRewardUnlocked.value) {
+    return `Copy your unique code to secure entry to ${artistName.value}'s event.`;
+  }
+  if (isComplete.value) {
+    return 'Your presale window is unlocked. Hang tight while we prepare your code.';
+  }
+  const remaining = pointsRemaining.value;
+  if (remaining > 0) {
+    return `Complete quests to earn ${remaining} more points.`;
+  }
+  return 'Complete the available quests to unlock your presale access.';
+});
+
+const rewardStatusIcon = computed(() => {
+  if (isRewardUnlocked.value) return ['fas', 'ticket-alt'];
+  if (isComplete.value) return ['fas', 'hourglass-half'];
+  return ['fas', 'lock'];
+});
+
+const rewardCodeDisplay = computed(() => {
+  if (isRewardUnlocked.value) return rewardCode.value;
+  if (isComplete.value) return 'PENDING';
+  return '••••••';
+});
+
+watch(rewardCode, () => {
+  copyState.value = 'idle';
+});
+
+function resetQuestState() {
+  quests.value = {
+    music: { points: 0, completed: false },
+    trivia: { points: 0, completed: false },
+  };
+  userRewardCode.value = null;
+  copyState.value = 'idle';
+}
 
 
 // --- database path helpers ---
@@ -389,36 +452,40 @@ function getProgressDocRef() {
 
 onMounted(async () => {
   try {
-    // rewardModal.value = new Modal(document.getElementById('rewardModal'));
     const modalEl = document.getElementById('rewardModal');
-try {
-  if (modalEl && typeof Modal === 'function') {
-    rewardModal.value = new Modal(modalEl);
-  }
-} catch (e) {
-  console.warn('Could not init modal:', e);
-}
+    if (modalEl && typeof Modal === 'function') {
+      try {
+        rewardModal.value = new Modal(modalEl);
+      } catch (modalError) {
+        console.warn('Could not init modal:', modalError);
+      }
+    }
 
-    // Load event details (Firestore or Jambase)
     await loadEventDetails();
 
-    // Only try to load/save progress if the user is logged in
     if (event.value && userId.value) {
       await loadProgress();
     }
 
-    // If returning from Spotify, open overlay
-    // const params = new URLSearchParams(window.location.search);
-    // if (params.has('code')) {
-    //   showMusicQuest.value = true;
-    // }
-
     if (route.query.spotify === '1') {
-  showMusicQuest.value = true;
-}
+      showMusicQuest.value = true;
+    }
   } finally {
-    // Ensure spinner clears even if anything above throws
     isLoading.value = false;
+  }
+});
+
+watch(userId, async (newId, oldId) => {
+  if (!event.value) return;
+
+  if (newId) {
+    try {
+      await loadProgress();
+    } catch (err) {
+      console.error('Failed to refresh quest progress after login:', err);
+    }
+  } else if (oldId) {
+    resetQuestState();
   }
 });
 
@@ -445,6 +512,7 @@ function mapJambaseEvent(apiEvent) {
     endDate,
     venueName,
     venueCity,
+    rewardPointsGoal: DEFAULT_POINT_GOAL,
     description:
       apiEvent.description ||
       (apiEvent.performer?.[0]?.name
@@ -532,9 +600,14 @@ async function loadEventDetails() {
     const startDate = data.startDate?.toDate ? data.startDate.toDate() : null;
     const endDate = data.endDate?.toDate ? data.endDate.toDate() : null;
 
+    const rewardGoal = Number(data.rewardPointsGoal);
+    const normalizedGoal =
+      Number.isFinite(rewardGoal) && rewardGoal > 0 ? Math.round(rewardGoal) : DEFAULT_POINT_GOAL;
+
     event.value = {
       id: fsDoc.id,
       ...data,
+      rewardPointsGoal: normalizedGoal,
       startDate,
       endDate,
       bannerImage: data.bannerImage || data.cardImage || FALLBACK_BANNER_IMAGE,
@@ -563,7 +636,10 @@ async function loadEventDetails() {
   try {
     const jb = await fetchJambaseEventFlexible(eventId);
     if (jb) {
-      event.value = jb;
+      event.value = {
+        ...jb,
+        rewardPointsGoal: jb.rewardPointsGoal ?? DEFAULT_POINT_GOAL,
+      };
       artistName.value = jb.artistName;
       return;
     }
@@ -597,6 +673,23 @@ async function loadEventDetails() {
 //   }
 // }
 
+function applyQuestProgress(key, rawProgress) {
+  const current = quests.value[key] || { points: 0, completed: false };
+  const points = Number(rawProgress?.points);
+  const maxPoints = QUEST_MAX_POINTS[key] ?? Infinity;
+
+  let nextPoints = current.points;
+  if (Number.isFinite(points)) {
+    nextPoints = Math.min(Math.max(0, Math.round(points)), maxPoints);
+  }
+
+  quests.value[key] = {
+    ...current,
+    points: nextPoints,
+    completed: rawProgress?.completed === true,
+  };
+}
+
 async function loadProgress() {
   const progressDocRef = getProgressDocRef();
   if (!progressDocRef) return; // skip if user not logged in
@@ -605,12 +698,44 @@ async function loadProgress() {
     const docSnap = await getDoc(progressDocRef);
     if (docSnap.exists()) {
       const progress = docSnap.data();
-      if (progress.music) quests.value.music = progress.music;
-      if (progress.trivia) quests.value.trivia = progress.trivia;
 
-      if (progress.rewardClaimed) {
-        quests.value.music.points = MUSIC_MAX;
-        quests.value.trivia.points = TRIVIA_AWARD;
+      if (progress.music) applyQuestProgress('music', progress.music);
+      if (progress.trivia) applyQuestProgress('trivia', progress.trivia);
+
+      const storedGoal = Number(progress.goalPoints);
+      if (
+        Number.isFinite(storedGoal) &&
+        storedGoal > 0 &&
+        (!event.value?.rewardPointsGoal || event.value.rewardPointsGoal <= 0)
+      ) {
+        event.value = { ...event.value, rewardPointsGoal: Math.round(storedGoal) };
+      }
+
+      if (progress.rewardCode) {
+        userRewardCode.value = String(progress.rewardCode || '').toUpperCase();
+      } else {
+        userRewardCode.value = null;
+      }
+
+      if (progress.rewardUnlocked || progress.rewardClaimed || progress.rewardCode) {
+        Object.keys(quests.value).forEach((key) => {
+          const maxPoints = QUEST_MAX_POINTS[key];
+          quests.value[key].completed = true;
+          if (Number.isFinite(maxPoints) && maxPoints > 0) {
+            const currentPoints = Number(quests.value[key].points) || 0;
+            quests.value[key].points = Math.max(currentPoints, maxPoints);
+          }
+        });
+
+        if (!userRewardCode.value) {
+          userRewardCode.value = generateUserRewardCode(event.value?.title);
+          await saveProgress({
+            rewardUnlocked: true,
+            rewardClaimed: progress.rewardClaimed === true,
+            rewardUnlockedAt: progress.rewardUnlockedAt || Timestamp.now(),
+            rewardCode: userRewardCode.value,
+          });
+        }
       }
     } else {
       await saveProgress();
@@ -633,16 +758,38 @@ async function loadProgress() {
 //   }
 // }
 
-async function saveProgress() {
+async function saveProgress(options = {}) {
   const progressDocRef = getProgressDocRef();
   if (!progressDocRef) return; // skip if no user
 
+  const payload = {
+    music: quests.value.music,
+    trivia: quests.value.trivia,
+    totalPoints: totalPoints.value,
+    questsCompleted: completedQuestCount.value,
+    goalPoints: pointGoal.value,
+    rewardUnlocked: options.rewardUnlocked ?? (isComplete.value ? true : false),
+    lastUpdated: Timestamp.now(),
+  };
+
+  if (userRewardCode.value) {
+    payload.rewardCode = userRewardCode.value;
+  }
+
+  if (options.rewardCode !== undefined) {
+    payload.rewardCode = options.rewardCode;
+  }
+
+  if (options.rewardClaimed !== undefined) {
+    payload.rewardClaimed = options.rewardClaimed;
+  }
+
+  if (options.rewardUnlockedAt) {
+    payload.rewardUnlockedAt = options.rewardUnlockedAt;
+  }
+
   try {
-    await setDoc(progressDocRef, {
-      music: quests.value.music,
-      trivia: quests.value.trivia,
-      lastUpdated: Timestamp.now(),
-    });
+    await setDoc(progressDocRef, payload, { merge: true });
   } catch (e) {
     console.error('failed to save progress:', e);
   }
@@ -663,7 +810,8 @@ async function handleMusicProgress(progress) {
       }
     }
 
-    quests.value.music.points = progress.points;
+    const maxPoints = QUEST_MAX_POINTS.music ?? progress.points;
+    quests.value.music.points = Math.min(progress.points, maxPoints);
     quests.value.music.completed = progress.completed;
     await saveProgress();
     await checkForCompletion();
@@ -685,7 +833,8 @@ async function handleTriviaProgress(progress) {
       }
     }
 
-    quests.value.trivia.points = progress.points;
+    const maxPoints = QUEST_MAX_POINTS.trivia ?? progress.points;
+    quests.value.trivia.points = Math.min(progress.points, maxPoints);
     quests.value.trivia.completed = progress.completed;
     await saveProgress();
     await checkForCompletion();
@@ -710,7 +859,16 @@ async function checkForCompletion() {
   const progressDocRef = getProgressDocRef();
   if (!progressDocRef) return; // skip if no user
 
-  await setDoc(progressDocRef, { rewardClaimed: true }, { merge: true });
+  const unlockedAt = Timestamp.now();
+  if (!userRewardCode.value) {
+    userRewardCode.value = generateUserRewardCode(event.value?.title);
+  }
+  await saveProgress({
+    rewardUnlocked: true,
+    rewardClaimed: true,
+    rewardUnlockedAt: unlockedAt,
+    rewardCode: userRewardCode.value,
+  });
   if (rewardModal.value?.show) {
     rewardModal.value.show();
   }
@@ -743,6 +901,38 @@ async function copyRewardCode() {
       copyState.value = 'idle';
     }, 2500);
   }
+}
+
+function generateUserRewardCode(title) {
+  const initials = buildTitleInitials(title);
+  const digits = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0');
+  return `${initials}${digits}`;
+}
+
+function buildTitleInitials(title) {
+  const fallback = 'EVT';
+  if (!title) return fallback;
+
+  const words = String(title)
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const letters = [];
+  for (const word of words) {
+    const match = word.match(/[A-Za-z0-9]/);
+    if (match) {
+      letters.push(match[0].toUpperCase());
+    }
+    if (letters.length === 3) break;
+  }
+
+  while (letters.length < 3) {
+    letters.push('X');
+  }
+
+  return letters.join('').slice(0, 3);
 }
 
 
@@ -930,21 +1120,109 @@ async function copyRewardCode() {
   box-shadow: var(--card-elev);
 }
 
-.reward-code-card {
-  border: 0;
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: var(--card-elev);
+
+.reward-access-card {
+  border-radius: 1rem;
+  padding: 1.75rem;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: linear-gradient(160deg, rgba(255, 248, 241, 0.95), rgba(255, 255, 255, 0.9));
 }
 
-.reward-code-display {
-  font-family: 'Fira Code', 'SFMono-Regular', ui-monospace, 'DejaVu Sans Mono', monospace;
+.reward-access-card--locked {
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.reward-access-card--pending {
+  background: linear-gradient(160deg, rgba(250, 245, 255, 0.95), rgba(255, 255, 255, 0.92));
+  border-color: rgba(129, 140, 248, 0.3);
+}
+
+.reward-access-card--unlocked {
+  background: linear-gradient(160deg, rgba(236, 253, 245, 0.95), rgba(255, 255, 255, 0.92));
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.reward-access-card__inner {
+  position: relative;
+  z-index: 1;
+}
+
+.reward-access-card__status {
+  flex: 1 1 auto;
+}
+
+.status-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(251, 191, 36, 0.18);
+  color: #f59e0b;
+  font-size: 1.2rem;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.2);
+}
+
+.status-icon--pending {
+  background: rgba(129, 140, 248, 0.16);
+  color: #6366f1;
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.22);
+}
+
+.status-icon--unlocked {
+  background: rgba(16, 185, 129, 0.18);
+  color: #059669;
+  box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.2);
+}
+
+.status-eyebrow {
   letter-spacing: 0.08em;
-  font-size: 1.1rem;
-  background: rgba(96, 165, 250, 0.12);
-  color: var(--bs-primary, #0d6efd);
-  border: 1px dashed rgba(96, 165, 250, 0.45);
-  min-width: 220px;
+}
+
+.reward-access-card__code {
+  min-width: 240px;
+}
+
+.code-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  font-family: 'Fira Code', 'SFMono-Regular', ui-monospace, 'DejaVu Sans Mono', monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.code-chip--locked {
+  border-style: dashed;
+  color: rgba(15, 23, 42, 0.35);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.code-value {
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.code-copy-btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+  .reward-access-card {
+    padding: 1.5rem;
+  }
+
+  .reward-access-card__code {
+    width: 100%;
+  }
 }
 
 .fade-enter-active,

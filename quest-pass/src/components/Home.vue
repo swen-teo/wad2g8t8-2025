@@ -1,10 +1,10 @@
 <template>
   <main class="container py-5">
     <!-- header and search bar -->
-    <header class="d-flex justify-content-between align-items-center mb-4">
+    <header class="mb-4">
       <!-- 🎟️ Emoji removed -->
-      <h1 class="mb-0">Upcoming Events</h1>
-      <div class="col-md-4">
+      <h1 class="mb-3">Upcoming Events</h1>
+      <div class="home-search col-md-6 col-lg-4 px-0">
         <input
           type="search"
           class="form-control"
@@ -14,23 +14,10 @@
       </div>
     </header>
 
-    <!-- loading spinner -->
-    <div
-      v-if="isLoading"
-      class="text-center py-5"
-    >
-      <div
-        class="spinner-border text-primary-1"
-        role="status"
-        style="width: 3rem; height: 3rem"
-      >
-        <span class="visually-hidden">Loading events...</span>
-      </div>
-      <p class="mt-3 text-muted">Loading events...</p>
-    </div>
+    <Loading :is-loading="isLoading" />
 
     <!-- event discovery + grid -->
-    <section v-else>
+    <section v-if="!isLoading">
       <!-- Fun discovery widget: random event picker based on current filters -->
       <EventPicker :events="filteredEvents" />
 
@@ -146,6 +133,7 @@
 import { ref, onMounted, computed } from 'vue';
 import FilterSelect from './FilterSelect.vue';
 import EventPicker from './EventPicker.vue';
+import Loading from './Loading.vue';
 // Firebase imports are no longer needed here
 // import { db } from '@/firebase.js';
 // import { collection, getDocs } from 'firebase/firestore';
@@ -396,6 +384,15 @@ function matchesDateRange(startDate) {
 </script>
 
 <style scoped>
+
+.home-search {
+  max-width: 360px;
+}
+
+.home-search .form-control {
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+}
 
 
 .page-header {
