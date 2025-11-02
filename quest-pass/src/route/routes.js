@@ -13,6 +13,7 @@ import Profile from '../components/Profile.vue';
 import EventDetails from '../components/EventDetails.vue';
 import LandingPage from "../components/LandingPage.vue";
 import Instructions from "../components/Instructions.vue";
+import LoadingScreen from '../components/Loading.vue';
 
 const routes = [
   {
@@ -20,7 +21,12 @@ const routes = [
     name: 'LandingPage',
     component: LandingPage,
   },
-  
+
+  {
+    path: '/loading',
+    name: 'Loading',
+    component: LoadingScreen,
+  },
   {
     path: '/instructions',
     name: 'Instructions',
