@@ -36,7 +36,7 @@
                 <p class="text-muted mb-2">
                   {{ userStore.currentUser.email }}
                 </p>
-                <span
+                <div class="d-flex align-items-center gap-2"><span
                   class="badge fs-6"
                   :style="{ 
                     backgroundColor: userStore.currentTier.bg, 
@@ -46,6 +46,27 @@
                   <i class="fas fa-shield-alt me-1"></i>
                   {{ userStore.currentUser.currentTier }} Tier
                 </span>
+                <div
+                class="tier-info-icon"
+                data-bs-toggle="popover"
+                data-bs-trigger="hover focus" 
+                data-bs-placement="right" 
+                data-bs-title="Tier Information"
+    
+                data-bs-html="true" data-bs-content="
+                  <strong>Bronze:</strong> Levels 1–10<br>
+                  <strong>Silver:</strong> Levels 11–20<br>
+                  <strong>Gold:</strong> Levels 21–30<br>
+                  <strong>Platinum:</strong> Levels 31+" 
+                  
+                style="cursor: pointer;">
+
+              <font-awesome-icon 
+                :icon="['fas','info-circle']" 
+                :style="{ color: userStore.currentTier.color }" 
+              />
+            </div>
+                </div>
               </div>
               <button
                   class="btn btn-outline-secondary btn-sm"
@@ -202,7 +223,8 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
+import { Popover } from 'bootstrap';
 import { useUserStore } from '@/store/user.js';
 import { db } from '@/firebase.js';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
@@ -318,6 +340,14 @@ async function loadUnlockedEvents(userId) {
     isLoadingEvents.value = false;
   }
 }
+
+onMounted(() => {
+    // Find all elements marked as a popover and initialize them
+    const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+
+    // Initialize popovers
+    [...popoverTriggerList].map(popoverTriggerEl => new Popover(popoverTriggerEl));
+});
 
 // 'watch' for the userStore to finish loading the user
 // a watcher is like a little spy that runs a function
@@ -488,6 +518,25 @@ async function handleLogout() {
 .list-group-item { padding-top: .75rem; padding-bottom: .75rem; }
 .card.card-body { padding: 1rem; }
 
+
+.tier-info-icon {
+    width: 28px; 
+    height: 28px;
+    border-radius: 50%; 
+    background-color: #e9ecef;
+    /* color: var(--bs-secondary); */
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-size: 0.85rem; 
+    flex-shrink: 0; 
+}
+
+.tier-info-icon:hover {
+    background-color: var(--primary-1); 
+    color: white; 
+}
 </style>
 
 
