@@ -1,10 +1,9 @@
 <template>
   <div class="event-details-root">
-    <div v-if="isLoading" class="d-flex justify-content-center align-items-center vh-100">
-      <div class="custom-loader"></div>
-    </div>
+    <!-- Global loading overlay (music-themed) -->
+    <Loading :is-loading="isLoading" />
 
-    <div v-else-if="error" class="container my-5 text-center">
+    <div v-if="error" class="container my-5 text-center">
       <div class="alert alert-danger" role="alert">
         <h4 class="alert-heading">Event Not Found</h4>
         <p>{{ error }}</p>
@@ -253,13 +252,11 @@ import {
 import { Modal } from 'bootstrap';
 
 // --- Import the new components ---
-// (Assuming they are in the same 'components' folder)
 import MusicQuest from './MusicQuest.vue';
 import TriviaQuest from './TriviaQuest.vue';
-import MusicQuestButton from '@/components/MusicQuestButton.vue';
-import Loading from '@/components/Loading.vue';
-import ScrollObserver from '@/components/ScrollObserver.vue';
-// import ScrollObserver from './ScrollObserver.vue';
+import MusicQuestButton from './MusicQuestButton.vue';
+import Loading from './Loading.vue';
+import ScrollObserver from './ScrollObserver.vue';
 
 
 // --- configuration ---
@@ -290,7 +287,7 @@ const artistName = ref('the artist');
 const rewardModal = ref(null);
 const FALLBACK_BANNER_IMAGE = 'https://placehold.co/1200x400/a78bfa/ffffff?text=Event';
 
-// --- NEW state for showing overlays ---
+// --- state for showing overlays ---
 const showMusicQuest = ref(false);
 const showTriviaQuest = ref(false);
 
@@ -1522,7 +1519,6 @@ function buildTitleInitials(title) {
 </style>
 
 <style>
-/* This unscoped block makes the animation globally available */
 @keyframes float-and-fade {
     0% {
         opacity: 1;

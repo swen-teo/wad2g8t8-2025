@@ -168,44 +168,69 @@
       <!-- right column: completed quests -->
       <div class="col-lg-8">
         <h4 class="mb-3">Events Unlocked</h4>
-        <div
-          v-if="isLoadingEvents"
-          class="text-center"
-        >
-          <span
-            class="spinner-border spinner-border-sm"
-            role="status"
-          ></span>
-        </div>
-        <ul v-else-if="unlockedEvents.length > 0" class="list-group">
-          <li
-            v-for="event in unlockedEvents"
-            :key="event.id"
-            class="list-group-item"
-          >
-            <div class="d-flex align-items-center justify-content-between">
-              <div class="d-flex align-items-center gap-3">
-                <div class="quest-icon bg-light rounded-circle d-inline-flex align-items-center justify-content-center">
-                  <font-awesome-icon :icon="['fas','check']" class="text-success" />
+        <div class="card events-card">
+          <div class="card-body p-0">
+            <div class="events-card-header d-flex align-items-center justify-content-between p-3 p-md-4">
+              <div class="d-flex align-items-center gap-2">
+                <div class="events-badge-icon">
+                  <font-awesome-icon :icon="['fas','flag-checkered']" />
                 </div>
-                <div>
-                  <strong>{{ event.title }}</strong>
-                  <div v-if="event.subtitle" class="text-muted small">{{ event.subtitle }}</div>
-                  <div v-if="event.unlockedAtLabel" class="text-muted small">Unlocked {{ event.unlockedAtLabel }}</div>
-                </div>
+                <h5 class="mb-0">Unlocked Events</h5>
               </div>
-              <div class="text-success">
-                <font-awesome-icon :icon="['fas','angle-right']" />
-              </div>
+              <span class="events-count badge rounded-pill">
+                {{ unlockedEvents.length }}
+              </span>
             </div>
-          </li>
-        </ul>
-        <p
-          v-else
-          class="text-muted"
-        >
-          No events unlocked yet.
-        </p>
+
+            <!-- Loading state -->
+            <div v-if="isLoadingEvents" class="text-center py-4">
+              <span class="spinner-border" role="status" aria-hidden="true"></span>
+            </div>
+
+            <!-- List state -->
+            <ul v-else-if="unlockedEvents.length > 0" class="list-group list-group-flush">
+              <li
+                v-for="event in unlockedEvents"
+                :key="event.id"
+                class="list-group-item event-item"
+                role="button"
+                tabindex="0"
+                @click="goToEvent(event.id)"
+                @keyup.enter="goToEvent(event.id)"
+                @keyup.space.prevent="goToEvent(event.id)"
+              >
+                <div class="d-flex align-items-center justify-content-between w-100">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="event-icon">
+                      <font-awesome-icon :icon="['fas','check']" />
+                    </div>
+                    <div class="event-text">
+                      <div class="event-title">{{ event.title }}</div>
+                      <div class="event-meta" v-if="event.subtitle || event.unlockedAtLabel">
+                        <span v-if="event.subtitle">{{ event.subtitle }}</span>
+                        <span v-if="event.subtitle && event.unlockedAtLabel" class="mx-2">•</span>
+                        <span v-if="event.unlockedAtLabel">Unlocked {{ event.unlockedAtLabel }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chevron" aria-hidden="true">
+                    <font-awesome-icon :icon="['fas','angle-right']" />
+                  </div>
+                </div>
+              </li>
+            </ul>
+
+            <!-- Empty state -->
+            <div v-else class="p-4 text-center text-muted">
+              <div class="mb-2">
+                <div class="event-icon mx-auto">
+                  <font-awesome-icon :icon="['fas','lock']" />
+                </div>
+              </div>
+              <p class="mb-0">No events unlocked yet. Complete quests to reveal your next adventure.</p>
+            </div>
+          </div>
+        </div>
       </div>
       </div>
     </template>
@@ -360,6 +385,12 @@ watch(
 async function handleLogout() {
   await userStore.logout();
   router.push({ name: 'Login' });
+}
+
+// navigate to an event's details page
+function goToEvent(id) {
+  if (!id) return;
+  router.push({ name: 'EventDetails', params: { id } });
 }
 </script>
 
@@ -528,6 +559,68 @@ async function handleLogout() {
     background-color: var(--primary-1); 
     color: white; 
 }
+
+/* Events card styling */
+.events-card {
+  border: 1px solid rgba(0,0,0,0.04);
+  border-radius: 1rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaff 100%);
+  box-shadow: 0 6px 18px rgba(96,75,200,0.06);
+}
+.events-card-header {
+  background: linear-gradient(90deg, rgba(167,139,250,0.08), rgba(96,165,250,0.06));
+  border-bottom: 1px solid #f1eefb;
+}
+.events-badge-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  box-shadow: 0 6px 14px rgba(96,75,200,0.18);
+}
+.events-count {
+  background: rgba(167,139,250,0.15);
+  color: var(--primary-1);
+  font-weight: 600;
+  padding: .5rem .75rem;
+}
+
+/* Event list items */
+.event-item {
+  border-color: #f1eefb;
+  transition: background-color .2s ease, transform .15s ease;
+  cursor: pointer;
+}
+.event-item:hover {
+  background: linear-gradient(90deg, rgba(167,139,250,0.06), rgba(96,165,250,0.04));
+}
+.event-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(167,139,250,0.35);
+}
+.event-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-grid;
+  place-items: center;
+  color: #22c55e;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+}
+.event-text .event-title {
+  font-weight: 600;
+}
+.event-text .event-meta {
+  color: #6c757d;
+  font-size: .9rem;
+}
+.chevron { color: var(--primary-1); opacity: .7; }
+.event-item:hover .chevron { opacity: 1; }
 </style>
 
 
