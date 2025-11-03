@@ -117,14 +117,61 @@
 
         </div>
     </div>
+
+    <div class="container my-5 py-4 text-center">
+        <p class="fs-5 text-secondary mb-4">
+            Ready to start completing quests? Head into the app to see your personalized dashboard.
+        </p>
+        <button
+            class="btn btn-primary btn-lg px-5"
+            type="button"
+            @click="enterApp"
+            :disabled="isCompleting"
+        >
+            <span
+                v-if="isCompleting"
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+            ></span>
+            Enter QuestPass
+        </button>
+    </div>
 </template>
 
 <script setup>
 // In a real .vue file, you'd import Vue features like this
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useUserStore } from '@/store/user.js';
+
+const router = useRouter();
+const userStore = useUserStore();
+const isCompleting = ref(false);
+
+async function enterApp() {
+    if (isCompleting.value) return;
+
+    isCompleting.value = true;
+
+    try {
+        if (userStore.currentUser && !userStore.currentUser.hasSeenInstructions) {
+            await userStore.markInstructionsSeen();
+        }
+
+        await router.push({ name: 'Home' });
+    } finally {
+        isCompleting.value = false;
+    }
+}
 
 // The logic from setup() goes directly inside <script setup>
 onMounted(() => {
+    if (userStore.currentUser?.hasSeenInstructions) {
+        router.replace({ name: 'Home' });
+        return;
+    }
+
     
     // --- Sparkle Generation ---
     // This targets the #sparkle-container in the main HTML file

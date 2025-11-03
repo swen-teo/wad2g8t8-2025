@@ -102,7 +102,10 @@
                         >
                           <div class="quest-progress-card__fill" :style="{ width: `${questCompletionPercent}%` }"></div>
                         </div>
-                        <div v-if="isComplete" class="quest-progress-card__status mt-3">
+                        <div
+                          v-if="isComplete"
+                          class="quest-progress-card__status badge quest-progress-card__status--complete mt-3"
+                        >
                           Quest Completed!
                         </div>
                       </div>
@@ -154,16 +157,17 @@
                       {{ copyButtonLabel }}
                     </button>
                   </div>
-                  <div class="copy-feedback-space" aria-live="polite">
-                    <transition name="fade">
-                      <p
-                        v-if="isRewardUnlocked && copyState !== 'idle'"
-                        class="small mt-2 mb-0"
-                        :class="feedbackClass"
-                      >
-                        {{ copyFeedback }}
-                      </p>
-                    </transition>
+                  <div
+                    class="copy-feedback-region small mt-2 mb-0"
+                    :class="{ 'is-visible': isRewardUnlocked && copyState !== 'idle' }"
+                    aria-live="polite"
+                  >
+                    <span
+                      v-if="isRewardUnlocked && copyState !== 'idle'"
+                      :class="feedbackClass"
+                    >
+                      {{ copyFeedback }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1253,23 +1257,18 @@ function buildTitleInitials(title) {
 
 .quest-progress-card__status {
   align-self: flex-start;
-}
-
-.bg-success-subtle {
-  background-color: rgba(34, 197, 94, 0.12) !important;
-}
-
-.quest-progress-card__status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.35rem 0.85rem;
   border-radius: 999px;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
-  color: #ffffff;
+  padding: 0.35rem 0.9rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.2);
+  letter-spacing: 0.04em;
+  font-size: 0.75rem;
+}
+
+.quest-progress-card__status--complete {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(129, 140, 248, 0.24));
+  color: #1e3a8a;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.16);
 }
 
 
@@ -1363,8 +1362,8 @@ function buildTitleInitials(title) {
 .code-chip {
   display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  justify-content: flex-start;
+  gap: 0.75rem;
   width: 100%;
   padding: 0.85rem 1rem;
   border-radius: 0.85rem;
@@ -1385,10 +1384,22 @@ function buildTitleInitials(title) {
 .code-value {
   flex: 1 1 auto;
   text-align: left;
+  margin-right: auto;
 }
 
 .code-copy-btn {
   white-space: nowrap;
+  min-width: 120px;
+}
+
+.copy-feedback-region {
+  min-height: 1.25rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.copy-feedback-region.is-visible {
+  opacity: 1;
 }
 
 .copy-feedback-space {
@@ -1683,12 +1694,12 @@ function buildTitleInitials(title) {
   background: radial-gradient(60% 60% at 50% 40%, rgba(255,255,255,.4), transparent 60%);
   pointer-events: none;
 }
-.score-number { font-size: 2rem; line-height: 1; }
+.score-number { font-size: 1.75rem; line-height: 1; }
 
 /* Score ring responsive sizing */
 @media (max-width: 767.98px) {
   .score-ring { width: 110px; height: 110px; }
-  .score-number { font-size: 1.75rem; }
+  .score-number { font-size: 1.5rem; }
 }
 
 </style>

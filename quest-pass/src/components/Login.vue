@@ -23,6 +23,16 @@ const userStore = useUserStore();
 
 // --- methods ---
 
+function resolvePostLoginDestination() {
+  const redirectTarget = route.query.redirect;
+
+  if (!userStore.currentUser?.hasSeenInstructions) {
+    return { name: 'Instructions' };
+  }
+
+  return redirectTarget || { name: 'Home' };
+}
+
 /**
  * this handles the main email/password login
  */
@@ -43,8 +53,8 @@ async function handleLogin() {
     await userStore.fetchUserProfile(userCredential.user);
 
     // prefer redirect query if present (user tried to access a protected route)
-    const redirect = route.query.redirect || { name: 'Home' };
-    router.push(redirect);
+    const destination = resolvePostLoginDestination();
+    router.push(destination);
   } catch (err) {
     // handle firebase errors
     switch (err.code) {
@@ -81,8 +91,8 @@ async function handleGoogleLogin() {
     // update the Pinia user store immediately so components react
     await userStore.fetchUserProfile(result.user);
 
-    const redirect = route.query.redirect || { name: 'Home' };
-    router.push(redirect);
+    const destination = resolvePostLoginDestination();
+    router.push(destination);
   } catch (err) {
     // user might have closed the popup
     if (err.code !== 'auth/popup-closed-by-user') {

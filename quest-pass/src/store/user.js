@@ -55,6 +55,7 @@ function createDefaultUserProfile(user) {
     levelProgress: 0,
     purchasedTickets: 0,
     activeQuests: [],
+    hasSeenInstructions: false,
   };
 }
 
@@ -107,7 +108,19 @@ export const useUserStore = defineStore('user', {
 
         if (docSnap.exists()) {
           // User profile exists, load it
-          this.currentUser = { id: docSnap.id, ...docSnap.data() };
+          const data = docSnap.data();
+
+          if (data.hasSeenInstructions === undefined) {
+            try {
+              await updateDoc(userDocRef, { hasSeenInstructions: true });
+              data.hasSeenInstructions = true;
+            } catch (updateError) {
+              console.error('Error updating instruction flag:', updateError);
+              data.hasSeenInstructions = true;
+            }
+          }
+
+          this.currentUser = { id: docSnap.id, ...data };
         } else {
           // // User profile doesn't exist (first-time login)
           // // Create one using their Google info and the demo template
@@ -158,6 +171,22 @@ export const useUserStore = defineStore('user', {
     clearUser() {
       this.currentUser = null;
       this.loading = false;
+    },
+
+    async markInstructionsSeen() {
+      if (!this.currentUser) return;
+
+      const userDocRef = doc(db, 'users', this.currentUser.uid || this.currentUser.id);
+
+      try {
+        await updateDoc(userDocRef, { hasSeenInstructions: true });
+        this.currentUser = {
+          ...this.currentUser,
+          hasSeenInstructions: true,
+        };
+      } catch (error) {
+        console.error('Error marking instructions as seen:', error);
+      }
     },
 
     /**

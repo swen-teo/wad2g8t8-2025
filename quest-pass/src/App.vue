@@ -92,6 +92,10 @@ onMounted(() => {
 
   // router guard to protect routes
   router.beforeEach((to, from) => {
+    if (userStore.loading) {
+      return true;
+    }
+
     // check if the route we're going to needs auth
     if (to.meta.requiresAuth && !userStore.isLoggedIn) {
       // not logged in. send to the login page.
@@ -101,6 +105,18 @@ onMounted(() => {
         path: '/login',
         query: { redirect: to.fullPath },
       };
+    }
+
+    if (userStore.isLoggedIn) {
+      const hasSeenInstructions = userStore.currentUser?.hasSeenInstructions;
+
+      if (!hasSeenInstructions && to.name !== 'Instructions') {
+        return { name: 'Instructions' };
+      }
+
+      if (hasSeenInstructions && to.name === 'Instructions') {
+        return { name: 'Home' };
+      }
     }
     return true;
   });
