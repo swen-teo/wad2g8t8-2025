@@ -10,7 +10,7 @@
       </div>
     </div>
 
-    <div v-else-if="event" class="event-details-page">
+    <div v-if="event" class="event-details-page">
       <section
         class="event-banner"
         role="banner"
@@ -34,89 +34,128 @@
         </div>
       </section>
 
-      <div class="wave-divider" aria-hidden="true">
-        <svg viewBox="0 0 1440 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0,32 C220,96 450,0 720,32 C990,64 1220,16 1440,80 L1440,120 L0,120 Z" fill="rgba(255,255,255,0.95)" />
-        </svg>
-      </div>
-
       <main class="container-lg main-content-wrapper pb-5 px-3 px-md-0">
-        <div class="row g-4 mb-2">
-          <div class="col-12">
-            <div class="card shadow progress-summary-card animate-float-in">
-              <div class="card-body p-4 p-md-5 text-center">
-                <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-4">
-                  <div class="text-start flex-grow-1">
-                    <h5 class="fw-bold mb-1">Your Quest Progress</h5>
-                    <p class="text-muted small mb-0">Complete quests to unlock a final reward.</p>
-                  </div>
+        <div class="row g-4 align-items-stretch mb-4">
+          <div class="col-12 col-xl-8 d-flex">
+            <div class="card shadow progress-summary-card animate-float-in w-100 h-100">
+              <div class="card-body p-4 p-xl-5">
+                <div class="progress-summary-card__header text-center text-md-start">
+                  <h5 class="fw-bold mb-1">Your Quest Progress</h5>
+                  <p class="text-muted small mb-0">Complete quests to unlock a final reward.</p>
+                </div>
 
-                  <div class="d-flex align-items-center gap-4">
-                    <div class="score-ring" :style="{ '--p': progressPercent + '%' }">
-                      <div class="score-number gradient-text fw-bold">{{ totalPoints }}</div>
-                    </div>
-                    <div class="text-start">
-                      <div class="text-muted small">of {{ pointGoal }} points</div>
-                      <div class="progress mt-2" style="height: 14px; min-width: 220px;">
-                        <div
-                          class="progress-bar fw-bold progress-bar-striped progress-bar-animated"
-                          role="progressbar"
-                          :style="{ width: `${progressPercent}%` }"
-                        >
-                          {{ progressPercent }}%
+                <div class="progress-summary-card__content mt-4">
+                  <div class="row g-4 align-items-stretch h-100">
+                    <div class="col-12 col-lg-6 d-flex">
+                      <div
+                        class="points-progress d-flex flex-column flex-sm-row align-items-center gap-3 gap-md-4 h-100 w-100"
+                      >
+                        <div class="score-ring flex-shrink-0" :style="{ '--p': progressPercent + '%' }">
+                          <div class="score-number gradient-text fw-bold">{{ progressPercent }}%</div>
+                        </div>
+                        <div class="points-progress__meta text-center text-sm-start">
+                          <div class="points-progress__label text-muted text-uppercase small fw-semibold">
+                            Points earned
+                          </div>
+                          <div class="points-progress__value fw-bold text-dark">
+                            {{ totalPoints }}
+                          </div>
+                          <div class="text-muted small">of {{ pointGoal }} points</div>
+                          <div class="points-progress__bar mt-3">
+                            <div
+                              class="points-progress__track"
+                              role="progressbar"
+                              :aria-valuenow="progressPercent"
+                              aria-valuemin="0"
+                              aria-valuemax="100"
+                              :aria-valuetext="`${totalPoints} of ${pointGoal} points`"
+                            >
+                              <div class="points-progress__fill" :style="{ width: `${progressPercent}%` }"></div>
+                            </div>
+                            <div class="points-progress__ticks small text-muted mt-2 d-flex justify-content-between">
+                              <span>0</span>
+                              <span>{{ pointGoal }}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div class="small text-muted mt-2">
-                        {{ completedQuestCount }} / {{ totalQuestCount }} quests completed
+                    </div>
+
+                    <div class="col-12 col-lg-6 d-flex">
+                      <div class="quest-progress-card d-flex flex-column justify-content-between w-100">
+                        <div>
+                          <div class="quest-progress-card__label text-uppercase small fw-semibold text-muted">
+                            Quest completion
+                          </div>
+                          <div class="quest-progress-card__stat d-flex align-items-end gap-2">
+                            <span class="display-6 fw-bold text-dark">{{ completedQuestCount }}</span>
+                            <span class="text-muted small">/ {{ totalQuestCount }} quests</span>
+                          </div>
+                        </div>
+                        <div
+                          class="quest-progress-card__bar mt-3"
+                          role="progressbar"
+                          :aria-valuenow="questCompletionPercent"
+                          aria-valuemin="0"
+                          aria-valuemax="100"
+                          :aria-valuetext="`${completedQuestCount} of ${totalQuestCount} quests`"
+                        >
+                          <div class="quest-progress-card__fill" :style="{ width: `${questCompletionPercent}%` }"></div>
+                        </div>
+                        <div v-if="isComplete" class="quest-progress-card__status mt-3">
+                          Quest Completed!
+                        </div>
                       </div>
-                      <div v-if="isComplete" class="badge bg-success mt-2">Quest Complete!</div>
                     </div>
                   </div>
                 </div>
 
-                <div
-                  class="reward-access-card mt-4"
-                  :class="{
-                    'reward-access-card--locked': !isComplete,
-                    'reward-access-card--pending': isComplete && !isRewardUnlocked,
-                    'reward-access-card--unlocked': isRewardUnlocked,
-                  }"
-                >
-                  <div class="reward-access-card__inner d-flex flex-column flex-lg-row align-items-lg-center gap-3 gap-lg-4">
-                    <div
-                      class="reward-access-card__status d-flex align-items-center text-center text-lg-start gap-3"
-                    >
-                      <div
-                        class="status-icon"
-                        :class="{
-                          'status-icon--pending': isComplete && !isRewardUnlocked,
-                          'status-icon--unlocked': isRewardUnlocked,
-                        }"
-                      >
-                        <font-awesome-icon :icon="rewardStatusIcon" />
-                      </div>
-                      <div>
-                        <div class="status-eyebrow text-uppercase small fw-semibold text-muted mb-1">
-                          Presale Access
-                        </div>
-                        <h5 class="fw-bold mb-1">{{ rewardStatusHeading }}</h5>
-                        <p class="text-muted small mb-0">{{ rewardStatusMessage }}</p>
-                      </div>
-                    </div>
+              </div>
+            </div>
+          </div>
 
-                    <div class="reward-access-card__code text-center text-lg-start ms-lg-auto">
-                      <div class="code-chip" :class="{ 'code-chip--locked': !isRewardUnlocked }">
-                        <span class="code-value">{{ rewardCodeDisplay }}</span>
-                        <button
-                          v-if="isRewardUnlocked"
-                          class="btn btn-primary btn-sm code-copy-btn"
-                          type="button"
-                          :disabled="isCopyingCode"
-                          @click="copyRewardCode"
-                        >
-                          {{ copyButtonLabel }}
-                        </button>
-                      </div>
+          <div class="col-12 col-xl-4 d-flex">
+            <div
+              class="reward-access-card w-100 h-100"
+              :class="{
+                'reward-access-card--locked': !isComplete,
+                'reward-access-card--pending': isComplete && !isRewardUnlocked,
+                'reward-access-card--unlocked': isRewardUnlocked,
+              }"
+            >
+              <div class="reward-access-card__inner d-flex flex-column gap-3 h-100">
+                <div class="reward-access-card__status d-flex align-items-center text-center text-sm-start gap-3">
+                  <div
+                    class="status-icon"
+                    :class="{
+                      'status-icon--pending': isComplete && !isRewardUnlocked,
+                      'status-icon--unlocked': isRewardUnlocked,
+                    }"
+                  >
+                    <font-awesome-icon :icon="rewardStatusIcon" />
+                  </div>
+                  <div>
+                    <div class="status-eyebrow text-uppercase small fw-semibold text-muted mb-1">Presale Access</div>
+                    <h5 class="fw-bold mb-1">{{ rewardStatusHeading }}</h5>
+                    <p class="text-muted small mb-0">{{ rewardStatusMessage }}</p>
+                  </div>
+                </div>
+
+                <div class="reward-access-card__code text-center text-sm-start">
+                  <div class="code-chip" :class="{ 'code-chip--locked': !isRewardUnlocked }">
+                    <span class="code-value">{{ rewardCodeDisplay }}</span>
+                    <button
+                      v-if="isRewardUnlocked"
+                      class="btn btn-primary btn-sm code-copy-btn"
+                      type="button"
+                      :disabled="isCopyingCode"
+                      @click="copyRewardCode"
+                    >
+                      {{ copyButtonLabel }}
+                    </button>
+                  </div>
+                  <div class="copy-feedback-space" aria-live="polite">
+                    <transition name="fade">
                       <p
                         v-if="isRewardUnlocked && copyState !== 'idle'"
                         class="small mt-2 mb-0"
@@ -124,7 +163,7 @@
                       >
                         {{ copyFeedback }}
                       </p>
-                    </div>
+                    </transition>
                   </div>
                 </div>
               </div>
@@ -132,27 +171,29 @@
           </div>
         </div>
 
-        <div class="row g-4">
+        <div class="row g-4 available-quests">
           <div class="col-12">
             <h2 class="fw-bold mb-2">Available Quests</h2>
           </div>
 
           <ScrollObserver class="col-12 col-md-6 d-flex" delay="200ms" direction="left">
-            <div class="card quest-card quest-music h-100 w-100 shadow-sm">
-              <div class="card-body p-4 d-flex align-items-center">
-                <div class="quest-icon" aria-hidden="true">
+            <div class="card quest-card quest-music h-100 w-100">
+              <div class="card-body p-4">
+                <div class="quest-card__badge" aria-hidden="true">
                   <font-awesome-icon :icon="['fab', 'spotify']" />
                 </div>
-                <div class="flex-grow-1">
-                  <h5 class="fw-bold mb-1">Music Discovery</h5>
-                  <p class="text-muted mb-2">
+                <h5 class="fw-bold">Music Discovery</h5>
+                <div class="quest-card__content">
+                  <p class="quest-card__description text-muted small">
                     We’ll check your recently played tracks. If we find songs by
                     <strong>{{ artistName }}</strong> played at least 5 times, you earn
                     <strong>{{ MUSIC_MAX }} points</strong>.
                   </p>
-                  <div class="text-primary-1 fw-bold mb-2">+{{ quests.music.points }} / {{ MUSIC_MAX }} Points</div>
+                  <div class="quest-card__points">+{{ quests.music.points }} / {{ MUSIC_MAX }} Points</div>
+                </div>
+                <div class="quest-card__actions">
                   <MusicQuestButton
-                    class="qp-btn"
+                    class="w-100"
                     @start-quest="showMusicQuest = true"
                     :is-disabled="isMusicQuestDone"
                     :button-text="isMusicQuestDone ? 'Completed' : 'Start Quest'"
@@ -164,19 +205,21 @@
           </ScrollObserver>
 
           <ScrollObserver class="col-12 col-md-6 d-flex" delay="300ms" direction="right">
-            <div class="card quest-card quest-trivia h-100 w-100 shadow-sm">
-              <div class="card-body p-4 d-flex align-items-center">
-                <div class="quest-icon" aria-hidden="true">
-                  <i class="fas fa-record-vinyl"></i>
+            <div class="card quest-card quest-trivia h-100 w-100">
+              <div class="card-body p-4">
+                <div class="quest-card__badge" aria-hidden="true">
+                  <font-awesome-icon :icon="['fas', 'music']" class="text-white" />
                 </div>
-                <div class="flex-grow-1">
-                  <h5 class="fw-bold mb-1">Artist Trivia</h5>
-                  <p class="text-muted small mb-2">
+                <h5 class="fw-bold">Artist Trivia</h5>
+                <div class="quest-card__content">
+                  <p class="quest-card__description text-muted small">
                     Score a perfect {{ TRIVIA_QS }} / {{ TRIVIA_QS }} on the artist trivia.
                   </p>
-                  <div class="text-primary-1 fw-bold mb-2">+{{ quests.trivia.points }} / {{ TRIVIA_AWARD }} Points</div>
+                  <div class="quest-card__points">+{{ quests.trivia.points }} / {{ TRIVIA_AWARD }} Points</div>
+                </div>
+                <div class="quest-card__actions">
                   <MusicQuestButton
-                    class="qp-btn"
+                    class="w-100"
                     @start-quest="showTriviaQuest = true"
                     :is-disabled="isTriviaQuestDone"
                     :button-text="isTriviaQuestDone ? 'Completed' : 'Start Trivia'"
@@ -323,6 +366,11 @@ const completedQuestCount = computed(() =>
 );
 
 const totalQuestCount = computed(() => questList.value.length);
+
+const questCompletionPercent = computed(() => {
+  if (!totalQuestCount.value) return 0;
+  return Math.round((completedQuestCount.value / totalQuestCount.value) * 100);
+});
 
 const isComplete = computed(() => pointGoal.value > 0 && totalPoints.value >= pointGoal.value);
 
@@ -937,7 +985,6 @@ function buildTitleInitials(title) {
 
 </script>
 
-<!-- NEWLY ADDED <style> BLOCK -->
 <style scoped>
 /* --- ADDED: Theme variables and accents (scoped but declared on :root globally) --- */
 :global(:root) {
@@ -966,10 +1013,6 @@ function buildTitleInitials(title) {
   50% { transform: translateY(-6px) scale(1.02); opacity: 1 }
   100% { transform: translateY(0) scale(1); opacity: 0.95 }
 }
-
-/* Wave divider */
-.wave-divider { position: relative; width: 100%; height: 60px; margin-top: -2px; }
-.wave-divider svg { display: block; width: 100%; height: 100%; }
 
 /* --- ADDED: Keyframe Animations --- */
 @keyframes pulse {
@@ -1019,8 +1062,13 @@ function buildTitleInitials(title) {
 
 /* Base page styling */
 .event-details-page {
-  background-color: #f8f9fa; /* Light gray background */
+  --page-bg:
+    radial-gradient(1200px 600px at 50% -10%, var(--bg-1, #fff0ff) 0%, transparent 55%),
+    radial-gradient(1000px 500px at 90% 10%, var(--bg-2, #efeaff) 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg-3, #f3e9ff) 0%, #f7f3ff 55%, #f9f6ff 100%);
+  background: var(--page-bg);
   min-height: 100vh;
+  position: relative;
 }
 
 /* 1. Header Banner Improvements */
@@ -1067,9 +1115,8 @@ function buildTitleInitials(title) {
 
 /* 2. Main content positioning */
 .main-content-wrapper {
-  margin-top: -80px; /* Pull the entire content section up */
   position: relative;
-  z-index: 3; /* Make sure it's above the banner */
+  z-index: 3; /* Keep content above the banner background */
 }
 
 /* 3. Sticky Progress Card */
@@ -1117,13 +1164,125 @@ function buildTitleInitials(title) {
   box-shadow: var(--card-elev);
 }
 
+.progress-summary-card__header p {
+  max-width: 32rem;
+}
+
+.progress-summary-card__content {
+  background: linear-gradient(145deg, rgba(226, 232, 255, 0.32), rgba(244, 244, 255, 0.18));
+  border: 1px solid rgba(79, 70, 229, 0.08);
+  border-radius: 1.25rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.points-progress {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 1rem;
+  padding: 1.1rem 1.4rem;
+  box-shadow: 0 16px 32px rgba(99, 102, 241, 0.08);
+}
+
+.points-progress__meta {
+  flex: 1 1 auto;
+}
+
+.points-progress__label {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.points-progress__value {
+  line-height: 1.1;
+  font-size: clamp(1.9rem, 3vw, 2.45rem);
+}
+
+.points-progress__track {
+  position: relative;
+  width: min(360px, 100%);
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.18);
+  overflow: hidden;
+}
+
+.points-progress__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+  transition: width 0.5s ease;
+}
+
+.points-progress__ticks span:last-child {
+  font-variant-numeric: tabular-nums;
+}
+
+.quest-progress-card {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 1.15rem 1.4rem;
+  border-radius: 1rem;
+  background: rgba(248, 250, 255, 0.95);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 18px 28px rgba(30, 64, 175, 0.08);
+}
+
+.quest-progress-card__label {
+  letter-spacing: 0.08em;
+}
+
+.quest-progress-card__bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.2);
+  overflow: hidden;
+  position: relative;
+}
+
+.quest-progress-card__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #38bdf8, #6366f1);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
+  transition: width 0.5s ease;
+}
+
+.quest-progress-card__status {
+  align-self: flex-start;
+}
+
+.bg-success-subtle {
+  background-color: rgba(34, 197, 94, 0.12) !important;
+}
+
+.quest-progress-card__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.2);
+}
+
 
 .reward-access-card {
+  display: flex;
+  flex-direction: column;
   border-radius: 1rem;
-  padding: 1.75rem;
+  padding: 1.25rem 1.4rem;
   border: 1px solid rgba(15, 23, 42, 0.06);
-  background: linear-gradient(160deg, rgba(255, 248, 241, 0.95), rgba(255, 255, 255, 0.9));
+  background: linear-gradient(160deg, rgba(255, 248, 241, 0.92), rgba(255, 255, 255, 0.9));
+  box-shadow: var(--card-elev);
 }
+
 
 .reward-access-card--locked {
   border-color: rgba(245, 158, 11, 0.25);
@@ -1139,12 +1298,36 @@ function buildTitleInitials(title) {
   border-color: rgba(16, 185, 129, 0.35);
 }
 
+.reward-access-card--summary.reward-access-card--locked {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(253, 244, 235, 0.88));
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.reward-access-card--summary.reward-access-card--pending {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(237, 233, 254, 0.9));
+  border-color: rgba(129, 140, 248, 0.3);
+}
+
+.reward-access-card--summary.reward-access-card--unlocked {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(222, 247, 236, 0.9));
+  border-color: rgba(16, 185, 129, 0.32);
+}
+
+@media (min-width: 768px) {
+  .progress-summary-card__content .reward-access-card--summary {
+    border-left: 1px solid rgba(79, 70, 229, 0.24);
+    padding-left: 2rem;
+    margin-left: 0.5rem;
+  }
+
+  .progress-summary-card__content .reward-access-card--summary::before {
+    opacity: 0.75;
+  }
+}
+
 .reward-access-card__inner {
   position: relative;
   z-index: 1;
-}
-
-.reward-access-card__status {
   flex: 1 1 auto;
 }
 
@@ -1175,10 +1358,6 @@ function buildTitleInitials(title) {
 
 .status-eyebrow {
   letter-spacing: 0.08em;
-}
-
-.reward-access-card__code {
-  min-width: 240px;
 }
 
 .code-chip {
@@ -1212,11 +1391,11 @@ function buildTitleInitials(title) {
   white-space: nowrap;
 }
 
-@media (max-width: 767.98px) {
-  .reward-access-card {
-    padding: 1.5rem;
-  }
+.copy-feedback-space {
+  min-height: 1.5rem;
+}
 
+@media (max-width: 767.98px) {
   .reward-access-card__code {
     width: 100%;
   }
@@ -1233,107 +1412,98 @@ function buildTitleInitials(title) {
 }
 
 /* 4. Quest Card Enhancements */
-.quest-card {
-  border: 0;
-  border-radius: 0.5rem;
-  /* MODIFICATION: Smoother, bouncier transition */
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-    box-shadow 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  overflow: hidden; /* Good for icons */
-  transform-origin: center;
-  will-change: transform;
+.available-quests {
+  margin-top: 3rem;
 }
 
-/* Make sure the card body uses a stable flex layout so the icon sits left of the content */
-.quest-card .card-body {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
+.quest-card {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaff 100%);
+  box-shadow: 0 12px 30px rgba(96, 75, 200, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  overflow: hidden;
 }
 
 .quest-card:hover {
-  transform: translateY(-8px); /* More lift */
-  /* MODIFICATION: Softer, more pronounced shadow on hover */
-  box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.1) !important;
-  transform: perspective(900px) rotateX(1deg) translateY(-8px) scale(1.01);
+  transform: translateY(-6px);
+  box-shadow: 0 18px 34px rgba(96, 75, 200, 0.12);
 }
 
-/* New class for the round icons */
-.quest-card .quest-icon {
-  flex-shrink: 0;
-  width: 78px;
-  height: 78px;
-  border-radius: 50%;
+.quest-card .card-body {
+  height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  margin-right: 1.25rem;
-  color: #fff;
-  position: relative;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.15);
-  /* Vinyl disc look */
-  background: radial-gradient(circle at 50% 45%, #262b3a 0%, #0d111a 65%, #0a0e15 100%);
-}
-
-/* Grooves */
-.quest-card .quest-icon::before {
-  content: '';
-  position: absolute; inset: 10%;
-  border-radius: 50%;
-  background: repeating-radial-gradient(
-    circle,
-    rgba(255,255,255,0.06) 0px,
-    rgba(255,255,255,0.06) 2px,
-    rgba(255,255,255,0) 3px,
-    rgba(255,255,255,0) 4px
-  );
-  filter: blur(0.2px);
-}
-
-/* Label */
-.quest-card .quest-icon::after {
-  content: '';
-  position: absolute;
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  background: conic-gradient(from 120deg, var(--accent-1), var(--accent-2));
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.25);
-}
-
-/* icon inside label */
-.quest-card .quest-icon svg, .quest-card .quest-icon i {
-  position: relative;
-  z-index: 1;
-  font-size: 18px;
-  width: 18px; height: 18px;
-  color: #fff;
-}
-
-/* playful floating orb behind the icon */
-/* Spin vinyl on hover */
-.quest-card:hover .quest-icon { animation: spin 1.8s linear infinite; }
-
-/* subtle background for quest cards to make them less flat */
-.quest-card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,249,255,0.98));
-  border: 1px solid rgba(15,23,36,0.03);
-}
-
-.quest-card .quest-icon i {
-  font-size: 1.75rem; /* A bit smaller than 3x, fits circle better */
-  line-height: 1; /* Fixes potential alignment issues */
-}
-
-/* Ensure card body text is dark for contrast against page/bg */
-.quest-card .card-body,
-.progress-card .card-body,
-.event-details-page .card-body {
+  text-align: center;
+  gap: 1.25rem;
   color: #0f1724;
 }
 
-/* Buttons: add subtle dark text shadows to improve legibility on bright colors */
-.btn {
-  text-shadow: 0 1px 0 rgba(0,0,0,0.12);
+.quest-card__content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  width: 100%;
+  min-height: 140px;
+}
+
+.quest-card__badge {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(96, 75, 200, 0.2);
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+}
+
+.quest-card__badge svg,
+.quest-card__badge i {
+  font-size: 1.5rem;
+}
+
+.quest-card__description {
+  max-width: 320px;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+.quest-card__points {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  background: rgba(129, 140, 248, 0.16);
+  color: #4c1d95;
+  font-weight: 600;
+  border: 1px solid rgba(129, 140, 248, 0.24);
+  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.12);
+}
+
+.quest-card__actions {
+  margin-top: auto;
+  width: 100%;
+}
+
+.quest-card.quest-music .quest-card__badge {
+  background: linear-gradient(135deg, #34d399, #10b981);
+}
+
+.quest-card.quest-trivia .quest-card__badge {
+  background: linear-gradient(135deg, #60a5fa, #a855f7);
+}
+
+
+
+.quest-card__actions .start-quest-button {
+  width: 100%;
 }
 
 /* 5. Reward Modal */
@@ -1369,9 +1539,9 @@ function buildTitleInitials(title) {
   pointer-events: none;
   border-radius: 50%;
   filter: blur(18px);
-  /* match the page background so shapes blend in */
-  background: radial-gradient(circle, rgba(248,249,250,1), rgba(248,249,250,0.95));
-  opacity: 0.95;
+  /* match the soft gradient used across profile/home */
+  background: radial-gradient(circle at 50% 50%, rgba(167, 139, 250, 0.18), rgba(255, 255, 255, 0));
+  opacity: 0.8;
 }
 .event-details-page::before {
   width: 160px;
@@ -1406,11 +1576,44 @@ function buildTitleInitials(title) {
 
 /* small responsive tweaks */
 @media (max-width: 767.98px) {
-  .event-details-page::before, .event-details-page::after { display: none; }
-  .wave-divider { height: 44px }
-  .progress-summary-card .score-ring { margin: 0 auto; }
-  .progress-summary-card .progress { min-width: 0 !important; }
-  .quest-card .quest-icon { width: 64px; height: 64px; }
+  .event-details-page::before,
+  .event-details-page::after {
+    display: none;
+  }
+  .progress-summary-card__content {
+    padding: 1.1rem 1.25rem;
+  }
+  .points-progress {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem 1.25rem;
+    gap: 1.25rem;
+  }
+  .points-progress__meta {
+    text-align: center;
+  }
+  .points-progress__track {
+    width: 100%;
+  }
+  .quest-progress-card {
+    width: 100%;
+    align-items: center;
+    text-align: center;
+    flex: 1 1 auto;
+  }
+  .quest-progress-card__status {
+    align-self: center;
+  }
+  .reward-access-card {
+    padding: 1.3rem;
+  }
+  .quest-card__badge {
+    width: 60px;
+    height: 60px;
+  }
+  .available-quests {
+    margin-top: 2rem;
+  }
 }
 
 /* --- Responsive layout improvements --- */
@@ -1424,23 +1627,23 @@ function buildTitleInitials(title) {
 
 @media (max-width: 991.98px) {
   .event-banner { padding: 4rem 0; min-height: 320px; }
-  .main-content-wrapper { margin-top: -56px; }
   /* Turn off sticky on tablets/phones to avoid overlap glitches */
   .progress-card.position-sticky { position: static !important; top: auto !important; }
 }
 
 @media (max-width: 767.98px) {
   .event-banner { padding: 3rem 0; min-height: 280px; }
-  .main-content-wrapper { margin-top: -32px; }
 
-  /* Quest card: make layout wrap so the button goes full-width below text */
-  .quest-card .card-body { flex-wrap: wrap; align-items: flex-start; }
-  .quest-card .card-body > button { flex: 1 1 100%; margin-top: 0.75rem;  position: relative;z-index: 2;pointer-events: auto;}
-  .quest-card .quest-icon { width: 56px; height: 56px; margin-right: 1rem; }
-  .quest-card .quest-icon svg { width: 28px; height: 28px; }
+  .quest-card .card-body { gap: 1rem; }
+  .quest-card__description { max-width: none; }
 }
 
 @media (max-width: 575.98px) {
+  .quest-card__content {
+    min-height: 0;
+    gap: 1rem;
+  }
+
   .main-content-wrapper { margin-top: -20px; }
 }
 
@@ -1481,34 +1684,6 @@ function buildTitleInitials(title) {
   pointer-events: none;
 }
 .score-number { font-size: 2rem; line-height: 1; }
-
-/* Themed gradient buttons to match app-wide tokens */
-.qp-btn {
-  background: linear-gradient(90deg, var(--accent-1) 0%, var(--accent-2) 100%);
-  color: #fff;
-  border: 0;
-  box-shadow: 0 8px 20px rgba(96,165,250,.20);
-}
-.qp-btn:hover { box-shadow: 0 12px 26px rgba(96,165,250,.35); transform: translateY(-1px); }
-.qp-btn:disabled { opacity: .7; filter: grayscale(.1); }
-
-/* Subtle gradient border on hover via pseudo element */
-.quest-card { position: relative; }
-.quest-card::before {
-  content: '';
-  position: absolute; inset: 0; border-radius: 8px;
-  padding: 1px; background: linear-gradient(135deg, rgba(167,139,250,.5), rgba(96,165,250,.5));
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude;
-  opacity: 0; transition: opacity .25s ease;
-  pointer-events: none; /* add this line */
-}
-.quest-card:hover::before { opacity: 1; }
 
 /* Score ring responsive sizing */
 @media (max-width: 767.98px) {
