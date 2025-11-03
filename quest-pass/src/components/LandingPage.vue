@@ -36,26 +36,7 @@
 
         <div class="floating-card card-1">
           <div class="floating-card-icon icon-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M12 3c.3 0 .5.2.5.5v3c0 .3-.2.5-.5.5s-.5-.2-.5-.5v-3c0-.3.2-.5.5-.5z" />
-              <path d="M6.4 6.4c.2-.2.5-.2.7 0l2.1 2.1c.2.2.2.5 0 .7s-.5.2-.7 0L6.4 7.1c-.2-.2-.2-.5 0-.7z" />
-              <path d="M3 12c0-.3.2-.5.5-.5h3c.3 0 .5.2.5.5s-.2.5-.5.5h-3c-.3 0-.5-.2-.5-.5z" />
-              <path d="M6.4 17.6c-.2.2-.5.2-.7 0l-2.1-2.1c-.2-.2-.2-.5 0-.7s.5-.2.7 0l2.1 2.1c.2.2.2.5 0 .7z" />
-              <path d="M12 21c-.3 0-.5-.2-.5-.5v-3c0 .3.2.5.5.5s.5.2.5.5v3c0 .3-.2.5-.5.5z" />
-              <path d="M17.6 17.6c.2-.2.5-.2.7 0l2.1-2.1c.2.2.2.5 0 .7s-.5.2-.7 0l-2.1 2.1c-.2.2-.2.5 0 .7z" />
-              <path d="M21 12c0 .3-.2.5-.5.5h-3c-.3 0-.5-.2-.5-.5s.2-.5.5-.5h3c.3 0 .5.2.5.5z" />
-              <path d="M17.6 6.4c.2.2.5.2.7 0l2.1 2.1c.2.2.2.5 0 .7s-.5.2-.7 0l-2.1-2.1c-.2-.2-.2-.5 0-.7z" />
-            </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-check-icon lucide-check-check"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>
           </div>
           <div>
             <div class="floating-card-label">Quests Done</div>
@@ -64,24 +45,7 @@
         </div>
         <div class="floating-card card-2">
           <div class="floating-card-icon">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-              <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-              <path d="M4 22h16" />
-              <path d="M10 14.66V17c0 .55-.45 1-1 1H5c-.55 0-1-.45-1-1v-2.34" />
-              <path d="M14 9V6.5c0-.83-.67-1.5-1.5-1.5h-1c-.83 0-1.5.67-1.5 1.5V9" />
-              <path d="M15 22v-4.33c0-.55.45-1 1-1h4c.55 0 1 .45 1 1V22" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-no-axes-combined-icon lucide-chart-no-axes-combined"><path d="M12 16v5"/><path d="M16 14v7"/><path d="M20 10v11"/><path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"/><path d="M4 18v3"/><path d="M8 14v7"/></svg>
           </div>
           <div>
             <div class="floating-card-label">Your Points</div>
