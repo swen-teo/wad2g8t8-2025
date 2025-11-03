@@ -16,7 +16,7 @@
       <div class="modal-body p-4 p-md-5">
         <div v-if="triviaLoading" class="text-center p-5">
           <div class="spinner-border qp-spinner" role="status"></div>
-          <p class="mt-3 text-muted">Generating your trivia...</p>
+          <p class="mt-3 text-muted">{{ currentLoadingMessage }}</p>
         </div>
 
         <div v-else-if="triviaCompleted" class="text-center p-4">
@@ -291,7 +291,7 @@
 </style>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 // Import from the service file
 import { generateQuizQuestions } from '../services/gemini-quiz.js';
 
@@ -322,6 +322,13 @@ const triviaCurrentIndex = ref(0);
 const selectedAnswer = ref(null);
 const triviaScore = ref(0);
 const triviaError = ref(null); // For handling API errors
+const loadingMessageIndex = ref(0);
+
+const LOADING_MESSAGES = [
+  'Curating questions from the crowd...',
+  'Spinning up some challenging tracks...',
+  'Mixing lyrics and lore for your quiz...',
+];
 
 // --- computed properties ---
 const currentTriviaQuestion = computed(() => {
@@ -331,11 +338,17 @@ const canRetryTrivia = computed(() => {
   const message = String(triviaError.value || '').toLowerCase();
   return message.includes('502') || message.includes('invalid model response');
 });
+const currentLoadingMessage = computed(() => {
+  return LOADING_MESSAGES[loadingMessageIndex.value] || LOADING_MESSAGES[0];
+});
 
 // --- lifecycle ---
 onMounted(() => {
   // Load questions immediately when the overlay is shown
   loadTriviaQuestions();
+});
+onUnmounted(() => {
+  stopLoadingMessageRotation();
 });
 
 // --- quest 2: trivia ---
@@ -349,6 +362,7 @@ async function loadTriviaQuestions() {
   triviaScore.value = 0;
   selectedAnswer.value = null;
   triviaError.value = null;
+  startLoadingMessageRotation();
 
   try {
     // Call the service
@@ -363,6 +377,28 @@ async function loadTriviaQuestions() {
     triviaError.value = e.message || 'Could not load trivia questions.';
   } finally {
     triviaLoading.value = false;
+    stopLoadingMessageRotation();
+  }
+}
+
+let loadingMessageTimer = null;
+
+function startLoadingMessageRotation() {
+  stopLoadingMessageRotation();
+  loadingMessageIndex.value = 0;
+  if (LOADING_MESSAGES.length <= 1) {
+    return;
+  }
+  loadingMessageTimer = setInterval(() => {
+    loadingMessageIndex.value =
+      (loadingMessageIndex.value + 1) % LOADING_MESSAGES.length;
+  }, 2500);
+}
+
+function stopLoadingMessageRotation() {
+  if (loadingMessageTimer) {
+    clearInterval(loadingMessageTimer);
+    loadingMessageTimer = null;
   }
 }
 

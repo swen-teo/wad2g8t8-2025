@@ -236,13 +236,6 @@ async function startSpotifyAuth(options = {}) {
       /* no-op */
     }
 
-    setTimeout(() => {
-      try {
-        if (!popup.closed) popup.close();
-      } catch (e) {
-        /* no-op */
-      }
-    }, 20000);
   } catch (e) {
     error.value = 'Could not start Spotify auth.';
     loading.value = false;

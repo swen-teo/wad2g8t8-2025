@@ -6,13 +6,41 @@
 export async function generateQuizQuestions(artist) {
   // we're fetching from a secure backend
   const QUIZ_API_URL = import.meta.env.VITE_QUIZ_API_URL || '/api/quiz';
-  const response = await fetch(QUIZ_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ artist }),
-  });
+  const RETRYABLE_STATUS = new Set([502, 404]);
 
-  if (!response.ok) {
+  let attempt = 0;
+  for (;;) {
+    attempt += 1;
+    let response;
+
+    try {
+      response = await fetch(QUIZ_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artist }),
+      });
+    } catch (networkError) {
+      // Treat network failures like retryable errors, but rethrow if this was an abort.
+      if (networkError?.name === 'AbortError') {
+        throw networkError;
+      }
+      console.warn('Quiz request failed due to a network error, retrying…', networkError);
+      await new Promise((resolve) => setTimeout(resolve, getRetryDelay(attempt)));
+      continue;
+    }
+
+    if (response.ok) {
+      return await response.json(); // gemini ai-generated quiz array
+    }
+
+    if (RETRYABLE_STATUS.has(response.status)) {
+      console.warn(
+        `Quiz request returned HTTP ${response.status}; retrying attempt ${attempt + 1} after backoff.`
+      );
+      await new Promise((resolve) => setTimeout(resolve, getRetryDelay(attempt)));
+      continue;
+    }
+
     // Try to surface server error details to the UI
     let detail = '';
     let extra = '';
@@ -34,9 +62,17 @@ export async function generateQuizQuestions(artist) {
         detail = await response.text();
       }
     } catch {}
-    const msg = `Failed to fetch quiz from backend (HTTP ${response.status}). ${[detail, extra].filter(Boolean).join(' ')}`.trim();
+    const msg = `Failed to fetch quiz from backend (HTTP ${response.status}). ${[detail, extra]
+      .filter(Boolean)
+      .join(' ')}`.trim();
     throw new Error(msg);
   }
+}
 
-  return await response.json(); // gemini ai-generated quiz array
+function getRetryDelay(attempt) {
+  const BASE_DELAY = 1000; // 1 second
+  const MAX_DELAY = 5000; // 5 seconds max between attempts
+  const jitter = Math.random() * 250; // add a little jitter to avoid thundering herd
+  const delay = Math.min(BASE_DELAY * 2 ** (attempt - 1), MAX_DELAY);
+  return delay + jitter;
 }
