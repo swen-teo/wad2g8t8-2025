@@ -358,6 +358,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { Modal } from 'bootstrap';
+import { sendRewardUnlockEmail } from '../services/email.js';
 
 // --- Import the new components ---
 import MusicQuest from './MusicQuest.vue';
@@ -447,9 +448,21 @@ const isComplete = computed(() => pointGoal.value > 0 && totalPoints.value >= po
 const isMusicQuestDone = computed(() => quests.value.music.completed);
 const isTriviaQuestDone = computed(() => quests.value.trivia.completed);
 
+const APP_NAME = 'Quest Pass';
+
 const userRewardCode = ref(null);
 
 const rewardCode = computed(() => userRewardCode.value);
+
+const userEmail = computed(() => userStore.currentUser?.email || null);
+const userDisplayName = computed(() =>
+  userStore.currentUser?.name ||
+  userStore.currentUser?.displayName ||
+  (userEmail.value ? userEmail.value.split('@')[0] : null) ||
+  'there'
+);
+
+const eventName = computed(() => event.value?.title || event.value?.name || 'your event');
 
 const isRewardUnlocked = computed(
   () => Boolean(rewardCode.value) && isComplete.value
@@ -1072,6 +1085,7 @@ async function checkForCompletion() {
   const progressDocRef = getProgressDocRef();
   if (!progressDocRef) return; // skip if no user
 
+  const hadRewardCode = Boolean(userRewardCode.value);
   const unlockedAt = Timestamp.now();
   if (!userRewardCode.value) {
     userRewardCode.value = generateUserRewardCode(event.value?.title);
@@ -1082,6 +1096,17 @@ async function checkForCompletion() {
     rewardUnlockedAt: unlockedAt,
     rewardCode: userRewardCode.value,
   });
+
+  if (!hadRewardCode) {
+    await sendRewardUnlockEmail({
+      toEmail: userEmail.value,
+      toName: userDisplayName.value,
+      pointsEarned: totalPoints.value,
+      eventName: eventName.value,
+      rewardCode: userRewardCode.value,
+      appName: APP_NAME,
+    });
+  }
   if (rewardModal.value?.show) {
     rewardModal.value.show();
   }
