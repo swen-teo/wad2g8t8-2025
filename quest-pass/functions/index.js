@@ -146,8 +146,23 @@ async function requestGeminiQuiz(apiKey, prompt) {
   try {
     quiz = JSON.parse(raw);
   } catch {
-    const match = raw.match(/\[[\s\S]*\]/);
-    quiz = match ? JSON.parse(match[0]) : [];
+    // Try to extract the first valid JSON array from the string
+    const arrMatch = raw.match(/\[[^\]]*\](?![\s\S]*\[[^\]]*\])/s);
+    if (arrMatch) {
+      try {
+        quiz = JSON.parse(arrMatch[0]);
+      } catch {
+        quiz = [];
+      }
+    } else {
+      // Try to extract any JSON array (greedy)
+      const fallbackMatch = raw.match(/\[[\s\S]*\]/);
+      try {
+        quiz = fallbackMatch ? JSON.parse(fallbackMatch[0]) : [];
+      } catch {
+        quiz = [];
+      }
+    }
   }
 
   return (Array.isArray(quiz) ? quiz : [])
