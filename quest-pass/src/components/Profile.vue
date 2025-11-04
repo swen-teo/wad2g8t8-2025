@@ -149,30 +149,80 @@
       >
       <!-- left column: badges -->
       <div class="col-lg-4">
-        <h4 class="mb-3">My Badges</h4>
-        <div
-          v-if="userStore.currentUser.badges?.length > 0"
-          class="card card-body"
-        >
-          <div class="list-group list-group-flush">
-              <div
-                v-for="badge in userStore.currentUser.badges"
-                :key="badge"
-                class="list-group-item d-flex align-items-center"
-              >
-                <div class="badge-icon me-3">
-                  <font-awesome-icon :icon="['fas','trophy']" class="text-white" />
+        <h4 class="mb-3">Events In Progress</h4>
+        <div class="card events-card">
+          <div class="card-body p-0">
+            <div class="events-card-header d-flex align-items-center justify-content-between p-3 p-md-4">
+              <div class="d-flex align-items-center gap-2">
+                <div class="events-badge-icon events-badge-icon--progress">
+                  <font-awesome-icon :icon="['fas','hourglass-half']" />
                 </div>
-                <span class="fw-bold">{{ badge }}</span>
+                <h5 class="mb-0">In Progress</h5>
               </div>
+              <span class="events-count badge rounded-pill">
+                {{ eventsInProgress.length }}
+              </span>
+            </div>
+
+            <div v-if="isLoadingEvents" class="text-center py-4">
+              <span class="spinner-border" role="status" aria-hidden="true"></span>
+            </div>
+
+            <ul v-else-if="eventsInProgress.length > 0" class="list-group list-group-flush">
+              <li
+                v-for="event in eventsInProgress"
+                :key="event.id"
+                class="list-group-item event-item"
+                role="button"
+                tabindex="0"
+                @click="goToEvent(event.id)"
+                @keyup.enter="goToEvent(event.id)"
+                @keyup.space.prevent="goToEvent(event.id)"
+              >
+                <div class="d-flex align-items-center justify-content-between w-100">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="event-icon event-icon--progress">
+                      <font-awesome-icon :icon="['fas','hourglass-half']" />
+                    </div>
+                    <div class="event-text">
+                      <div class="event-title">{{ event.title }}</div>
+                      <div class="event-meta" v-if="event.subtitle || event.progressLabel || event.updatedAtLabel">
+                        <span v-if="event.subtitle">{{ event.subtitle }}</span>
+                        <span
+                          v-if="event.subtitle && (event.progressLabel || event.updatedAtLabel)"
+                          class="mx-2"
+                        >
+                          •
+                        </span>
+                        <span v-if="event.progressLabel">{{ event.progressLabel }}</span>
+                        <span
+                          v-if="event.progressLabel && event.updatedAtLabel"
+                          class="mx-2"
+                        >
+                          •
+                        </span>
+                        <span v-if="!event.progressLabel && event.subtitle && event.updatedAtLabel" class="mx-2"></span>
+                        <span v-if="event.updatedAtLabel">Updated {{ event.updatedAtLabel }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chevron" aria-hidden="true">
+                    <font-awesome-icon :icon="['fas','angle-right']" />
+                  </div>
+                </div>
+              </li>
+            </ul>
+
+            <div v-else class="p-4 text-center text-muted">
+              <div class="mb-2">
+                <div class="event-icon event-icon--progress mx-auto">
+                  <font-awesome-icon :icon="['fas','hourglass-half']" />
+                </div>
+              </div>
+              <p class="mb-0">No events in progress yet. Complete a quest to see it here.</p>
+            </div>
           </div>
         </div>
-        <p
-          v-else
-          class="text-muted"
-        >
-          No badges earned yet. Go complete some quests!
-        </p>
       </div>
 
       <!-- right column: completed quests -->
@@ -252,7 +302,7 @@ import { ref, watch, onMounted } from 'vue';
 import { Popover } from 'bootstrap';
 import { useUserStore } from '@/store/user.js';
 import { db } from '@/firebase.js';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { useRouter } from 'vue-router';
 import Loading from '@/components/Loading.vue';
 
@@ -262,6 +312,7 @@ const router = useRouter();
 
 // local state for this page
 const unlockedEvents = ref([]);
+const eventsInProgress = ref([]);
 const isLoadingEvents = ref(false);
 
 function asDate(value) {
@@ -290,26 +341,42 @@ function formatDateLabel(date) {
   }
 }
 
-// fetches the list of events this user has unlocked by completing all quests
-async function loadUnlockedEvents(userId) {
+function buildProgressLabel({ musicComplete, triviaComplete, questsCompleted }) {
+  const labels = [];
+  if (musicComplete) labels.push('Music quest complete');
+  if (triviaComplete) labels.push('Trivia quest complete');
+
+  if (!labels.length && questsCompleted > 0) {
+    const suffix = questsCompleted === 1 ? '' : 's';
+    labels.push(`${questsCompleted} quest${suffix} underway`);
+  }
+
+  return labels.join(' • ') || null;
+}
+
+// fetch the user's event progress so we can show unlocked and in-progress events
+async function loadEventProgress(userId) {
   if (!userId) return; // can't fetch if we don't know who the user is
 
   isLoadingEvents.value = true;
   unlockedEvents.value = [];
+  eventsInProgress.value = [];
   try {
-    const q = query(
-      collection(db, 'users', userId, 'eventProgress'),
-      where('rewardClaimed', '==', true)
+    const querySnapshot = await getDocs(
+      collection(db, 'users', userId, 'eventProgress')
     );
-    const querySnapshot = await getDocs(q);
 
     const events = await Promise.all(
       querySnapshot.docs.map(async (snapshot) => {
-        const progress = snapshot.data();
+        const progress = snapshot.data() || {};
         const eventId = snapshot.id;
 
         const unlockedAt =
-          asDate(progress.rewardClaimedAt) || asDate(progress.lastUpdated);
+          asDate(progress.rewardClaimedAt) ||
+          asDate(progress.rewardUnlockedAt) ||
+          asDate(progress.lastUpdated);
+
+        const lastUpdated = asDate(progress.lastUpdated) || unlockedAt || null;
 
         let eventDetails;
         try {
@@ -324,7 +391,7 @@ async function loadUnlockedEvents(userId) {
         const title =
           eventDetails?.title ||
           progress.eventTitle ||
-          `Unlocked Event ${eventId}`;
+          `Event ${eventId}`;
 
         const venueName =
           eventDetails?.venueName || progress.eventVenueName || null;
@@ -342,26 +409,81 @@ async function loadUnlockedEvents(userId) {
           subtitleParts.push(venueText);
         }
 
+        const musicComplete = progress?.music?.completed === true;
+        const triviaComplete = progress?.trivia?.completed === true;
+        const questsCompleted = Number(progress?.questsCompleted) || 0;
+        const hasCompletedQuest =
+          musicComplete || triviaComplete || questsCompleted > 0;
+        const rewardUnlocked =
+          progress?.rewardUnlocked === true ||
+          progress?.rewardClaimed === true ||
+          Boolean(progress?.rewardCode);
+        const rewardClaimed = progress?.rewardClaimed === true;
+
+        const progressLabel = buildProgressLabel({
+          musicComplete,
+          triviaComplete,
+          questsCompleted,
+        });
+
         return {
           id: eventId,
           title,
           subtitle: subtitleParts.join(' • ') || null,
           unlockedAt,
           unlockedAtLabel: formatDateLabel(unlockedAt),
+          lastUpdated,
+          updatedAtLabel: formatDateLabel(lastUpdated),
+          progressLabel,
+          rewardUnlocked,
+          rewardClaimed,
+          hasCompletedQuest,
         };
       })
     );
 
-    unlockedEvents.value = events
+    const normalised = events
       .filter(Boolean)
-      .sort((a, b) => {
-        const aTime = a.unlockedAt ? a.unlockedAt.getTime() : 0;
-        const bTime = b.unlockedAt ? b.unlockedAt.getTime() : 0;
-        return bTime - aTime;
-      })
-      .map(({ unlockedAt, ...rest }) => rest);
+      .map((event) => ({
+        ...event,
+        unlockedAtTime: event.unlockedAt ? event.unlockedAt.getTime() : 0,
+        lastUpdatedTime: event.lastUpdated ? event.lastUpdated.getTime() : 0,
+      }));
+
+    unlockedEvents.value = normalised
+      .filter((event) => event.rewardClaimed)
+      .sort((a, b) => b.unlockedAtTime - a.unlockedAtTime)
+      .map(
+        ({
+          unlockedAtTime,
+          lastUpdatedTime,
+          rewardClaimed,
+          rewardUnlocked,
+          hasCompletedQuest,
+          ...rest
+        }) => rest
+      );
+
+    eventsInProgress.value = normalised
+      .filter(
+        (event) =>
+          !event.rewardUnlocked &&
+          !event.rewardClaimed &&
+          event.hasCompletedQuest
+      )
+      .sort((a, b) => b.lastUpdatedTime - a.lastUpdatedTime)
+      .map(
+        ({
+          unlockedAtTime,
+          lastUpdatedTime,
+          rewardClaimed,
+          rewardUnlocked,
+          hasCompletedQuest,
+          ...rest
+        }) => rest
+      );
   } catch (error) {
-    console.error('Error fetching unlocked events:', error);
+    console.error('Error fetching event progress:', error);
   } finally {
     isLoadingEvents.value = false;
   }
@@ -383,9 +505,10 @@ watch(
   (newUser) => {
     // the function to run when it changes
     if (newUser) {
-      loadUnlockedEvents(newUser.uid);
+      loadEventProgress(newUser.uid);
     } else {
       unlockedEvents.value = [];
+      eventsInProgress.value = [];
     }
   },
   { immediate: true } // run this immediately on load, just in case
@@ -592,6 +715,10 @@ function goToEvent(id) {
   background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
   box-shadow: 0 6px 14px rgba(96,75,200,0.18);
 }
+.events-badge-icon--progress {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  box-shadow: 0 6px 14px rgba(249,115,22,0.18);
+}
 .events-count {
   background: rgba(167,139,250,0.15);
   color: var(--primary-1);
@@ -621,6 +748,11 @@ function goToEvent(id) {
   color: #22c55e;
   background: #f0fdf4;
   border: 1px solid #dcfce7;
+}
+.event-icon--progress {
+  color: #f97316;
+  background: #fff7ed;
+  border-color: #ffedd5;
 }
 .event-text .event-title {
   font-weight: 600;
