@@ -2,7 +2,7 @@
   <div class="container py-5">
     <div class="card shadow-lg merch-card">
       <div class="card-body p-4 p-md-5 text-center">
-        <h2 class="fw-bold mb-4">🛒 Spin to Win Merch Voucher!</h2>
+        <h2 class="fw-bold mb-4">Spin to Win Merch Voucher!</h2>
         
                 <div v-if="!userStore.isLoggedIn" class="alert alert-warning d-flex align-items-center justify-content-center gap-2">
                     <font-awesome-icon :icon="['fas','sign-in-alt']" class="me-2" />

@@ -24,7 +24,7 @@
         </div>
 
         <div v-if="isQuestCompleted" class="alert alert-success d-flex align-items-center gap-2" role="status">
-          <i class="fas fa-check-circle"></i>
+          <font-awesome-icon :icon="['fas', 'check-circle']" />
           <span>Great news! You’ve already completed this quest.</span>
         </div>
 
