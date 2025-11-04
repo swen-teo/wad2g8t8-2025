@@ -126,7 +126,7 @@ exports.populateEventsFromJambase = functions.https.onRequest((req, res) => {
 // Generate Gemini Quiz
 // ----------------------
 async function requestGeminiQuiz(apiKey, prompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
   const { data } = await axios.post(
     url,
     {

@@ -245,8 +245,8 @@ onUnmounted(() => { document.removeEventListener('click', handleOutsideClick) })
 // Suggestions
 const artistSuggestions = computed(() => {
   const q = artistQuery.value.trim().toLowerCase()
-  if (!q) return allArtists.value.slice(0, 8)
-  return allArtists.value.filter(a => a.name.toLowerCase().includes(q)).slice(0, 8)
+  if (!q) return allArtists.value.slice(0, 3)
+  return allArtists.value.filter(a => a.name.toLowerCase().includes(q)).slice(0, 3)
 })
 
 const suggestions = computed(() => {
@@ -455,7 +455,7 @@ onMounted(fetchArtists)
   max-width: 100%;
   overflow: visible;
   display: flex;
-  height: 100%;
+  /* Removed fixed height so card grows with content */
 }
 .game-icon {
   width: 36px; height: 36px; border-radius: 10px;
@@ -486,11 +486,23 @@ onMounted(fetchArtists)
 }
 .overlay-chip.success { background: rgba(16,185,129,0.75); border-color: rgba(16,185,129,0.9); }
 
-.guess-box { position: relative; }
+.guess-box {
+  position: relative;
+  overflow: visible;
+  z-index: 10;
+}
 .suggestion-list {
-  position: absolute; left: 0; right: 0; top: 100%; z-index: 1080;
-  border: 1px solid #f1eefb; border-top: none; border-radius: 0 0 .75rem .75rem;
-  max-height: min(260px, 40vh); overflow-y: auto;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 2000;
+  border: 1px solid #f1eefb;
+  border-top: none;
+  border-radius: 0 0 .75rem .75rem;
+  max-height: min(260px, 40vh);
+  overflow-y: auto;
+  background: #fff;
 }
 .list-group-item-action { cursor: pointer; }
 
