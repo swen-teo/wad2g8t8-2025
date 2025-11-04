@@ -59,13 +59,11 @@
                 data-bs-html="true"
                 data-bs-content="
                 <strong>Bronze:</strong> Levels 1–10<br>
-        
-                <strong>Silver:</strong> Levels 11–20 (Voucher: $5)<br> 
-                <strong>Gold:</strong> Levels 21–30 (Voucher: $10)<br>
-                <strong>Platinum:</strong> Levels 31+ (Voucher: $20)"
-        
-                data-bs-custom-class="tier-popover-wide"
-                style="cursor: pointer;"
+                <strong>Silver:</strong> Levels 11–20<br>
+                <strong>Gold:</strong> Levels 21–30<br>
+                <strong>Platinum:</strong> Levels 31+"
+    
+                data-bs-custom-class="tier-popover-wide" style="cursor: pointer;"
               >
 
               <font-awesome-icon 
@@ -625,6 +623,7 @@ function goToEvent(id) {
 }
 .chevron { color: var(--primary-1); opacity: .7; }
 .event-item:hover .chevron { opacity: 1; }
+
 </style>
 
 
