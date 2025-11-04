@@ -22,6 +22,10 @@
     ],
     "rewrites": [
       {
+        "source": "/api/quiz", 
+        "function": "generateQuiz"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
