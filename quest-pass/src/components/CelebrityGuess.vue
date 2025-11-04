@@ -74,6 +74,20 @@
             :style="{ filter: `blur(${effectiveBlur}px)` }"
             @error="onImageError"
           />
+          <!-- Win overlay: subtle success chip -->
+          <div v-if="isWin" class="image-overlay" aria-live="polite">
+            <div class="overlay-chip success">
+              <font-awesome-icon :icon="['fas','check']" class="me-2" />
+              Correct!
+            </div>
+          </div>
+          <!-- Loss overlay: show revealed answer on top of unblurred image -->
+          <div v-if="isLoss" class="image-overlay" aria-live="polite">
+            <div class="overlay-chip">
+              <font-awesome-icon :icon="['fas','eye']" class="me-2" />
+              Answer: <strong class="ms-1">{{ answer.name }}</strong>
+            </div>
+          </div>
         </div>
 
         <!-- Controls -->
@@ -120,6 +134,9 @@
 
         <!-- Attempts list -->
         <div class="attempts-list">
+          <div v-if="isLoss" class="alert alert-warning text-center">
+            <strong>So close!</strong> The answer was <br><strong>{{ answer.name }}</strong>
+          </div>
           <div 
             v-for="(guess, index) in reversedAttempts" 
             :key="index"
@@ -131,9 +148,6 @@
           </div>
           <div v-if="isWin" class="alert alert-success text-center">
             <strong>Well done! You got it!</strong>
-          </div>
-          <div v-if="isLoss" class="alert alert-warning text-center">
-            <strong>So close!</strong> The answer was <br><strong>{{ answer.name }}</strong>
           </div>
         </div>
       </div>
@@ -181,8 +195,8 @@ const suggestions = computed(() => {
   }).slice(0, 5) // Limit to 5 suggestions
 })
 
-// Blur control: unblur immediately on win
-const effectiveBlur = computed(() => (isWin.value ? 0 : blurLevels[currentLevel.value]))
+// Blur control: unblur immediately on game completion (win or loss)
+const effectiveBlur = computed(() => (isComplete.value ? 0 : blurLevels[currentLevel.value]))
 
 // Points helpers (same as Heardle)
 const currentAttemptNumber = computed(() => Math.min(attempts.value.length + 1, MAX_ATTEMPTS))
@@ -394,12 +408,33 @@ function pickRandom(list) {
   background-color: #eee;
   margin-left: auto;
   margin-right: auto;
+  position: relative; /* allow overlay positioning */
 }
 .image-container img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: filter 0.5s ease-out; /* Smooth transition for the blur */
+}
+.image-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.25) 40%, transparent 70%);
+  color: #fff;
+  padding: 0.75rem;
+}
+.overlay-chip {
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.18);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
 }
 .guess-box { 
   position: relative; 

@@ -245,6 +245,7 @@ async function handleLogout() {
   overflow: hidden;
   top: calc(100% + 0.5rem);
   transform: none !important;
+  z-index: 2000; /* ensure above content */
 }
 
 .navbar-nav.ms-auto .dropdown-menu .dropdown-item,
@@ -293,10 +294,12 @@ async function handleLogout() {
   max-width: 12rem;
   justify-content: flex-end;
   text-align: right;
+  min-width: 0; /* allow truncation */
 }
 
 .user-name {
   max-width: 7.5rem;
+  overflow: hidden; /* paired with text-truncate */
 }
 
 .user-points {
@@ -316,12 +319,30 @@ async function handleLogout() {
 }
 
 @media (max-width: 575.98px) {
+  /* tighter button and gaps on very small screens */
+  .user-dropdown-toggle {
+    gap: 0.5rem;
+    padding: 0.35rem 0.6rem;
+  }
   .user-meta {
-    max-width: none;
+    max-width: 9.5rem;
   }
 
   .user-name {
-    max-width: 6.5rem;
+    max-width: 6rem;
+  }
+
+  /* make dropdown menu fit within viewport on phones */
+  .navbar-nav.ms-auto .dropdown-menu {
+    right: 0;
+    left: auto;
+    width: min(92vw, 320px);
+  }
+
+  /* hide the username on extra-cramped widths to avoid wrapping */
+  @media (max-width: 380px) {
+    .user-name { display: none; }
+    .user-meta { max-width: 6.5rem; }
   }
 }
 </style>
