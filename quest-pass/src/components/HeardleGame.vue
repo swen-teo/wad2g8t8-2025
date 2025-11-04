@@ -6,101 +6,92 @@
           <div class="game-icon"><font-awesome-icon :icon="['fas','music']" /></div>
           <h5 class="mb-0">Heardle (Lite)</h5>
         </div>
-        <span class="badge bg-light text-dark border">Attempt {{ attempts.length + 1 }} / {{ MAX_ATTEMPTS }}</span>
+        <span v-if="!isLoading" class="badge bg-light text-dark border">
+          Attempt {{ attempts.length + 1 }} / {{ MAX_ATTEMPTS }}
+        </span>
       </div>
 
       <p class="text-muted small mb-3">
         Listen to a short clip and guess the song. Each attempt reveals a longer snippet.
       </p>
 
-      <!-- Controls -->
-      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-        <button class="btn btn-primary" :disabled="isComplete" @click="playSnippet">
-          <font-awesome-icon :icon="['fas','play']" class="me-2" />Play snippet ({{ snippetDurations[currentLevel] }}s)
-        </button>
-        <button class="btn btn-outline-secondary" :disabled="isComplete" @click="skipAttempt">
-          Skip
-        </button>
-        <button class="btn btn-outline-danger ms-auto" @click="resetGame">
-          Reset
-        </button>
+      <!-- Loading State -->
+      <div v-if="isLoading" class="text-center p-4">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading songs...</span>
+        </div>
+        <p class="mt-2 text-muted">Loading today's tracks from Deezer...</p>
       </div>
 
-      <!-- Guess input with suggestions -->
-      <div class="guess-box mb-3">
-        <div class="input-group">
-          <span class="input-group-text bg-white"><font-awesome-icon :icon="['fas','search']" /></span>
-          <input
-            type="text"
-            class="form-control"
-            v-model.trim="query"
-            :disabled="isComplete"
-            placeholder="Type song title or artist"
-            @keydown.down.prevent="moveFocus(1)"
-            @keydown.up.prevent="moveFocus(-1)"
-            @keydown.enter.prevent="submitGuessFocused"
-          />
-          <button class="btn btn-success" :disabled="isComplete || !canSubmit" @click="submitGuess">
-            Submit
+      <!-- Error State -->
+      <div v-else-if="errorMessage" class="alert alert-danger">
+        <strong>Error:</strong> {{ errorMessage }}
+        <p class="mb-0 small">Could not load songs. The Deezer API or proxy might be down. Please try reloading.</p>
+      </div>
+      
+      <!-- Game UI (Main Content) -->
+      <div v-else>
+        <!-- Controls -->
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+          <button class="btn btn-primary" :disabled="isComplete" @click="playSnippet">
+            <font-awesome-icon :icon="['fas','play']" class="me-2" />Play snippet ({{ snippetDurations[currentLevel] }}s)
+          </button>
+          <button class="btn btn-outline-secondary" :disabled="isComplete" @click="skipAttempt">
+            Skip
+          </button>
+          <button class="btn btn-outline-danger ms-auto" @click="resetGame">
+            <font-awesome-icon :icon="['fas','sync']" />
           </button>
         </div>
 
-        <ul v-if="showSuggestions" class="list-group suggestion-list">
-          <li
-            v-for="(s, idx) in suggestions"
-            :key="s.id"
-            class="list-group-item d-flex align-items-center justify-content-between"
-            :class="{ focused: idx === focusedIndex }"
-            role="button"
-            tabindex="0"
-            @mouseenter="focusedIndex = idx"
-            @click="chooseSuggestion(s)"
+        <!-- Guess input with suggestions -->
+        <div class="guess-box mb-3">
+          <input 
+            type="text" 
+            class="form-control"
+            placeholder="Guess the song..."
+            v-model="query"
+            :disabled="isComplete"
+            @focus="showSuggestions = true"
+            @blur="hideSuggestions"
+            @keydown.down.prevent="onArrowDown"
+            @keydown.up.prevent="onArrowUp"
+            @keydown.enter.prevent="onEnter"
+            @keydown.esc.prevent="onEscape"
           >
-            <div class="d-flex align-items-center gap-2">
-              <div class="suggestion-dot"></div>
-              <div>
-                <div class="fw-semibold">{{ s.title }}</div>
-                <div class="text-muted small">{{ s.artist }}</div>
-              </div>
-            </div>
-            <font-awesome-icon :icon="['fas','check']" class="text-success" v-if="selectedSuggestion && selectedSuggestion.id === s.id" />
-          </li>
-        </ul>
-      </div>
-
-      <!-- Attempts -->
-      <div class="attempts mb-3">
-        <div
-          v-for="(att, i) in MAX_ATTEMPTS"
-          :key="i"
-          class="attempt-row"
-        >
-          <div v-if="attempts[i]" class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2">
-              <div class="attempt-badge" :class="attempts[i].correct ? 'bg-success' : 'bg-light border'">
-                {{ i + 1 }}
-              </div>
-              <div>
-                <div class="fw-semibold">{{ attempts[i].label }}</div>
-                <div class="small text-muted" v-if="!attempts[i].correct">Not correct</div>
-              </div>
-            </div>
-            <font-awesome-icon :icon="['fas', attempts[i].correct ? 'check' : 'times']" :class="attempts[i].correct ? 'text-success' : 'text-muted'" />
-          </div>
-          <div v-else class="attempt-empty text-muted">Attempt {{ i + 1 }}</div>
+          <ul 
+            class="list-group suggestion-list shadow-sm"
+            v-if="showSuggestions && suggestions.length > 0"
+          >
+            <li 
+              v-for="(song, index) in suggestions" 
+              :key="song.id"
+              class="list-group-item list-group-item-action"
+              :class="{ 'active': index === focusedIndex }"
+              @mousedown="selectSuggestion(song)"
+              @mouseenter="focusedIndex = index"
+            >
+              <strong>{{ song.title }}</strong> - <span class="text-muted">{{ song.artist }}</span>
+            </li>
+          </ul>
         </div>
-      </div>
 
-      <!-- Result -->
-      <div v-if="isComplete" class="alert" :class="didWin ? 'alert-success' : 'alert-secondary'">
-        <div class="d-flex align-items-center justify-content-between">
-          <div>
-            <div class="fw-bold mb-1">{{ didWin ? 'Correct!' : 'Out of tries' }}</div>
-            <div class="text-muted">Answer: <span class="fw-semibold">{{ answerLabel }}</span></div>
+        <!-- Attempts list -->
+        <div class="attempts-list">
+          <div 
+            v-for="(guess, index) in attempts" 
+            :key="index"
+            class="alert"
+            :class="guess.isCorrect ? 'alert-success' : 'alert-danger'"
+          >
+            <font-awesome-icon :icon="['fas', guess.isCorrect ? 'check' : 'times']" class="me-2" />
+            {{ guess.title }} - {{ guess.artist }}
           </div>
-          <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary" @click="playFull">Play full</button>
-            <button class="btn btn-primary" @click="resetGame">Play again</button>
+          <div v-if="isWin" class="alert alert-success text-center">
+            <strong>Well done! You got it!</strong>
+          </div>
+          <div v-if="isLoss" class="alert alert-warning text-center">
+            <strong>So close!</strong> The answer was <br><strong>{{ answer.title }} - {{ answer.artist }}</strong>
           </div>
         </div>
       </div>
@@ -109,155 +100,281 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
-// Simple local dataset (placeholder titles/artists) with tone patterns instead of copyrighted audio
-const SONGS = [
-  { id: 's1', title: 'Neon Skyline', artist: 'Aurora City', pattern: [440, 494, 523, 587, 523, 494] },
-  { id: 's2', title: 'Midnight Drive', artist: 'The Astrolites', pattern: [392, 440, 392, 330, 392, 440, 392] },
-  { id: 's3', title: 'Ocean Echoes', artist: 'Blue Harbor', pattern: [349, 392, 440, 392, 349, 330] },
-  { id: 's4', title: 'Golden Hour', artist: 'Sunset Stereo', pattern: [262, 330, 392, 440, 392, 330] },
-  { id: 's5', title: 'Starlight', artist: 'Nova & Co', pattern: [523, 494, 440, 392, 440, 494] },
-  { id: 's6', title: 'City Lights', artist: 'Metrowave', pattern: [330, 349, 392, 330, 294, 330] },
-]
+// --- State ---
 
-const MAX_ATTEMPTS = 6
-const snippetDurations = [1, 2, 4, 7, 11, 16] // seconds
-
-// Game state
-const answer = ref(pickRandom(SONGS))
-const attempts = ref([]) // { id, label, correct }
-const currentLevel = ref(0)
+// Game State
+const allSongs = ref([]) // Will be filled by API
+const answer = ref(null)
 const query = ref('')
-const selectedSuggestion = ref(null)
+const attempts = ref([])
+const currentLevel = ref(0) // 0-5
+const MAX_ATTEMPTS = 6
+const snippetDurations = [1, 2, 4, 8, 16, 30]
+
+// UI State
+const isLoading = ref(true)
+const errorMessage = ref(null)
+const showSuggestions = ref(false)
 const focusedIndex = ref(-1)
 
-// Audio context
-let audioCtx = null
-let currentOsc = null
-let stopTimer = null
+// Audio State
+const audioCtx = ref(null)
+const currentAudioSource = ref(null) // This will hold the AudioBufferSourceNode
 
-function ensureAudio() {
-  if (!audioCtx) {
-    const Ctx = window.AudioContext || window.webkitAudioContext
-    audioCtx = new Ctx()
-  }
-}
+// --- Computed Properties ---
 
-function playToneSequence(freqs, seconds) {
-  ensureAudio()
-  stopAudio()
-  const now = audioCtx.currentTime
-  const osc = audioCtx.createOscillator()
-  const gain = audioCtx.createGain()
-  gain.gain.value = 0.1 // gentle volume
-  osc.type = 'sine'
-  osc.connect(gain).connect(audioCtx.destination)
+const isComplete = computed(() => isWin.value || isLoss.value)
+const isWin = computed(() => attempts.value.some(g => g.isCorrect))
+const isLoss = computed(() => attempts.value.length >= MAX_ATTEMPTS && !isWin.value)
 
-  // Schedule simple step sequence looping within allotted seconds
-  const step = 0.35 // seconds per note
-  let t = now
-  let i = 0
-  const endAt = now + seconds
-  while (t < endAt) {
-    const freq = freqs[i % freqs.length]
-    osc.frequency.setValueAtTime(freq, t)
-    t += step
-    i++
-  }
-  osc.start(now)
-  osc.stop(endAt)
-  currentOsc = osc
-  stopTimer = setTimeout(stopAudio, (seconds + 0.05) * 1000)
-}
-
-function stopAudio() {
-  if (stopTimer) { clearTimeout(stopTimer); stopTimer = null }
-  try { currentOsc && currentOsc.stop(); } catch (_) {}
-  currentOsc = null
-}
-
-function playSnippet() {
-  const seconds = snippetDurations[currentLevel.value]
-  playToneSequence(answer.value.pattern, seconds)
-}
-
-function playFull() {
-  playToneSequence(answer.value.pattern, 20)
-}
-
-onBeforeUnmount(() => {
-  stopAudio()
-})
-
-// Suggestions
 const suggestions = computed(() => {
-  const q = query.value.trim().toLowerCase()
-  if (!q) return []
-  return SONGS.filter(s =>
-    s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q)
-  ).slice(0, 8)
+  if (query.value.length < 2) return []
+  const q = query.value.toLowerCase()
+  return allSongs.value.filter(song => {
+    const fullText = `${song.title} ${song.artist}`.toLowerCase()
+    return fullText.includes(q) && !attempts.value.some(a => a.id === song.id)
+  }).slice(0, 5) // Limit to 5 suggestions
 })
 
-const showSuggestions = computed(() => suggestions.value.length > 0 && !selectedSuggestion.value && !isComplete.value)
-const canSubmit = computed(() => Boolean(selectedSuggestion.value))
-const isComplete = computed(() => attempts.value.length >= MAX_ATTEMPTS || attempts.value.some(a => a.correct))
-const didWin = computed(() => attempts.value.some(a => a.correct))
-const answerLabel = computed(() => `${answer.value.title} — ${answer.value.artist}`)
+// --- Audio Logic ---
 
-function chooseSuggestion(s) {
-  selectedSuggestion.value = s
-  query.value = `${s.title} — ${s.artist}`
-}
-
-function moveFocus(delta) {
-  if (!suggestions.value.length) return
-  focusedIndex.value = (focusedIndex.value + delta + suggestions.value.length) % suggestions.value.length
-}
-
-function submitGuessFocused() {
-  if (focusedIndex.value >= 0 && suggestions.value[focusedIndex.value]) {
-    chooseSuggestion(suggestions.value[focusedIndex.value])
+// Ensures the AudioContext is created (must be after user interaction)
+async function ensureAudio() {
+  if (audioCtx.value) return
+  try {
+    audioCtx.value = new (window.AudioContext || window.webkitAudioContext)()
+    await audioCtx.value.resume()
+  } catch (e) {
+    console.error("Failed to create AudioContext:", e)
+    errorMessage.value = "Could not initialize audio. Please interact with the page and try again."
   }
-  submitGuess()
 }
 
-function submitGuess() {
-  if (!selectedSuggestion.value || isComplete.value) return
-  const s = selectedSuggestion.value
-  const correct = s.id === answer.value.id
-  attempts.value.push({ id: s.id, label: `${s.title} — ${s.artist}`, correct })
-  selectedSuggestion.value = null
-  focusedIndex.value = -1
-  if (!correct) {
-    currentLevel.value = Math.min(currentLevel.value + 1, snippetDurations.length - 1)
+// Stops any currently playing audio snippet
+function stopAudio() {
+  if (currentAudioSource.value) {
+    try {
+      currentAudioSource.value.stop()
+    } catch (e) {
+      // Ignore errors if source already stopped
+    }
+    currentAudioSource.value = null
   }
+}
+
+/**
+ * NEW: Plays an MP3 snippet from a URL for a specific duration.
+ * This replaces the old playToneSequence function.
+ */
+async function playAudioSnippet(url, duration) {
+  stopAudio()
+  await ensureAudio()
+  if (!audioCtx.value) return
+
+  try {
+    // 1. Fetch the MP3 file
+    const response = await fetch(url)
+    const arrayBuffer = await response.arrayBuffer()
+
+    // 2. Decode the MP3 data into an AudioBuffer
+    const audioBuffer = await audioCtx.value.decodeAudioData(arrayBuffer)
+
+    // 3. Create a source node to play the buffer
+    const source = audioCtx.value.createBufferSource()
+    source.buffer = audioBuffer
+    source.connect(audioCtx.value.destination)
+    
+    // 4. Play only the specified duration
+    // source.start(when, offset, duration)
+    source.start(0, 0, duration) 
+
+    // 5. Keep track of the source so we can stop it
+    currentAudioSource.value = source
+    
+    // 6. Set a timeout to clear the ref after the snippet finishes
+    setTimeout(() => {
+      if (currentAudioSource.value === source) {
+        currentAudioSource.value = null
+      }
+    }, duration * 1000)
+
+  } catch (err) {
+    console.error("Error playing audio snippet:", err)
+    errorMessage.value = "Failed to play audio snippet."
+  }
+}
+
+// This function is called by the "Play" button
+function playSnippet() {
+  if (!answer.value) return
+  const duration = snippetDurations[currentLevel.value]
+  playAudioSnippet(answer.value.previewUrl, duration)
+}
+
+// --- Game Logic ---
+
+function makeGuess(song) {
+  if (isComplete.value) return
+
+  const isCorrect = song.id === answer.value.id
+  attempts.value.push({ ...song, isCorrect })
+  
+  query.value = ''
+  showSuggestions.value = false
+
+  if (!isCorrect && attempts.value.length < MAX_ATTEMPTS) {
+    currentLevel.value++
+  }
+  
+  stopAudio()
 }
 
 function skipAttempt() {
   if (isComplete.value) return
-  attempts.value.push({ id: null, label: 'Skipped', correct: false })
-  currentLevel.value = Math.min(currentLevel.value + 1, snippetDurations.length - 1)
+
+  attempts.value.push({ 
+    id: `skip-${Date.now()}`, 
+    title: 'Skipped', 
+    artist: '', 
+    isCorrect: false 
+  })
+  
+  if (attempts.value.length < MAX_ATTEMPTS) {
+    currentLevel.value++
+  }
+  
+  stopAudio()
 }
+
+// --- Data Fetching ---
+
+/**
+ * NEW: Fetches songs from the Deezer API on component mount.
+ */
+async function fetchAndSetGame() {
+  isLoading.value = true
+  errorMessage.value = null
+  
+  // We use a CORS proxy because api.deezer.com blocks browser requests
+  const apiUrl = "https://corsproxy.io/?https://api.deezer.com/chart/0/tracks?limit=50"
+
+  try {
+    const res = await fetch(apiUrl)
+    if (!res.ok) throw new Error(`API request failed with status ${res.status}`)
+    
+    const data = await res.json()
+
+    // Map the API response and *filter out* songs without a preview URL
+    const fetchedSongs = data.data
+      .filter(track => track.preview)
+      .map(track => ({
+        id: track.id,
+        title: track.title,
+        artist: track.artist.name,
+        previewUrl: track.preview
+      }))
+
+    if (fetchedSongs.length === 0) {
+      throw new Error("No songs with playable previews were found.")
+    }
+
+    allSongs.value = fetchedSongs
+    answer.value = pickRandom(allSongs.value)
+    
+  } catch (err) {
+    console.error("Failed to load songs:", err)
+    errorMessage.value = err.message
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Fetch songs when the component is first loaded
+onMounted(fetchAndSetGame)
+
+// --- Event Handlers & Utilities ---
 
 function resetGame() {
   stopAudio()
-  answer.value = pickRandom(SONGS)
   attempts.value = []
   currentLevel.value = 0
   query.value = ''
-  selectedSuggestion.value = null
+  showSuggestions.value = false
+  focusedIndex.value = -1
+  
+  // Pick a new random song from the *existing* list
+  if (allSongs.value.length > 0) {
+    answer.value = pickRandom(allSongs.value)
+  } else {
+    // If list is empty (e.g., initial fetch failed), try fetching again
+    fetchAndSetGame()
+  }
+}
+
+function selectSuggestion(song) {
+  query.value = `${song.title} - ${song.artist}`
+  showSuggestions.value = false
+  makeGuess(song)
+}
+
+function hideSuggestions() {
+  // Use setTimeout to allow click event to register before blur
+  setTimeout(() => {
+    showSuggestions.value = false
+    focusedIndex.value = -1
+  }, 200)
+}
+
+function onArrowDown() {
+  if (suggestions.value.length === 0) return
+  focusedIndex.value = (focusedIndex.value + 1) % suggestions.value.length
+}
+
+function onArrowUp() {
+  if (suggestions.value.length === 0) return
+  focusedIndex.value = (focusedIndex.value - 1 + suggestions.value.length) % suggestions.value.length
+}
+
+function onEnter() {
+  if (focusedIndex.value >= 0 && suggestions.value[focusedIndex.value]) {
+    selectSuggestion(suggestions.value[focusedIndex.value])
+  } else if (query.value.length > 0) {
+    // Allow guessing without selecting (less friendly, but works)
+    const q = query.value.toLowerCase()
+    const directMatch = allSongs.value.find(s => 
+      `${s.title} - ${s.artist}`.toLowerCase() === q
+    )
+    if(directMatch) {
+      makeGuess(directMatch)
+    }
+  }
   focusedIndex.value = -1
 }
 
-function pickRandom(list) { return list[Math.floor(Math.random() * list.length)] }
+function onEscape() {
+  query.value = ''
+  showSuggestions.value = false
+  focusedIndex.value = -1
+}
+
+function pickRandom(list) { 
+  return list[Math.floor(Math.random() * list.length)] 
+}
 </script>
 
 <style scoped>
+:root {
+  --primary-1: #6a11cb;
+  --primary-2: #2575fc;
+}
 .game-card {
   border: 1px solid rgba(0,0,0,0.04);
   border-radius: 1rem;
   background: linear-gradient(180deg, #ffffff 0%, #fbfaff 100%);
+  max-width: 500px;
+  margin: auto;
 }
 .game-icon {
   width: 36px; height: 36px; border-radius: 10px;
@@ -265,18 +382,22 @@ function pickRandom(list) { return list[Math.floor(Math.random() * list.length)]
   background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
   box-shadow: 0 6px 14px rgba(96,75,200,0.18);
 }
-.guess-box { position: relative; }
-.suggestion-list {
-  position: absolute; left: 0; right: 0; top: 100%; z-index: 10;
-  border: 1px solid #f1eefb; border-top: none; border-radius: 0 0 .75rem .75rem;
-  max-height: 260px; overflow: auto;
+.guess-box { 
+  position: relative; 
 }
-.suggestion-list .list-group-item { cursor: pointer; }
-.suggestion-list .list-group-item.focused { background: rgba(167,139,250,0.08); }
-.suggestion-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary-1); }
-
-.attempts { border-top: 1px solid #f1eefb; padding-top: .75rem; }
-.attempt-row { padding: .5rem 0; border-bottom: 1px solid #f8f6ff; }
-.attempt-badge { color: #111; width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; font-weight: 600; }
-.attempt-empty { padding: .5rem 0; }
+.suggestion-list {
+  position: absolute; 
+  left: 0; 
+  right: 0; 
+  top: 100%; 
+  z-index: 10;
+  border: 1px solid #f1eefb; 
+  border-top: none; 
+  border-radius: 0 0 .75rem .75rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.list-group-item-action {
+  cursor: pointer;
+}
 </style>

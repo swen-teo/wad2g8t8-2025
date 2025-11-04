@@ -159,7 +159,7 @@ const apiKey = import.meta.env.VITE_JAMBASE_API_KEY;
 // --- DEBUG LINE ---
 // This will log "My API Key is: your_key_here" if it's working,
 // or "My API Key is: undefined" if it's not.
-console.log('My API Key is:', apiKey);
+// console.log('My API Key is:', apiKey);
 // --- END DEBUG LINE ---
 
 // this computed property will automatically update
