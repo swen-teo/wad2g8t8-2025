@@ -16,6 +16,7 @@ import MiniGames from "../components/MiniGames.vue";
 import Instructions from "../components/Instructions.vue";
 import LoadingScreen from '../components/Loading.vue';
 import Tiers from "../components/Tiers.vue";
+import Merch from "../components/Merch.vue";
 
 const routes = [
   {
@@ -62,6 +63,12 @@ const routes = [
     path: '/tiers',
     name: 'Tiers',
     component: Tiers,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/merch',
+    name: 'Merch',
+    component: Merch,
     meta: { requiresAuth: true },
   },
   {
