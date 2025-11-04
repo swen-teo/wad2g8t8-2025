@@ -61,7 +61,7 @@
                 </p>
 
                 <button class="btn btn-outline-primary" @click="copyCode">
-                    <i class="fas fa-copy me-2"></i> {{ copyButtonText }}
+                   {{ copyButtonText }}
                 </button>
             </div>
 
