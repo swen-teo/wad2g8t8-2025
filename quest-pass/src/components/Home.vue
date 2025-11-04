@@ -15,7 +15,56 @@
     </header>
 
     <Loading :is-loading="isLoading" />
+    <!-- 🔽 Filters toggle -->
+<div class="d-flex justify-content-end mb-3">
+  <button class="btn btn-outline-primary" @click="toggleFilters">
+    <font-awesome-icon :icon="['fas', showFilters ? 'times' : 'filter']" class="me-2" />
+    {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+  </button>
+</div>
 
+<!-- 🎛 Collapsible filters -->
+<transition name="slide-fade">
+  <div v-if="showFilters" class="filter-panel p-3 mb-4 rounded shadow-sm bg-light">
+    <div class="row g-3">
+      <!-- Venue -->
+      <div class="col-md-4 col-sm-6">
+        <label class="form-label small text-muted">Venue</label>
+        <select class="form-select" v-model="selectedVenue">
+          <option value="all">All venues</option>
+          <option v-for="v in venueOptions" :key="v" :value="v">{{ v }}</option>
+        </select>
+      </div>
+
+      <!-- Date from -->
+      <div class="col-md-3 col-sm-6">
+        <label class="form-label small text-muted">Date from</label>
+        <input type="date" class="form-control" v-model="dateFrom" />
+      </div>
+
+      <!-- Date to -->
+      <div class="col-md-3 col-sm-6">
+        <label class="form-label small text-muted">Date to</label>
+        <input type="date" class="form-control" v-model="dateTo" />
+      </div>
+
+      <!-- Quick range (reuses your existing selectedDateRange) -->
+      <div class="col-md-2 col-sm-6">
+        <label class="form-label small text-muted">Quick range</label>
+        <select class="form-select" v-model="selectedDateRange">
+          <option value="all">Any time</option>
+          <option value="today">Today</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <button class="btn btn-outline-secondary btn-sm" @click="resetFilters">Reset filters</button>
+    </div>
+  </div>
+</transition>
     <!-- event discovery + grid -->
     <section v-if="!isLoading">
       <!-- Fun discovery widget: random event picker based on current filters -->
@@ -147,6 +196,13 @@ const selectedGenre = ref('all');
 const allEvents = ref([]);
 const isLoading = ref(true);
 
+const showFilters = ref(false);
+
+// new filter state
+const selectedVenue = ref('all');
+const dateFrom = ref(''); // yyyy-mm-dd
+const dateTo = ref('');   // yyyy-mm-dd
+
 const dateRangeOptions = [
   { value: 'all', label: 'Any time' },
   { value: 'today', label: 'Today' },
@@ -180,6 +236,16 @@ const locationNames = computed(() => {
   return options.sort((a, b) => a.localeCompare(b));
 });
 
+const venueOptions = computed(() => {
+  const set = new Set();
+  for (const ev of allEvents.value) {
+    // Use “Venue, City” so users can distinguish similarly named venues
+    const label = [ev.venueName, ev.venueCity].filter(Boolean).join(', ');
+    if (label) set.add(label);
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+});
+
 const locationFilterOptions = computed(() => [
   { value: 'all', label: 'All locations' },
   ...locationNames.value.map((location) => ({
@@ -187,6 +253,18 @@ const locationFilterOptions = computed(() => [
     label: location,
   })),
 ]);
+
+function toggleFilters() {
+  showFilters.value = !showFilters.value;
+}
+
+function resetFilters() {
+  selectedVenue.value = 'all';
+  selectedDateRange.value = 'all';
+  dateFrom.value = '';
+  dateTo.value = '';
+  searchQuery.value = '';
+}
 
 const genreNames = computed(() => {
   const uniqueGenres = new Set();
@@ -209,31 +287,40 @@ const genreFilterOptions = computed(() => [
 ]);
 
 const filteredEvents = computed(() => {
-  const lowerQuery = searchQuery.value.trim().toLowerCase();
+  const q = searchQuery.value.trim().toLowerCase();
 
-  return allEvents.value.filter((event) => {
+  // parse date inputs (if provided)
+  const from = dateFrom.value ? new Date(dateFrom.value) : null;
+  const to = dateTo.value ? new Date(dateTo.value) : null;
+  if (to) to.setHours(23, 59, 59, 999);
+
+  return allEvents.value.filter((ev) => {
+    // text search
     const matchesSearch =
-      !lowerQuery ||
-      [
-        event.title,
-        event.description,
-        event.venueName,
-        event.venueCity,
-      ]
+      !q ||
+      [ev.title, ev.description, ev.venueName, ev.venueCity]
         .filter(Boolean)
-        .some((field) => field.toLowerCase().includes(lowerQuery));
+        .some((s) => s.toLowerCase().includes(q));
 
-    const matchesLocation =
-      selectedLocation.value === 'all' ||
-      event.venueCity === selectedLocation.value;
+    // venue filter: compare against “Venue, City”
+    const venueLabel = [ev.venueName, ev.venueCity].filter(Boolean).join(', ');
+    const matchesVenue =
+      selectedVenue.value === 'all' || venueLabel === selectedVenue.value;
 
-    const matchesGenre =
-      selectedGenre.value === 'all' ||
-      (event.genres ?? []).includes(selectedGenre.value);
+    // quick range (today/week/month)
+    const matchesQuick = matchesDateRange(ev.startDate);
 
-    const matchesDate = matchesDateRange(event.startDate);
+    // date-from/to (calendar)
+    let matchesBetween = true;
+    const evDate = ev.startDate ? new Date(ev.startDate) : null;
+    if (evDate) {
+      if (from && evDate < from) matchesBetween = false;
+      if (to && evDate > to) matchesBetween = false;
+    } else if (from || to) {
+      matchesBetween = false; // no date to compare against
+    }
 
-    return matchesSearch && matchesLocation && matchesGenre && matchesDate;
+    return matchesSearch && matchesVenue && matchesQuick && matchesBetween;
   });
 });
 
@@ -723,6 +810,29 @@ header h1 {
   border-top: 2px dashed rgba(0,0,0,0.08);
 }
 
+/* Collapsible filter panel animation */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-8px);
+}
+.slide-fade-enter-to,
+.slide-fade-leave-from {
+  opacity: 1;
+  max-height: 540px; /* big enough for content */
+  transform: translateY(0);
+}
+
+/* Optional: panel look */
+.filter-panel {
+  border: 1px solid rgba(0,0,0,0.06);
+}
 .event-cta {
   display: block;
   width: 100%;
