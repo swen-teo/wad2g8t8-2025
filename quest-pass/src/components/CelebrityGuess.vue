@@ -410,6 +410,13 @@ function pickRandom(list) {
   margin-right: auto;
   position: relative; /* allow overlay positioning */
 }
+
+/* On medium screens, reduce image size to make card shorter */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .image-container {
+    width: min(100%, 280px);
+  }
+}
 .image-container img {
   width: 100%;
   height: 100%;
