@@ -13,9 +13,11 @@
   },
   "main": "index.js",
   "dependencies": {
+    "@stripe/stripe-js": "^8.3.0",
     "axios": "^1.7.2",
     "firebase-admin": "^12.1.1",
-    "firebase-functions": "^5.0.1"
+    "firebase-functions": "^6.6.0",
+    "stripe": "^19.2.0"
   },
   "devDependencies": {
     "firebase-functions-test": "^3.1.0"

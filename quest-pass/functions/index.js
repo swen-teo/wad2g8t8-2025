@@ -1,22 +1,41 @@
-
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
+const Stripe = require("stripe");
 
 admin.initializeApp();
 const db = admin.firestore();
 const { Timestamp, FieldValue } = admin.firestore;
 
-// Define the secret name
-// This tells the function it needs to access this secret
 const JAMBASE_API_KEY_SECRET = "JAMBASE_KEY";
+let stripe; // <-- 1. Define stripe here, but don't initialize it
 
-/**
- * Formats a human readable date string for event cards/details.
- * @param {Date|null} startDate
- * @param {string} venueName
- * @returns {string}
- */
+// Create a payment intent
+exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
+// 2. Add this "if" block to initialize stripe on the first run
+if (!stripe) {
+  stripe = Stripe(functions.config().stripe.secret);
+  }
+  try {
+    // Uncomment this before production
+    // if (!context.auth) {
+    //   throw new functions.https.HttpsError("unauthenticated", "User must be logged in");
+    // }
+
+    const amount = data.amount;
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: "usd",
+      automatic_payment_methods: { enabled: true },
+    });
+
+    return { clientSecret: paymentIntent.client_secret };
+  } catch (error) {
+    throw new functions.https.HttpsError("unknown", error.message, error);
+  }
+});
+
+// Format readable date
 function formatDisplayDate(startDate, venueName = "") {
   if (!startDate) {
     return venueName ? `Date TBA · ${venueName}` : "Date TBA";
@@ -34,30 +53,18 @@ function formatDisplayDate(startDate, venueName = "") {
   return venueName ? `${formatted} · ${venueName}` : formatted;
 }
 
-/**
- * Determines whether an event is current/upcoming/past based on its dates.
- * @param {Date|null} startDate
- * @param {Date|null} endDate
- * @returns {"current"|"upcoming"|"past"}
- */
+// Determine event status
 function resolveStatus(startDate, endDate) {
-  if (!startDate) {
-    return "upcoming";
-  }
+  if (!startDate) return "upcoming";
 
   const now = new Date();
   const effectiveEnd = endDate || new Date(startDate.getTime() + 3 * 60 * 60 * 1000);
 
-  if (now >= startDate && now <= effectiveEnd) {
-    return "current";
-  }
-
+  if (now >= startDate && now <= effectiveEnd) return "current";
   return now < startDate ? "upcoming" : "past";
 }
 
-/**
- * Builds the Firestore document payload for an event.
- */
+// Build Firestore event document
 function buildEventDocument({
   id,
   title,
@@ -102,33 +109,25 @@ function buildEventDocument({
   };
 }
 
-/**
- * An HTTP-triggered Cloud Function that:
- * 1. Fetches events from the Jambase API.
- * 2. Adds curated QuestPass events.
- * 3. Saves them to the 'events' collection in Firestore.
- */
+// Populate events from Jambase
 exports.populateEventsFromJambase = functions
   .runWith({
     timeoutSeconds: 120,
     memory: "1GB",
-    // This line "opts-in" to the secret
     secrets: [JAMBASE_API_KEY_SECRET],
   })
   .https.onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    if (req.method === "OPTIONS") return res.status(204).send("");
+
     try {
       console.log("Starting Jambase event population...");
-      
-      // Get the API key from process.env
-      // On deploy, this comes from the "secret"
-      // Locally, it comes from your new `functions/.env` file
+
       const apiKey = process.env[JAMBASE_API_KEY_SECRET];
+      if (!apiKey) throw new Error("JAMBASE_KEY secret is not set or available.");
 
-      if (!apiKey) {
-        throw new Error("JAMBASE_KEY secret is not set or available.");
-      }
-
-      // 1. Fetch events from Jambase
       const jambaseUrl = `https://www.jambase.com/jb-api/v1/events?apikey=${apiKey}&o=json`;
       const response = await axios.get(jambaseUrl);
 
@@ -142,7 +141,6 @@ exports.populateEventsFromJambase = functions
       const batch = db.batch();
       let processedCount = 0;
 
-      // 2. Loop through and transform each event
       apiEvents.forEach((apiEvent) => {
         const artist = apiEvent.performer?.[0]?.name || "Various Artists";
         const venue = apiEvent._embedded?.venues?.[0];
@@ -159,9 +157,7 @@ exports.populateEventsFromJambase = functions
 
         const startDateTime =
           apiEvent.dates?.start?.dateTime ||
-          `${apiEvent.dates?.start?.localDate}T${
-            apiEvent.dates?.start?.localTime || "18:00:00"
-          }`;
+          `${apiEvent.dates?.start?.localDate}T${apiEvent.dates?.start?.localTime || "18:00:00"}`;
         const startDate = startDateTime ? new Date(startDateTime) : null;
         const endDateTime = apiEvent.dates?.end?.dateTime;
         const endDate = endDateTime ? new Date(endDateTime) : null;
@@ -179,147 +175,69 @@ exports.populateEventsFromJambase = functions
           endDate,
         });
 
-        // 3. Save to Firestore
         const eventRef = db.collection("events").doc(String(apiEvent.id));
         batch.set(eventRef, newEvent, { merge: true });
         processedCount++;
       });
 
-      const curatedEvents = [
-        {
-          id: "questpass-live-night",
-          title: "QuestPass Live: Midnight Encore",
-          description:
-            "Join fellow fans for an exclusive QuestPass takeover featuring live sets, trivia quests, and limited-time rewards.",
-          artistName: "QuestPass Collective",
-          venueName: "QuestPass Arena",
-          venueLocation: "Virtual Stage",
-          bannerImage:
-            "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=80",
-          cardImage:
-            "https://images.unsplash.com/photo-1512427691650-1e0c0d57589f?auto=format&fit=crop&w=1200&q=80",
-          startDate: new Date(Date.now() - 30 * 60 * 1000),
-          endDate: new Date(Date.now() + 2 * 60 * 60 * 1000),
-          status: "current",
-          source: "questpass",
-          extraData: {
-            spotlight: true,
-          },
-        },
-        {
-          id: "questpass-meetup-city",
-          title: "QuestPass City Meetup",
-          description:
-            "Connect with other QuestPass explorers in your city for a night of music quests, rewards, and exclusive drops.",
-          artistName: "Community DJs",
-          venueName: "Downtown Listening Lounge",
-          venueLocation: "Singapore",
-          bannerImage:
-            "https://images.unsplash.com/photo-1525182008055-f88b95ff7980?auto=format&fit=crop&w=1600&q=80",
-          cardImage:
-            "https://images.unsplash.com/photo-1492683513054-55277abccd50?auto=format&fit=crop&w=1200&q=80",
-          startDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-          endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000),
-          status: "upcoming",
-          source: "questpass",
-          extraData: {
-            spotlight: true,
-          },
-        },
-      ];
-
-      curatedEvents.forEach((event) => {
-        const curatedDoc = buildEventDocument(event);
-        const eventRef = db.collection("events").doc(event.id);
-        batch.set(eventRef, curatedDoc, { merge: true });
-        processedCount++;
-      });
-
-      // Commit the batch of writes to Firestore
       await batch.commit();
-
-      const successMsg = `Successfully populated/updated ${processedCount} events in Firestore.`;
-      console.log(successMsg);
-      res.status(200).send(successMsg);
-
+      res.status(200).send(`Successfully populated ${processedCount} events.`);
     } catch (error) {
       console.error("Error populating Jambase events:", error);
       res.status(500).send(`Error: ${error.message}`);
     }
   });
 
-/*
- * GENERATE REWARD CODE ON EVENT CREATE
- * This function is triggered automatically *every time* a new
- * document is created in the 'events' collection.
- */
-
-// Normalize the artist name into a safe, uppercase code prefix
+// Reward code generator
 function buildArtistPrefix(artistName, fallback = "QUESTPASS") {
-  if (!artistName) {
-    return fallback;
-  }
+  if (!artistName) return fallback;
 
   const normalized = artistName
     .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "") // strip diacritics
-    .replace(/[^a-zA-Z0-9]/g, "") // keep only alphanumeric
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
     .toUpperCase();
 
   return normalized.substring(0, 18) || fallback;
 }
 
-// Helper function to generate an artist-based reward code
 function generateRewardCode(eventData = {}) {
   const prefix = buildArtistPrefix(eventData.artistName || eventData.title);
-  const randomFiveDigit = Math.floor(Math.random() * 90000) + 10000; // 10000-99999
+  const randomFiveDigit = Math.floor(Math.random() * 90000) + 10000;
   return `${prefix}-${randomFiveDigit}`;
 }
 
 exports.generateRewardCodeOnEventCreate = functions.firestore
-  .document('events/{eventId}')
+  .document("events/{eventId}")
   .onCreate(async (snapshot, context) => {
-    // 1. Get the new event's data and reference
     const eventData = snapshot.data();
     const eventRef = snapshot.ref;
     const eventId = context.params.eventId;
 
-    // 2. Check if it already has a code (it shouldn't, but it's safe)
     if (eventData.rewardCode) {
       console.log(`Event ${eventId} already has a code. Skipping.`);
       return null;
     }
 
-    // 3. Generate a new, unique code
     const newCode = generateRewardCode(eventData);
     console.log(`Generated code ${newCode} for event ${eventId}.`);
 
-    // 4. Update the event document with the new code
     try {
       await eventRef.update({ rewardCode: newCode });
-      return { status: 'ok', code: newCode };
+      return { status: "ok", code: newCode };
     } catch (error) {
-      console.error('Failed to update event with reward code:', error);
+      console.error("Failed to update event with reward code:", error);
       return null;
     }
   });
 
-/**
- * Generate a 5-question multiple-choice quiz using Gemini.
- * POST { artist: string } -> [{ question, options: string[], correctAnswer }]
- * Uses secret GEMINI_API_KEY; falls back to VITE_GEMINI_API_KEY in local .env for convenience.
- */
+// Gemini Quiz Generator
 async function requestGeminiQuiz(apiKey, prompt) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
   const { data } = await axios.post(
     url,
     {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }],
-        },
-      ],
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.7,
         max_output_tokens: 1024,
@@ -330,13 +248,7 @@ async function requestGeminiQuiz(apiKey, prompt) {
   );
 
   const candidate = data?.candidates?.[0];
-  if (!candidate) {
-    return { questions: [], reason: "NO_CANDIDATE" };
-  }
-
-  if (candidate.finishReason && candidate.finishReason !== "STOP") {
-    console.warn("Gemini finishReason", candidate.finishReason);
-  }
+  if (!candidate) return { questions: [], reason: "NO_CANDIDATE" };
 
   const part = candidate?.content?.parts?.[0] || {};
   let raw = "";
@@ -351,24 +263,16 @@ async function requestGeminiQuiz(apiKey, prompt) {
     raw = part.text;
   }
 
-  const text = String(raw).replace(/```json|```/g, '').trim();
+  const text = String(raw).replace(/```json|```/g, "").trim();
   let quiz;
   try {
     quiz = JSON.parse(text);
-  } catch (_) {
-    try {
-      const match = text.match(/\[[\s\S]*\]/);
-      quiz = match ? JSON.parse(match[0]) : null;
-    } catch {
-      quiz = null;
-    }
+  } catch {
+    const match = text.match(/\[[\s\S]*\]/);
+    quiz = match ? JSON.parse(match[0]) : [];
   }
 
-  const normalized = Array.isArray(quiz)
-    ? quiz
-    : [];
-
-  const cleaned = normalized
+  const cleaned = (Array.isArray(quiz) ? quiz : [])
     .slice(0, 5)
     .map((q) => ({
       question: String(q.question || q.prompt || "").trim(),
@@ -377,25 +281,9 @@ async function requestGeminiQuiz(apiKey, prompt) {
         : [],
       correctAnswer: String(q.correctAnswer || q.answer || "").trim(),
     }))
-    .map((q) => {
-      const opts = q.options
-        .map((opt) => opt.trim())
-        .filter(Boolean);
-      if (opts.length && q.correctAnswer && !opts.includes(q.correctAnswer)) {
-        opts[0] = q.correctAnswer || opts[0];
-      }
-      return {
-        question: q.question,
-        options: opts.length >= 2 ? opts.slice(0, 4) : [],
-        correctAnswer: q.correctAnswer,
-      };
-    })
     .filter((q) => q.question && q.options.length >= 2 && q.correctAnswer);
 
-  return {
-    questions: cleaned,
-    reason: cleaned.length ? null : "INVALID_MODEL_RESPONSE",
-  };
+  return { questions: cleaned, reason: cleaned.length ? null : "INVALID_RESPONSE" };
 }
 
 exports.generateQuiz = functions
@@ -405,7 +293,6 @@ exports.generateQuiz = functions
     secrets: ["GEMINI_API_KEY"],
   })
   .https.onRequest(async (req, res) => {
-    // Basic CORS (adjust for your hosting as needed)
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Headers", "Content-Type");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -413,35 +300,26 @@ exports.generateQuiz = functions
     if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
 
     try {
-      const artist = String((req.body && req.body.artist) || "").trim();
+      const artist = String(req.body.artist || "").trim();
       if (!artist) return res.status(400).json({ error: "Missing artist" });
 
       const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
       if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
 
-      const prompt = `You are a music trivia generator. Create exactly 5 multiple-choice questions about the artist "${artist}". Return ONLY a JSON array with items of the form: {"question": string, "options": [string, string, string, string], "correctAnswer": string}. Avoid duplicates; ensure the correctAnswer is one of the options. Keep questions concise.`;
+      const prompt = `You are a music trivia generator. Create exactly 5 multiple-choice questions about the artist "${artist}". Return ONLY a JSON array with {"question": string, "options": [string, string, string, string], "correctAnswer": string}.`;
 
-      const MAX_ATTEMPTS = 4;
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
-        const { questions, reason } = await requestGeminiQuiz(apiKey, prompt);
-        if (questions.length) {
-          if (attempt > 1) {
-            console.info(`Gemini quiz succeeded on retry #${attempt}`);
-          }
-          return res.json(questions);
-        }
-
-        console.warn(`Gemini quiz attempt ${attempt} returned no questions (${reason}).`);
-        if (attempt === MAX_ATTEMPTS) {
-          return res.status(502).json({ error: "Invalid model response" });
-        }
+      const { questions, reason } = await requestGeminiQuiz(apiKey, prompt);
+      if (questions.length) {
+        return res.json(questions);
+      } else {
+        console.warn(`Gemini quiz returned no questions (${reason}).`);
+        return res.status(502).json({ error: "Invalid model response", details: reason });
       }
     } catch (err) {
       console.error("generateQuiz error:", err?.response?.data || err);
-
-
-
-      return res.status(500).json({ error: "Quiz generation failed", details: String(err?.message || err) });
+      return res.status(500).json({
+        error: "Quiz generation failed",
+        details: String(err?.message || err),
+      });
     }
- 
   });

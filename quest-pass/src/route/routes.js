@@ -19,6 +19,7 @@ import Tiers from "../components/Tiers.vue";
 import Merch from "../components/Merch.vue";
 import SilverMerch from "../components/SilverMerch.vue";
 import Cart from "../components/Cart.vue";
+import Paymentform from "../components/Paymentform.vue";
 
 const routes = [
   {
@@ -101,6 +102,12 @@ const routes = [
   path: '/spotify-callback',
   name: 'SpotifyCallback',
   component: SpotifyCallback,
+},
+{
+  path: '/Paymentform',
+  name: 'Paymentform',
+  component: Paymentform,
+  meta: { requiresAuth: true },
 },
 // catch-all LAST:
   { path: '/:pathMatch(.*)*', redirect: '/' }
