@@ -123,7 +123,7 @@ async function handleGoogleLogin() {
           <div class="card-body p-4 p-md-5 text-center">
             <div class="brand d-flex align-items-center justify-content-center gap-3 mb-4">
               <font-awesome-icon icon="fa-solid fa-ticket-simple" class="fa-3x text-primary-1" />
-              <span class="app-name">QuessPass</span>
+              <span class="app-name">QuestPass</span>
             </div>
             <h1 class="fw-bold mb-3">Welcome Back</h1>
             <p class="text-muted mb-4">Log in to continue your quest.</p>
