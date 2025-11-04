@@ -5,12 +5,17 @@
       <span class="text-muted d-none d-sm-inline">Pick a game and earn points</span>
     </div>
 
-    <div class="row g-4 justify-content-center">
-      <div class="col-12 col-md-10 col-lg-6">
-        <HeardleGame />
+    <!-- Responsive grid: 1 col on mobile, 2 on md+, 3 on xl; stretch cards to equal heights -->
+    <div class="row g-4 row-cols-1 row-cols-md-2 row-cols-xl-3 align-items-stretch justify-content-center">
+      <div class="col d-flex">
+        <HeardleGame class="h-100 flex-fill" />
       </div>
-      <div class="col-12 col-md-10 col-lg-6">
-        <CelebrityGuess />
+      <!-- Place Album Guesser before Artist Guesser -->
+      <div class="col d-flex">
+        <AlbumGuess class="h-100 flex-fill" />
+      </div>
+      <div class="col d-flex">
+        <CelebrityGuess class="h-100 flex-fill" />
       </div>
     </div>
   </div>
@@ -20,6 +25,7 @@
 <script setup>
 import HeardleGame from './HeardleGame.vue'
 import CelebrityGuess from './CelebrityGuess.vue'
+import AlbumGuess from './AlbumGuess.vue'
 </script>
 
 <style scoped>

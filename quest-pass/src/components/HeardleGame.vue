@@ -6,7 +6,7 @@
           <div class="game-icon"><font-awesome-icon :icon="['fas','music']" /></div>
           <h5 class="mb-0">Heardle</h5>
         </div>
-        <div v-if="!isLoading" class="d-flex align-items-center gap-2">
+        <div v-if="!isLoading" class="d-flex align-items-center gap-2 flex-wrap header-badges">
           <span class="badge bg-light text-dark border">
             Attempt {{ attempts.length + 1 }} / {{ MAX_ATTEMPTS }}
           </span>
@@ -505,6 +505,8 @@ function pickRandom(list) {
   width: 100%;
   max-width: 100%; /* allow parent column to control width */
   overflow: visible; /* allow popovers/lists to extend beyond */
+  display: flex;
+  height: 100%;
 }
 .game-icon {
   width: 36px; height: 36px; border-radius: 10px;
@@ -543,20 +545,15 @@ function pickRandom(list) {
   z-index: 1080;
 }
 
-/* ensure inner body doesn't clip overflow either */
+/* ensure inner body doesn't clip overflow either and fills height */
 .game-card :deep(.card-body) {
   overflow: visible;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Responsive tweaks */
-@media (min-width: 768px) {
-  /* give the card a comfortable max width on medium+ screens while remaining fluid */
-  .game-card {
-    max-width: 720px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-}
+/* Removed fixed max-width so cards fill their grid columns at all breakpoints */
 
 @media (max-width: 575.98px) {
   /* tighten paddings slightly on very small screens */
@@ -578,4 +575,9 @@ function pickRandom(list) {
     left: auto;
   }
 }
+
+/* Header badges wrapping on narrow cards */
+.header-badges { row-gap: .5rem; }
+.header-badges .badge { white-space: nowrap; }
+.header-badges .info-trigger { flex: 0 0 auto; }
 </style>

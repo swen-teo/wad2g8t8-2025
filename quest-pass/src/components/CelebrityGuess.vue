@@ -8,7 +8,7 @@
           </div>
           <h5 class="mb-0">Artist Guesser</h5>
         </div>
-        <div v-if="!isLoading && !isComplete" class="d-flex align-items-center gap-2">
+        <div v-if="!isLoading && !isComplete" class="d-flex align-items-center gap-2 flex-wrap header-badges">
           <span class="badge bg-light text-dark border">
             Attempt {{ attempts.length + 1 }} / {{ MAX_ATTEMPTS }}
           </span>
@@ -265,38 +265,68 @@ function skipAttempt() {
 
 // --- Data Fetching ---
 
+// Fetch multiple Deezer pages to increase artist pool
+async function fetchDeezerPages(endpoint, limit = 100, maxPages = 3) {
+  const results = []
+  for (let page = 0; page < maxPages; page++) {
+    const index = page * limit
+    const url = `https://corsproxy.io/?https://api.deezer.com/${endpoint}?limit=${limit}&index=${index}`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`Request failed (${res.status}) for ${endpoint}`)
+    const data = await res.json()
+    const items = data?.data || []
+    results.push(...items)
+    if (items.length < limit) break // no more pages
+  }
+  return results
+}
+
+async function fetchArtistsFromCharts() {
+  const raw = await fetchDeezerPages('chart/0/artists', 100, 3)
+  const map = new Map()
+  raw.forEach(a => {
+    const picture = a.picture_big || a.picture_medium || a.picture
+    if (picture && !map.has(a.id)) {
+      map.set(a.id, { id: a.id, name: a.name, pictureUrl: picture })
+    }
+  })
+  return Array.from(map.values())
+}
+
+async function fetchArtistsFromTracksFallback(limit = 100) {
+  const url = `https://corsproxy.io/?https://api.deezer.com/chart/0/tracks?limit=${limit}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Tracks fallback failed (${res.status})`)
+  const data = await res.json()
+  const artistsMap = new Map()
+  data.data.forEach(track => {
+    if (track.artist && (track.artist.picture_big || track.artist.picture_medium)) {
+      if (!artistsMap.has(track.artist.id)) {
+        artistsMap.set(track.artist.id, {
+          id: track.artist.id,
+          name: track.artist.name,
+          pictureUrl: track.artist.picture_big || track.artist.picture_medium
+        })
+      }
+    }
+  })
+  return Array.from(artistsMap.values())
+}
+
 async function fetchAndSetGame() {
   isLoading.value = true
   errorMessage.value = null
   
-  // We use a CORS proxy because api.deezer.com blocks browser requests
-  const apiUrl = "https://corsproxy.io/?https://api.deezer.com/chart/0/tracks?limit=50"
-
   try {
-    const res = await fetch(apiUrl)
-    if (!res.ok) throw new Error(`API request failed with status ${res.status}`)
-    
-    const data = await res.json()
-
-    // De-duplicate artists from the track list
-    const artistsMap = new Map()
-    data.data.forEach(track => {
-      // Use picture_big for better quality
-      if (track.artist && track.artist.picture_big) { 
-        if (!artistsMap.has(track.artist.id)) {
-          artistsMap.set(track.artist.id, {
-            id: track.artist.id,
-            name: track.artist.name,
-            pictureUrl: track.artist.picture_big 
-          })
-        }
-      }
-    })
-
-    const fetchedArtists = Array.from(artistsMap.values())
+    // Prefer the charts artists endpoint to gather more artists with pagination
+    let fetchedArtists = await fetchArtistsFromCharts()
+    // Fallback: derive from chart tracks if chart artists returned nothing
+    if (fetchedArtists.length === 0) {
+      fetchedArtists = await fetchArtistsFromTracksFallback(100)
+    }
 
     if (fetchedArtists.length === 0) {
-      throw new Error("No artists with pictures were found.")
+      throw new Error('No artists with pictures were found.')
     }
 
     allArtists.value = fetchedArtists
@@ -393,6 +423,8 @@ function pickRandom(list) {
   width: 100%;
   max-width: 100%; /* allow parent column to control width */
   overflow: visible; /* allow popovers/lists to extend beyond */
+  display: flex;
+  height: 100%;
 }
 .game-icon {
   width: 36px; height: 36px; border-radius: 10px;
@@ -458,6 +490,8 @@ function pickRandom(list) {
 /* ensure inner body doesn't clip overflow either */
 .game-card :deep(.card-body) {
   overflow: visible;
+  display: flex;
+  flex-direction: column;
 }
 
 /* popover styles shared with Heardle */
@@ -472,14 +506,7 @@ function pickRandom(list) {
 }
 
 /* Responsive tweaks */
-@media (min-width: 768px) {
-  /* give the card a comfortable max width on medium+ screens while remaining fluid */
-  .game-card {
-    max-width: 720px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-}
+/* Removed fixed max-width so cards fill their grid columns at all breakpoints */
 
 @media (max-width: 575.98px) {
   /* tighten paddings slightly on very small screens */
@@ -497,4 +524,9 @@ function pickRandom(list) {
   }
   .info-popover { right: 0; left: auto; }
 }
+
+/* Header badges wrapping on narrow cards */
+.header-badges { row-gap: .5rem; }
+.header-badges .badge { white-space: nowrap; }
+.header-badges .info-trigger { flex: 0 0 auto; }
 </style>
