@@ -1,5 +1,5 @@
 <template>
-  <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+  <nav class="navbar navbar-expand-md navbar-light sticky-top">
     <div class="container">
       <router-link
         class="navbar-brand fw-bold"
@@ -10,17 +10,18 @@
       <button
         class="navbar-toggler"
         type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navbarNav"
         aria-controls="navbarNav"
-        aria-expanded="false"
+        :aria-expanded="isNavOpen"
         aria-label="Toggle navigation"
+        @click="toggleNav"
       >
         <span class="navbar-toggler-icon"></span>
       </button>
       <div
-        class="collapse navbar-collapse"
+        :class="['collapse', 'navbar-collapse', { show: isNavOpen }]"
         id="navbarNav"
+        ref="navbarCollapse"
+        @click.capture="handleCollapseClick"
       >
         <!-- Logged-in links -->
         <ul
@@ -169,18 +170,36 @@
 import { useUserStore } from '@/store/user';
 import { useRouter, useRoute } from 'vue-router';
 
-import { onBeforeUnmount, onMounted, ref, computed } from 'vue';
+import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue';
 
 const userStore = useUserStore();
 const router = useRouter();
 const route = useRoute();
 
 const isDropdownOpen = ref(false);
+const isNavOpen = ref(false);
 const userDropdownToggle = ref(null);
 const userDropdownMenu = ref(null);
+const navbarCollapse = ref(null);
 
 function toggleDropdown() {
   isDropdownOpen.value = !isDropdownOpen.value;
+}
+
+function toggleNav() {
+  // Prefer Vue-controlled collapse; fall back to Bootstrap if present
+  isNavOpen.value = !isNavOpen.value;
+  // Keep Bootstrap collapse state in sync if available (no-op if not loaded)
+  try {
+    const el = navbarCollapse.value;
+    const bootstrap = window?.bootstrap;
+    if (el && bootstrap?.Collapse) {
+      const inst = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+      isNavOpen.value ? inst.show() : inst.hide();
+    }
+  } catch (_) {
+    // ignore
+  }
 }
 
 function closeDropdown() {
@@ -220,6 +239,40 @@ const hideAuthCtas = computed(() => {
   const name = route.name;
   return name === 'Login' || name === 'Instructions';
 });
+
+// Programmatically hide the mobile navbar when navigating or clicking a nav item
+function getCollapseInstance() {
+  const el = navbarCollapse.value;
+  const bootstrap = window.bootstrap;
+  if (!el || !bootstrap?.Collapse) return null;
+  return bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+}
+
+function hideNavbarCollapse() {
+  isNavOpen.value = false;
+  const inst = getCollapseInstance();
+  if (inst) inst.hide();
+}
+
+function handleCollapseClick(e) {
+  // Close the collapse when a nav link, dropdown item, or button inside is clicked
+  const target = e.target;
+  if (!target) return;
+  const clickable = target.closest('a.nav-link, a.dropdown-item, a.btn, button');
+  if (clickable) {
+    hideNavbarCollapse();
+    closeDropdown();
+  }
+}
+
+// Also close the collapse whenever the route changes (e.g., via RouterLink)
+watch(
+  () => route.fullPath,
+  () => {
+    hideNavbarCollapse();
+    closeDropdown();
+  }
+);
 </script>
 
 <style scoped>
@@ -351,5 +404,45 @@ const hideAuthCtas = computed(() => {
     .user-name { display: none; }
     .user-meta { max-width: 6.5rem; }
   }
+}
+
+/* Improve responsiveness of navbar on small/medium screens */
+@media (max-width: 991.98px) {
+  /* Collapse panel padding so items don't stick to edges */
+  .navbar-collapse {
+    padding: 0.5rem 0;
+  }
+
+  /* Stack nav links nicely with comfortable tap targets */
+  .navbar-collapse .nav-link {
+    margin-left: 0 !important;
+    padding: 0.5rem 0.25rem;
+  }
+
+  /* Put some spacing between the two nav lists when stacked */
+  .navbar-collapse .navbar-nav + .navbar-nav {
+    margin-top: 0.25rem;
+  }
+
+  /* Ensure user dropdown doesn't overflow the viewport when collapsed */
+  .navbar-collapse.show .navbar-nav.ms-auto .dropdown-menu {
+    position: absolute;
+    right: 0;
+    left: auto;
+    width: min(92vw, 340px);
+  }
+
+  /* Slightly reduce the user meta width so it doesn’t wrap early */
+  .user-meta {
+    max-width: 10.5rem;
+  }
+}
+
+/* Make the toggler more visible on white background */
+.navbar-toggler {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 0.1rem rgba(0,0,0,0.08);
 }
 </style>

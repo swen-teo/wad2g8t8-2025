@@ -858,8 +858,17 @@ header h1 {
   height: 3rem;
   border-radius: 0.75rem;
 }
-.filters-toggle {
-  min-width: 180px; /* keeps button readable next to search */
+
+/* Ensure the filter button text never wraps and the button sizes to content on sm+ */
+@media (min-width: 576px) {
+  .filters-toggle { flex: 0 0 auto; }
+  /* Override w-100 from Bootstrap on sm+ so the button is only as wide as its label */
+  .filters-toggle .btn {
+    width: auto !important;
+    white-space: nowrap;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }
 .event-cta {
   display: block;
