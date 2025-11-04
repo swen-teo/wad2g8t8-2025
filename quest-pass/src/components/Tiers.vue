@@ -56,7 +56,7 @@ const tiers = computed(() => [
   {
     name: 'Silver',
     levels: 'Levels 11–20',
-    voucherValue: '$50 Ticketmaster Voucher',
+    voucherValue: 'Randomised Voucher',
     voucherClass: 'text-success',
     visual: '⚪',
     status: 'Tiered Reward Unlocked',
@@ -64,7 +64,7 @@ const tiers = computed(() => [
   {
     name: 'Gold',
     levels: 'Levels 21+',
-    voucherValue: '$10 Voucher',
+    voucherValue: 'Purchase Custom Merch',
     voucherClass: 'text-success fw-semibold',
     visual: '🟡',
     status: 'Enhanced Rewards',
