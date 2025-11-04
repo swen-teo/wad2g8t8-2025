@@ -6,14 +6,47 @@
           <div class="game-icon"><font-awesome-icon :icon="['fas','music']" /></div>
           <h5 class="mb-0">Heardle (Lite)</h5>
         </div>
-        <span v-if="!isLoading" class="badge bg-light text-dark border">
-          Attempt {{ attempts.length + 1 }} / {{ MAX_ATTEMPTS }}
-        </span>
+        <div v-if="!isLoading" class="d-flex align-items-center gap-2">
+          <span class="badge bg-light text-dark border">
+            Attempt {{ attempts.length + 1 }} / {{ MAX_ATTEMPTS }}
+          </span>
+          <span v-if="!isComplete" class="badge bg-warning text-dark border">
+            <font-awesome-icon :icon="['fas','trophy']" class="me-1" /> Worth {{ currentAttemptPoints }} pts
+          </span>
+          <div class="info-trigger">
+            <button
+              type="button"
+              class="btn btn-light border btn-sm p-1 d-inline-flex align-items-center justify-content-center"
+              aria-label="Scoring info"
+              title="Scoring info"
+              @click.stop="toggleInfo"
+            >
+              <font-awesome-icon :icon="['fas','info-circle']" />
+            </button>
+            <div
+              v-if="showInfo"
+              class="info-popover shadow-sm bg-light border rounded-3 p-3 small"
+              @click.stop
+            >
+              <div class="fw-semibold mb-1">Heardle scoring</div>
+              <ul class="mb-2 ps-3">
+                <li>1st try: 60 pts</li>
+                <li>2nd try: 50 pts</li>
+                <li>3rd try: 40 pts</li>
+                <li>4th try: 30 pts</li>
+                <li>5th try: 20 pts</li>
+                <li>6th try: 10 pts</li>
+              </ul>
+              <div class="text-muted">Skips don't award points. Points add to your global total.</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <p class="text-muted small mb-3">
         Listen to a short clip and guess the song. Each attempt reveals a longer snippet.
       </p>
+      
 
       <!-- Loading State -->
       <div v-if="isLoading" class="text-center p-4">
@@ -100,7 +133,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useUserStore } from '@/store/user'
 
 // --- State ---
 
@@ -118,10 +152,14 @@ const isLoading = ref(true)
 const errorMessage = ref(null)
 const showSuggestions = ref(false)
 const focusedIndex = ref(-1)
+const showInfo = ref(false)
 
 // Audio State
 const audioCtx = ref(null)
 const currentAudioSource = ref(null) // This will hold the AudioBufferSourceNode
+
+// Stores
+const userStore = useUserStore()
 
 // --- Computed Properties ---
 
@@ -136,6 +174,29 @@ const suggestions = computed(() => {
     const fullText = `${song.title} ${song.artist}`.toLowerCase()
     return fullText.includes(q) && !attempts.value.some(a => a.id === song.id)
   }).slice(0, 5) // Limit to 5 suggestions
+})
+
+// Points helpers
+const currentAttemptNumber = computed(() => Math.min(attempts.value.length + 1, MAX_ATTEMPTS))
+function pointsForAttempt(n) {
+  return Math.max(10, 70 - n * 10)
+}
+const currentAttemptPoints = computed(() => (isComplete.value ? 0 : pointsForAttempt(currentAttemptNumber.value)))
+
+function toggleInfo() {
+  showInfo.value = !showInfo.value
+}
+
+function handleOutsideClick() {
+  if (showInfo.value) showInfo.value = false
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleOutsideClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleOutsideClick)
 })
 
 // --- Audio Logic ---
@@ -220,6 +281,16 @@ function makeGuess(song) {
 
   const isCorrect = song.id === answer.value.id
   attempts.value.push({ ...song, isCorrect })
+  
+  // Award points if correct based on attempt number (1st=60, 2nd=50, ... 6th=10)
+  if (isCorrect) {
+    const attemptNumber = attempts.value.length // after push => 1..6
+    const points = pointsForAttempt(attemptNumber)
+    // Fire-and-forget; store handles optimistic update and persistence
+    userStore.awardPoints(points).catch((e) => {
+      console.error('Failed to award points:', e)
+    })
+  }
   
   query.value = ''
   showSuggestions.value = false
@@ -373,8 +444,9 @@ function pickRandom(list) {
   border: 1px solid rgba(0,0,0,0.04);
   border-radius: 1rem;
   background: linear-gradient(180deg, #ffffff 0%, #fbfaff 100%);
-  max-width: 500px;
-  margin: auto;
+  width: 100%;
+  max-width: 100%; /* allow parent column to control width */
+  overflow: visible; /* allow popovers/lists to extend beyond */
 }
 .game-icon {
   width: 36px; height: 36px; border-radius: 10px;
@@ -390,14 +462,52 @@ function pickRandom(list) {
   left: 0; 
   right: 0; 
   top: 100%; 
-  z-index: 10;
+  z-index: 1080; /* above card */
   border: 1px solid #f1eefb; 
   border-top: none; 
   border-radius: 0 0 .75rem .75rem;
-  max-height: 260px;
+  max-height: min(260px, 40vh);
   overflow-y: auto;
 }
 .list-group-item-action {
   cursor: pointer;
+}
+
+.info-trigger {
+  position: relative;
+}
+.info-popover {
+  position: absolute;
+  right: 0;
+  top: 120%;
+  width: 260px;
+  max-width: min(90vw, 280px);
+  z-index: 1080;
+}
+
+/* ensure inner body doesn't clip overflow either */
+.game-card :deep(.card-body) {
+  overflow: visible;
+}
+
+/* Responsive tweaks */
+@media (min-width: 768px) {
+  /* give the card a comfortable max width on medium+ screens while remaining fluid */
+  .game-card {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (max-width: 575.98px) {
+  /* tighten paddings slightly on very small screens */
+  .game-card :deep(.card-body) {
+    padding: 1rem !important;
+  }
+  .game-icon {
+    width: 32px;
+    height: 32px;
+  }
 }
 </style>
