@@ -14,7 +14,7 @@
         ref="triggerRef"
       >
         <span class="trigger-label">{{ displayLabel }}</span>
-        <i class="fas fa-chevron-down" aria-hidden="true"></i>
+        <font-awesome-icon icon="fa-solid fa-chevron-down" aria-hidden="true" />
       </button>
       <transition name="dropdown-fade">
         <ul

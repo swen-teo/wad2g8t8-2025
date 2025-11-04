@@ -1,7 +1,7 @@
 <template>
   <div>
     <SparkleBackground />
-    <Navbar />
+    <Navbar v-if="showNavbar" />
 
 
     <RouterView />
@@ -38,13 +38,14 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase.js'; // our firebase config
 import { useUserStore } from '@/store/user.js'; // our pinia store
 import { useRouter } from 'vue-router';
 import Navbar from '@/components/Navbar.vue'; // our navbar component
 import SparkleBackground from '@/components/SparkleBackground.vue';
+import { useRoute } from 'vue-router';
 
 // a simple, local state for toasts.
 // can move this into a store later if needed.
@@ -70,6 +71,9 @@ provide('addToast', addToast);
 // --- firebase auth listener ---
 const userStore = useUserStore();
 const router = useRouter();
+const route = useRoute();
+
+const showNavbar = computed(() => route.name !== 'Login');
 
 // onmounted runs once when the app component is first created.
 onMounted(() => {

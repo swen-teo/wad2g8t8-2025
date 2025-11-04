@@ -24,7 +24,7 @@
 
         <!-- NEW: date-range panel -->
         <div v-if="dateRangeText" class="date-range-chip mt-2">
-          <font-awesome-icon :icon="['fas', 'calendar-alt']" class="me-2" />
+          <font-awesome-icon :icon="['fas', 'calendar-days']" class="me-2" />
           This event runs from <strong>{{ dateRangeText }}</strong>
 </div>
 
@@ -40,7 +40,7 @@
       aria-label="Open venue in Google Maps"
       @click="handleVenueClick"
     >
-      <font-awesome-icon :icon="['fas','map-marker-alt']" class="me-1" />
+      <font-awesome-icon icon="fa-solid fa-location-dot" class="me-1" />
       {{ displayVenueName }}, {{ displayVenueCity }}
     </a>
 
@@ -218,7 +218,8 @@
                     @start-quest="showMusicQuest = true"
                     :is-disabled="isMusicQuestDone"
                     :button-text="isMusicQuestDone ? 'Completed' : 'Start Quest'"
-                    :icon-class="'fas fa-play me-2'"
+                    :icon="['fas', 'play']"
+                    icon-class="me-2"
                   />
                 </div>
               </div>
@@ -244,7 +245,8 @@
                     @start-quest="showTriviaQuest = true"
                     :is-disabled="isTriviaQuestDone"
                     :button-text="isTriviaQuestDone ? 'Completed' : 'Start Trivia'"
-                    :icon-class="'fas fa-pencil-alt me-2'"
+                    :icon="['fas', 'pen']"
+                    icon-class="me-2"
                   />
                 </div>
               </div>
@@ -255,28 +257,28 @@
     </div>
 
     <div class="modal fade" id="rewardModal" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content overflow-hidden">
-          <div class="modal-body p-0 text-center">
-            <div class="p-4 modal-reward-header text-white">
-              <i class="fas fa-trophy fa-3x animate-tada"></i>
-              <h2 class="mt-3 mb-0">Quest Complete!</h2>
+      <div class="modal-dialog modal-dialog-centered reward-modal__dialog">
+        <div class="modal-content overflow-hidden reward-modal">
+          <div class="modal-reward-header text-white text-center">
+            <div class="reward-modal__icon">
+              <font-awesome-icon icon="fa-solid fa-trophy" class="reward-modal__icon-graphic animate-tada" />
             </div>
-            <div class="p-4 p-md-5">
-              <p class="lead">
-                You've earned {{ totalPoints }} points and unlocked the
-                final reward!
-              </p>
-              <p class="text-muted">
-                Use this access code for your special perk:
-              </p>
-              <div class="display-6 fw-bold text-primary-1 bg-light p-3 rounded border">
-                {{ rewardCode || 'CODE-LOCKED' }}
-              </div>
-              <button class="btn btn-success btn-lg mt-4" data-bs-dismiss="modal">
-                Awesome!
-              </button>
+            <h2 class="mt-3 mb-2">Quest Complete!</h2>
+            <p class="reward-modal__subtitle">Final reward unlocked</p>
+          </div>
+          <div class="modal-body text-center reward-modal__content">
+            <p class="lead mb-3">
+              You've earned {{ totalPoints }} points and unlocked the final reward!
+            </p>
+            <p class="text-muted mb-4">
+              Use this access code for your special perk:
+            </p>
+            <div class="reward-modal__code" role="status" aria-live="polite">
+              {{ rewardCode || 'CODE-LOCKED' }}
             </div>
+            <button class="btn btn-lg mt-5 reward-modal__cta" data-bs-dismiss="modal">
+              Awesome!
+            </button>
           </div>
         </div>
       </div>
@@ -294,11 +296,11 @@
                     <div class="map-embed-wrapper">
                       <div class="map-overlay-controls">
                         <a class="btn btn-primary btn-sm" :href="mapsSearchUrl" target="_blank" rel="noopener">
-                            <font-awesome-icon :icon="['fas', 'directions']" class="me-1" />
+                          <font-awesome-icon icon="fa-solid fa-route" class="me-1" />
                           Directions
                         </a>
                         <button class="btn btn-outline-secondary btn-sm" type="button" :disabled="isCopyingAddress" @click="copyVenueAddress">
-                          <font-awesome-icon :icon="['far', 'copy']" class="me-1" />
+                          <font-awesome-icon icon="fa-regular fa-copy" class="me-1" />
                           {{ addressCopyLabel }}
                         </button>
                       </div>
@@ -358,6 +360,11 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { Modal } from 'bootstrap';
+import { icon } from '@fortawesome/fontawesome-svg-core';
+import { faLocationDot, faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+
+const locationDotSvg = icon(faLocationDot).html.join('');
+const externalLinkSvg = icon(faArrowUpRightFromSquare).html.join('');
 import { sendRewardUnlockEmail } from '../services/email.js';
 
 // --- Import the new components ---
@@ -508,7 +515,7 @@ const rewardStatusMessage = computed(() => {
 });
 
 const rewardStatusIcon = computed(() => {
-  if (isRewardUnlocked.value) return ['fas', 'ticket-alt'];
+  if (isRewardUnlocked.value) return ['fas', 'ticket-simple'];
   if (isComplete.value) return ['fas', 'hourglass-half'];
   return ['fas', 'lock'];
 });
@@ -711,13 +718,13 @@ onMounted(async () => {
             <div class="map-popover-media">
               ${media}
               <div class="map-popover-chip">
-                <i class="fas fa-map-marker-alt me-1"></i>
+                <span class="me-1 icon-inline">${locationDotSvg}</span>
                 ${title}
               </div>
             </div>
             <div class="map-popover-actions">
               <a href="${mapsSearchUrl.value}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
-                <i class="fas fa-external-link-alt me-1"></i>
+                <span class="me-1 icon-inline">${externalLinkSvg}</span>
                 Open in Google Maps
               </a>
             </div>
@@ -1707,26 +1714,94 @@ function buildTitleInitials(title) {
 }
 
 /* 5. Reward Modal */
-.modal-content {
-  border: 0;
-  border-radius: 0.75rem; /* Softer modal corners */
+.reward-modal__dialog {
+  max-width: 440px;
 }
 
-/* ADDED: Animate the trophy icon */
+.modal-content.reward-modal {
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  border-radius: var(--card-radius, 1rem);
+  background: #ffffff;
+  box-shadow: 0 28px 55px rgba(79, 70, 229, 0.22);
+}
+
+/* Animate the trophy icon */
 .animate-tada {
-  /* This will run when the modal appears */
   animation: tada 1s ease;
 }
 
-
-/* Gradient header for the reward modal */
 .modal-reward-header {
-  /* Using --bs-success to respect Bootstrap's variables */
-  background: linear-gradient(
-    45deg,
-    var(--bs-success),
-    #157347
-  );
+  padding: 2.5rem 1.5rem 2rem;
+  background: linear-gradient(135deg, #a78bfa, #60a5fa);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-reward-header::after {
+  content: '';
+  position: absolute;
+  inset: 12% 18% auto;
+  height: 160px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, transparent 70%);
+  filter: blur(20px);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.reward-modal__icon {
+  position: relative;
+  z-index: 1;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
+  backdrop-filter: blur(4px);
+}
+
+.reward-modal__icon-graphic {
+  font-size: 2.5rem;
+  color: #fff;
+}
+
+.reward-modal__subtitle {
+  position: relative;
+  z-index: 1;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.reward-modal__content {
+  padding: 2.75rem clamp(2rem, 5vw, 2.75rem) 2.5rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f5ff 100%);
+}
+
+.reward-modal__code {
+  display: inline-block;
+  padding: 1rem 2.5rem;
+  border-radius: 1rem;
+  font-weight: 700;
+  font-size: clamp(2rem, 6vw, 2.75rem);
+  letter-spacing: 0.2em;
+  background: rgba(167, 139, 250, 0.18);
+  color: #4c1d95;
+  border: 2px dashed rgba(167, 139, 250, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 12px 30px rgba(129, 140, 248, 0.18);
+}
+
+.reward-modal__cta {
+  width: 100%;
+  font-weight: 600;
+  box-shadow: 0 16px 32px rgba(96, 165, 250, 0.35);
 }
 
 /* subtle floating decorative shapes for desktop

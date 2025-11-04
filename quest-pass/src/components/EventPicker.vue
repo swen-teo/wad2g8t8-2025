@@ -31,14 +31,14 @@
 				</div>
 
 				<div class="mt-3">
-					<button
-						class="btn qp-btn"
-						:disabled="isSpinning || !hasEvents"
-						@click="spinForEvent"
-					>
-						<i class="fas fa-compact-disc me-2"></i>
-						{{ isSpinning ? 'Spinning…' : (selectedEvent ? 'Spin again' : 'Spin the Vinyl') }}
-					</button>
+                                        <button
+                                                class="btn qp-btn"
+                                                :disabled="isSpinning || !hasEvents"
+                                                @click="spinForEvent"
+                                        >
+                                                <font-awesome-icon icon="fa-solid fa-compact-disc" class="me-2" />
+                                                {{ isSpinning ? 'Spinning…' : (selectedEvent ? 'Spin again' : 'Spin the Vinyl') }}
+                                        </button>
 				</div>
 
 				<p v-if="!hasEvents" class="text-muted small mt-2">

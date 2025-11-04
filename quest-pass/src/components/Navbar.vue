@@ -5,7 +5,7 @@
         class="navbar-brand fw-bold"
         :to="{ name: 'LandingPage' }"
       >
-        <font-awesome-icon :icon="['fas','ticket-alt']" class="me-2" />QuestPass
+        <font-awesome-icon :icon="['fas','ticket-simple']" class="me-2" />QuestPass
       </router-link>
       <button
         class="navbar-toggler"
@@ -34,7 +34,7 @@
               active-class="active"
               :to="{ name: 'Home' }"
             >
-              <font-awesome-icon :icon="['fas','calendar-alt']" class="me-2" />
+              <font-awesome-icon :icon="['fas','calendar-days']" class="me-2" />
               <span>Events</span>
             </router-link>
           </li>
@@ -135,10 +135,10 @@
                   href="#"
                   @click.prevent="() => { closeDropdown(); handleLogout(); }"
                   >
-                  <font-awesome-icon
-                    :icon="['fas', 'sign-out-alt']"
-                    class="me-2"
-                  />
+                    <font-awesome-icon
+                      :icon="['fas', 'right-from-bracket']"
+                      class="me-2"
+                    />
                   Logout
                 </a
                 >

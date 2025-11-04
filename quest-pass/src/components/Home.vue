@@ -171,7 +171,7 @@
       <!-- no events found message -->
       <!-- 👇 Class reverted back to original -->
       <div v-if="!isLoading && groupedEvents.length === 0" class="text-center py-5 text-muted">
-        <font-awesome-icon icon="search" size="3x" class="mb-3" />
+        <font-awesome-icon icon="fa-solid fa-magnifying-glass" class="fa-3x mb-3" aria-hidden="true" />
         <!-- 👇 Emoji removed -->
         <h4 class="fw-bold">No Events Found</h4>
         <p>Try adjusting your search or check back later for new events.</p>

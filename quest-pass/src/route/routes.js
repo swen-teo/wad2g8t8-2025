@@ -170,6 +170,12 @@ router.beforeEach((to, from, next) => {
       return;
     }
 
+    // 1c. if user is logged out and goes to LandingPage, show instructions first
+    if (to.path === "/" && !cachedUser) {
+      next("/instructions");
+      return;
+    }
+
     // 2. if the route needs auth and there's no logged-in user, send to /login
     if (needsAuth && !cachedUser) {
       next({ path: "/login", query: { redirect: to.fullPath } });

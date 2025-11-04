@@ -1,12 +1,12 @@
 <template>
 
     <div id="scroll-indicator">
-        <i class="fa fa-angle-down" aria-hidden="true"></i>
+        <font-awesome-icon icon="fa-solid fa-angle-down" aria-hidden="true" />
     </div>
 
     <div class="container d-block text-center mt-5 mb-5 hero-section">
         <div class="qp-logo-badge">
-            <i class="fa fa-music" aria-hidden="true"></i>
+            <font-awesome-icon icon="fa-solid fa-music" aria-hidden="true" />
         </div>
         <h1 class="display-4 mt-4 qp-title">
             QUESTPASS
@@ -22,7 +22,7 @@
             <div class="card w-100">
                 <div class="card-body">
                     <div class="qp-card-icon">
-                        <i class="fa fa-music" aria-hidden="true"></i>
+                        <font-awesome-icon icon="fa-solid fa-music" aria-hidden="true" />
                     </div>
                     <h4 class="card-title mb-3 fw-bold">Complete Quests</h4>
                     <p class="card-text text-muted">Listen to songs, follow artists, and take quizzes to earn points for your favorite events.</p>
@@ -32,7 +32,7 @@
             <div class="card w-100">
                 <div class="card-body">
                     <div class="qp-card-icon">
-                        <i class="fa fa-trophy" aria-hidden="true"></i>
+                        <font-awesome-icon icon="fa-solid fa-trophy" aria-hidden="true" />
                     </div>
                     <h4 class="card-title mb-3 fw-bold">Earn Points</h4>
                     <p class="card-text text-muted">Accumulate points to unlock eligibility for exclusive presale opportunities.</p>
@@ -42,7 +42,7 @@
             <div class="card w-100">
                 <div class="card-body">
                     <div class="qp-card-icon">
-                        <i class="fa fa-ticket" aria-hidden="true"></i>
+                        <font-awesome-icon icon="fa-solid fa-ticket" aria-hidden="true" />
                     </div>
                     <h4 class="card-title mb-3 fw-bold">Get Presale Access</h4>
                     <p class="card-text text-muted">Unlock presale codes and links to purchase tickets on Ticketmaster before the general public.</p>

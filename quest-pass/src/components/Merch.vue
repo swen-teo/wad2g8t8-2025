@@ -6,7 +6,7 @@
 
     <!-- Access gating: require Gold tier -->
     <div v-if="!userStore.isLoggedIn" class="alert alert-warning d-flex align-items-center justify-content-center gap-2">
-      <font-awesome-icon :icon="['fas','sign-in-alt']" class="me-2" />
+      <font-awesome-icon :icon="['fas','right-to-bracket']" class="me-2" />
       <div>Please log in to participate in quests and rewards.</div>
     </div>
     <div v-else-if="userStore.currentUser?.currentTier !== 'Gold'" class="alert alert-warning text-center">

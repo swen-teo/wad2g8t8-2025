@@ -41,12 +41,12 @@
                 </p>
                 <div class="d-flex align-items-center gap-2"><span
                   class="badge fs-6"
-                  :style="{ 
-                    backgroundColor: userStore.currentTier.bg, 
-                    color: userStore.currentTier.color 
+                  :style="{
+                    backgroundColor: userStore.currentTier.bg,
+                    color: userStore.currentTier.color
                   }"
                 >
-                  <i class="fas fa-shield-alt me-1"></i>
+                  <font-awesome-icon icon="fa-solid fa-shield-halved" class="me-1" />
                   {{ userStore.currentUser.currentTier }} Tier
                 </span>
                 <div
@@ -92,7 +92,7 @@
               </div>
               <div class="col-12 col-md-4 mb-3 mb-md-0 d-flex flex-column align-items-center align-items-md-start">
                 <h5 class="text-muted small text-uppercase mb-1 d-flex align-items-center justify-content-center justify-content-md-start">
-                  <font-awesome-icon :icon="['fas','shield-alt']" class="me-2 text-primary-2" />
+                  <font-awesome-icon :icon="['fas','shield-halved']" class="me-2 text-primary-2" />
                   Level
                 </h5>
                 <h3 class="fw-bold mb-0 d-flex align-items-center gap-2 justify-content-center justify-content-md-start w-100">
@@ -112,7 +112,7 @@
             <div class="mt-4">
               <div class="d-flex justify-content-between align-items-center mb-2">
                       <h5 class="text-muted small text-uppercase d-flex align-items-center gap-2">
-                        <font-awesome-icon :icon="['fas','tachometer-alt']" class="me-1 text-muted" />
+                        <font-awesome-icon :icon="['fas','gauge-high']" class="me-1 text-muted" />
                         Progress to next level
                       </h5>
                       <div class="small text-muted fw-semibold">
