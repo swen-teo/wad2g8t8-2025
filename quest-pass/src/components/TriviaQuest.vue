@@ -339,7 +339,12 @@ const currentTriviaQuestion = computed(() => {
 });
 const canRetryTrivia = computed(() => {
   const message = String(triviaError.value || '').toLowerCase();
-  return message.includes('502') || message.includes('invalid model response');
+  return (
+    message.includes('502') ||
+    message.includes('503') ||
+    message.includes('temporarily unavailable') ||
+    message.includes('invalid model response')
+  );
 });
 const currentLoadingMessage = computed(() => {
   return LOADING_MESSAGES[loadingMessageIndex.value] || LOADING_MESSAGES[0];
