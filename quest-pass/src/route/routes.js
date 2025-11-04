@@ -17,6 +17,7 @@ import Instructions from "../components/Instructions.vue";
 import LoadingScreen from '../components/Loading.vue';
 import Tiers from "../components/Tiers.vue";
 import Merch from "../components/Merch.vue";
+import SilverMerch from "../components/SilverMerch.vue";
 
 const routes = [
   {
@@ -65,12 +66,21 @@ const routes = [
     component: Tiers,
     meta: { requiresAuth: true },
   },
+
   {
     path: '/merch',
     name: 'Merch',
     component: Merch,
     meta: { requiresAuth: true },
   },
+  
+  {
+    path: '/SilverMerch',
+    name: 'SilverMerch',
+    component: SilverMerch,
+    meta: { requiresAuth: true },
+  },
+
   {
     path: '/event/:id', // A dynamic route for event details
     name: 'EventDetails',

@@ -28,17 +28,26 @@
           This event runs from <strong>{{ dateRangeText }}</strong>
 </div>
 
-<div class="meta-chips d-flex flex-wrap gap-2 mt-2">
-          <div class="meta-chips d-flex flex-wrap gap-2 mt-2">
-            <div class="chip">
-              <font-awesome-icon :icon="['fas', 'map-marker-alt']" class="me-1" />
-              {{ event.venueName }}, {{ event.venueCity }}
-            </div>
-            <div class="chip">
-              <font-awesome-icon :icon="['fas', 'star']" class="me-1" />
-              Points to goal: {{ pointsRemaining }}
-            </div>
-          </div>
+      <div class="meta-chips d-flex flex-wrap gap-2 mt-2">
+                
+      <a
+      id="venue-chip"
+      class="chip chip--clickable"
+      :href="mapsSearchUrl"
+      target="_blank"
+      rel="noopener"
+      tabindex="0"
+      aria-label="Open venue in Google Maps"
+      @click="handleVenueClick"
+    >
+      <font-awesome-icon :icon="['fas','map-marker-alt']" class="me-1" />
+      {{ displayVenueName }}, {{ displayVenueCity }}
+    </a>
+
+        <div class="chip">
+          <font-awesome-icon :icon="['fas', 'star']" class="me-1" />
+          Points to goal: {{ pointsRemaining }}
+        </div>
         </div></div>
       </section>
 
@@ -273,6 +282,39 @@
       </div>
     </div>
 
+    <!-- Venue Map Modal -->
+    <div class="modal fade" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content overflow-hidden">
+          <div class="modal-header">
+            <h5 class="modal-title" id="mapModalLabel">Map – {{ displayVenueName }}, {{ displayVenueCity }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-0">
+            <div class="map-embed-wrapper">
+              <iframe
+                ref="mapIframe"
+                :src="embedMapUrl"
+                width="100%"
+                height="100%"
+                style="border:0;"
+                allowfullscreen
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                title="Venue location map"
+              ></iframe>
+            </div>
+          </div>
+          <div class="modal-footer d-flex justify-content-between">
+            <small class="text-muted">Map based on venue search query</small>
+            <a class="btn btn-outline-primary" :href="mapsSearchUrl" target="_blank" rel="noopener">
+              Open in Google Maps
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <MusicQuest
       v-if="showMusicQuest"
       :artist-name="artistName"
@@ -313,6 +355,10 @@ import MusicQuestButton from './MusicQuestButton.vue';
 import Loading from './Loading.vue';
 import ScrollObserver from './ScrollObserver.vue';
 
+import {onUnmounted } from 'vue';
+import { Popover} from 'bootstrap';
+let venuePopover; // keep a handle to dispose later
+let mapModalInstance; // modal instance for the venue map
 
 // --- configuration ---
 const MUSIC_MAX = 300;
@@ -508,30 +554,108 @@ function getProgressDocRef() {
   if (!userId.value) return null;
   return doc(db, 'users', userId.value, 'eventProgress', eventId);
 }
+// --- GOOGLE MAPS SETUP ---
+const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+
+// Compute the venue name and city (existing data from event)
+const displayVenueName = computed(() =>
+  event.value?.venueName || groupMeta?.value?.venueName || 'Venue TBA'
+);
+const displayVenueCity = computed(() =>
+  event.value?.venueCity || groupMeta?.value?.venueCity || 'Singapore'
+);
+
+// Build Google Maps URLs
+const mapQuery = computed(() => {
+  const q = `${displayVenueName.value}, ${displayVenueCity.value}`;
+  return encodeURIComponent(q);
+});
+
+// Static Maps API image (hover preview)
+const staticMapUrl = computed(() => {
+  if (!mapsKey) return null;
+  return `https://maps.googleapis.com/maps/api/staticmap?size=480x260&scale=2&maptype=roadmap&markers=color:red|${mapQuery.value}&key=${mapsKey}`;
+});
+
+// Regular Google Maps search URL (opens new tab)
+const mapsSearchUrl = computed(() =>
+  `https://www.google.com/maps/search/?api=1&query=${mapQuery.value}`
+);
+
+// Prefer the official Embed API when a key is present (better UX and controls);
+// fall back to a generic embed that doesn't require a key.
+const embedMapUrl = computed(() => {
+  const q = mapQuery.value;
+  if (mapsKey) {
+    return `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(mapsKey)}&q=${q}`;
+  }
+  return `https://www.google.com/maps?q=${q}&output=embed`;
+});
+
+const mapIframe = ref(null);
+
+function handleVenueClick(event) {
+  // If we have a key (and thus a richer embed), open the modal instead of navigating away.
+  if (mapsKey) {
+    event?.preventDefault?.();
+    if (mapModalInstance) {
+      // Setting src explicitly helps when city/name changes across route updates
+      if (mapIframe?.value) {
+        mapIframe.value.src = embedMapUrl.value;
+      }
+      mapModalInstance.show();
+    }
+  }
+}
 
 onMounted(async () => {
+  // ✅ Only create the popover if we have a maps key AND the element exists
+  const el = document.getElementById('venue-chip');
+  if (el) {
+    venuePopover = new Popover(el, {
+      container: 'body',          // <-- ensures it’s above overlays
+      trigger: 'hover focus',     // <-- shows on hover; click still opens link
+      placement: 'bottom',
+      html: true,
+      sanitize: false,
+      fallbackPlacements: ['top','right','left'],
+      content: () => {
+        if (staticMapUrl.value) {
+          return `<img src="${staticMapUrl.value}" alt="Map preview" style="display:block;width:100%;height:auto;border-radius:8px;" />`;
+        }
+        // Fallback: lightweight embedded map without API key
+        return `<iframe src="${embedMapUrl.value}"
+                  class="map-popover-embed"
+                  width="360" height="200"
+                  style="border:0; pointer-events:none; border-radius:8px; display:block;"
+                  loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                  title="Map preview"></iframe>`;
+      }
+    });
+  }
+
+  // (keep the rest of your modal + data loading logic)
   try {
     const modalEl = document.getElementById('rewardModal');
     if (modalEl && typeof Modal === 'function') {
-      try {
-        rewardModal.value = new Modal(modalEl);
-      } catch (modalError) {
-        console.warn('Could not init modal:', modalError);
-      }
+      rewardModal.value = new Modal(modalEl);
     }
-
+    const mapModalEl = document.getElementById('mapModal');
+    if (mapModalEl && typeof Modal === 'function') {
+      mapModalInstance = new Modal(mapModalEl);
+    }
     await loadEventDetails();
-
-    if (event.value && userId.value) {
-      await loadProgress();
-    }
-
-    if (route.query.spotify === '1') {
-      showMusicQuest.value = true;
-    }
+    if (event.value && userId.value) await loadProgress();
+    if (route.query.spotify === '1') showMusicQuest.value = true;
   } finally {
     isLoading.value = false;
   }
+});
+
+onUnmounted(() => {
+  venuePopover?.dispose();
+  // Bootstrap doesn't expose a dispose on Modal instance directly; remove listeners by hiding
+  try { mapModalInstance?.hide?.(); } catch {}
 });
 
 watch(userId, async (newId, oldId) => {
@@ -1673,6 +1797,17 @@ function buildTitleInitials(title) {
   border: 1px solid rgba(255,255,255,.35);
   backdrop-filter: blur(4px);
   font-size: .9rem;
+}
+.chip--clickable {
+  cursor: pointer;
+  text-decoration: none;
+}
+.chip--clickable:hover {
+  filter: brightness(1.03);
+}
+.popover {
+  z-index: 2000 !important;
+  max-width: 480px;
 }
 </style>
 
