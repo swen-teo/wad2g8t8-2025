@@ -12,8 +12,8 @@
           <div class="col-md-2 d-flex align-items-center justify-content-center p-3">
             <img 
               :src="item.previewImage" 
-              class="img-fluid rounded" 
-              alt="Product Image" 
+              class="img-fluid rounded object-fit-contain" 
+              alt="Product preview" 
               style="max-height: 150px;"
             >
           </div>

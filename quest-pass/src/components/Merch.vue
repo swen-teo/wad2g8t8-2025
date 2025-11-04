@@ -358,7 +358,84 @@ function removeImage() {
   merchConfig.value.image.src = null;
 }
 
-function addToCart() {
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    if (!src) return resolve(null);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function generatePreviewDataUrl() {
+  try {
+    const baseUrl = baseProductImage.value;
+    const baseImg = await loadImage(baseUrl);
+
+    // Choose a reasonable canvas size based on base image
+    const maxDim = 800;
+    const baseW = Math.max(1, baseImg?.naturalWidth || 800);
+    const baseH = Math.max(1, baseImg?.naturalHeight || 800);
+    const scale = Math.min(maxDim / baseW, maxDim / baseH);
+    const canvasW = Math.round(baseW * scale);
+    const canvasH = Math.round(baseH * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = canvasW;
+    canvas.height = canvasH;
+    const ctx = canvas.getContext('2d');
+
+    // Draw base image or a fallback background
+    if (baseImg) {
+      ctx.drawImage(baseImg, 0, 0, canvasW, canvasH);
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasW, canvasH);
+    }
+
+    // Draw overlay image if present
+    if (merchConfig.value.image.src) {
+      const overlayImg = await loadImage(merchConfig.value.image.src);
+      if (overlayImg) {
+        const imgWidth = Number(merchConfig.value.image.size) || 150;
+        const ratio = overlayImg.naturalWidth / overlayImg.naturalHeight || 1;
+        const drawW = imgWidth;
+        const drawH = Math.round(drawW / ratio);
+        const cx = (Number(merchConfig.value.image.x) / 100) * canvasW;
+        const cy = (Number(merchConfig.value.image.y) / 100) * canvasH;
+        ctx.drawImage(overlayImg, Math.round(cx - drawW / 2), Math.round(cy - drawH / 2), drawW, drawH);
+      }
+    }
+
+    // Draw text overlay if present
+    const t = merchConfig.value.text;
+    if (t?.content) {
+      const size = Number(t.size) || 24;
+      const family = t.fontFamily || 'Arial';
+      const tx = (Number(t.x) / 100) * canvasW;
+      const ty = (Number(t.y) / 100) * canvasH;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `${size}px ${family}`;
+      // outline for readability similar to text-shadow
+      ctx.lineWidth = Math.max(2, Math.round(size * 0.08));
+      ctx.strokeStyle = '#ffffff';
+      ctx.strokeText(t.content, tx, ty);
+      ctx.fillStyle = t.color || '#000000';
+      ctx.fillText(t.content, tx, ty);
+    }
+
+    return canvas.toDataURL('image/png');
+  } catch (err) {
+    console.warn('Preview generation failed:', err);
+    return null;
+  }
+}
+
+async function addToCart() {
+  const preview = await generatePreviewDataUrl();
   const customMerchItem = {
     id: Date.now(),
     product: selectedProduct.value,
@@ -366,7 +443,7 @@ function addToCart() {
     config: JSON.parse(JSON.stringify(merchConfig.value)),
     quantity: quantity.value,
     price: basePrice.value,
-    previewImage: baseProductImage.value,
+    previewImage: preview || baseProductImage.value,
   };
 
   cartStore.addItem(customMerchItem);

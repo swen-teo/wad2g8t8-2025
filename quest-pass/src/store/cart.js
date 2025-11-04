@@ -1,10 +1,20 @@
 // src/store/cart.js
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 export const useCartStore = defineStore('cart', () => {
   // STATE
-  const items = ref([]); // This will hold your merch items
+  // Initialize from localStorage if available
+  const items = ref([]);
+  try {
+    const saved = localStorage.getItem('questpass_cart');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) items.value = parsed;
+    }
+  } catch (e) {
+    // ignore
+  }
 
   // GETTERS
   const itemCount = computed(() => items.value.length);
@@ -35,6 +45,15 @@ export const useCartStore = defineStore('cart', () => {
   function clearCart() {
     items.value = [];
   }
+
+  // Persist cart changes
+  watch(items, (val) => {
+    try {
+      localStorage.setItem('questpass_cart', JSON.stringify(val));
+    } catch (e) {
+      // ignore persistence errors
+    }
+  }, { deep: true });
 
   return { items, itemCount, totalPrice, formattedTotalPrice, addItem, removeItem, clearCart };
 });
