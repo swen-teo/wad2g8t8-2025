@@ -47,6 +47,18 @@
               <span>Mini Games</span>
             </router-link>
           </li>
+
+          <li class="nav-item">
+            <router-link
+              class="nav-link d-flex align-items-center"
+              active-class="active"
+              :to="{ name: 'Tiers' }"
+            >
+              <font-awesome-icon :icon="['fas', 'trophy']" class="me-2" />
+              <span>Exclusives</span>
+            </router-link>
+          </li>
+
           <li class="nav-item">
             <router-link
               class="nav-link d-flex align-items-center"
