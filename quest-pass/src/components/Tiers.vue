@@ -23,7 +23,7 @@
             <tbody>
               <tr v-for="tier in tiers" 
                   :key="tier.name" 
-                  :class="[ 'tier-' + tier.name.toLowerCase(), { 'tier-row-highlight': tier.name === currentUserTier } ]">
+                  :class="[ 'tier-' + tier.name.toLowerCase(), { 'tier-row-highlight': tier.name === userStore.currentUser?.currentTier } ]">
                 
                 <td class="fw-bold">{{ tier.name }}</td>
                 <td>{{ tier.levels }}</td>
@@ -51,8 +51,21 @@
 <script setup>
 import { computed, ref } from 'vue';
 
+// TODO: Import your user store here
+// e.g., import { useUserStore } from '@/stores/userStore';
+// const userStore = useUserStore();
+// For this example to work, userStore must be available.
+// As a placeholder, let's create a reactive object.
+// !! Replace this with your actual store !!
+const userStore = ref({
+  currentUser: {
+    currentTier: 'Silver' // You can change this value to test
+  }
+});
+
+
 // You can change 'Silver' to 'Bronze' or 'Gold' to see the highlight move.
-const currentUserTier = ref('Silver');
+// const currentUserTier = ref('Silver'); // REMOVED - Now using userStore
 
 const tiers = computed(() => [
   {
