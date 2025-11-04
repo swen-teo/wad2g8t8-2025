@@ -1,12 +1,14 @@
 <template>
   <div class="card game-card shadow-sm w-100">
     <div class="card-body p-4">
-  <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+      <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
-          <div class="game-icon"><font-awesome-icon :icon="['fas','music']" /></div>
-          <h5 class="mb-0">Heardle</h5>
+          <div class="game-icon">
+            <font-awesome-icon :icon="['fas','image']" />
+          </div>
+          <h5 class="mb-0">Artist Guesser</h5>
         </div>
-        <div v-if="!isLoading" class="d-flex align-items-center gap-2">
+        <div v-if="!isLoading && !isComplete" class="d-flex align-items-center gap-2">
           <span class="badge bg-light text-dark border">
             Attempt {{ attempts.length + 1 }} / {{ MAX_ATTEMPTS }}
           </span>
@@ -28,7 +30,7 @@
               class="info-popover shadow-sm bg-light border rounded-3 p-3 small"
               @click.stop
             >
-              <div class="fw-semibold mb-1">Heardle scoring</div>
+              <div class="fw-semibold mb-1">Scoring</div>
               <ul class="mb-2 ps-3">
                 <li>1st try: 60 pts</li>
                 <li>2nd try: 50 pts</li>
@@ -44,33 +46,40 @@
       </div>
 
       <p class="text-muted small mb-3">
-        Listen to a short clip and guess the song. Each attempt reveals a longer snippet.
+        Guess the artist from the blurred image. Each attempt reveals a clearer picture.
       </p>
-      
 
       <!-- Loading State -->
       <div v-if="isLoading" class="text-center p-4">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading songs...</span>
+          <span class="visually-hidden">Loading artists...</span>
         </div>
-        <p class="mt-2 text-muted">Loading today's tracks from Deezer...</p>
+        <p class="mt-2 text-muted">Loading today's artists from Deezer...</p>
       </div>
 
       <!-- Error State -->
       <div v-else-if="errorMessage" class="alert alert-danger">
         <strong>Error:</strong> {{ errorMessage }}
-        <p class="mb-0 small">Could not load songs. The Deezer API or proxy might be down. Please try reloading.</p>
+        <p class="mb-0 small">Could not load artists. The Deezer API or proxy might be down. Please try reloading.</p>
       </div>
       
       <!-- Game UI (Main Content) -->
       <div v-else>
+        <!-- Artist Image -->
+        <div class="image-container shadow-sm mb-3">
+          <img 
+            v-if="answer"
+            :src="answer.pictureUrl" 
+            :alt="`Blurred image of ${answer.name}`"
+            :style="{ filter: `blur(${effectiveBlur}px)` }"
+            @error="onImageError"
+          />
+        </div>
+
         <!-- Controls -->
         <div class="d-flex flex-wrap gap-2 align-items-center mb-3 controls">
-          <button class="btn btn-primary" :disabled="isComplete" @click="playSnippet">
-            <font-awesome-icon :icon="['fas','play']" class="me-2" />Play snippet ({{ snippetDurations[currentLevel] }}s)
-          </button>
           <button class="btn btn-outline-secondary" :disabled="isComplete" @click="skipAttempt">
-            Skip
+            <font-awesome-icon :icon="['fas','forward']" class="me-2" />Skip
           </button>
           <button class="btn btn-outline-danger ms-auto" @click="resetGame">
             <font-awesome-icon :icon="['fas','sync']" />
@@ -82,7 +91,7 @@
           <input 
             type="text" 
             class="form-control"
-            placeholder="Guess the song..."
+            placeholder="Guess the artist..."
             v-model="query"
             :disabled="isComplete"
             @focus="showSuggestions = true"
@@ -97,14 +106,14 @@
             v-if="showSuggestions && suggestions.length > 0"
           >
             <li 
-              v-for="(song, index) in suggestions" 
-              :key="song.id"
+              v-for="(artist, index) in suggestions" 
+              :key="artist.id"
               class="list-group-item list-group-item-action"
               :class="{ 'active': index === focusedIndex }"
-              @mousedown="selectSuggestion(song)"
+              @mousedown="selectSuggestion(artist)"
               @mouseenter="focusedIndex = index"
             >
-              <strong>{{ song.title }}</strong> - <span class="text-muted">{{ song.artist }}</span>
+              <strong>{{ artist.name }}</strong>
             </li>
           </ul>
         </div>
@@ -112,19 +121,19 @@
         <!-- Attempts list -->
         <div class="attempts-list">
           <div 
-            v-for="(guess, index) in attempts" 
+            v-for="(guess, index) in reversedAttempts" 
             :key="index"
             class="alert"
             :class="guess.isCorrect ? 'alert-success' : 'alert-danger'"
           >
             <font-awesome-icon :icon="['fas', guess.isCorrect ? 'check' : 'times']" class="me-2" />
-            {{ guess.title }} - {{ guess.artist }}
+            {{ guess.name }}
           </div>
           <div v-if="isWin" class="alert alert-success text-center">
             <strong>Well done! You got it!</strong>
           </div>
           <div v-if="isLoss" class="alert alert-warning text-center">
-            <strong>So close!</strong> The answer was <br><strong>{{ answer.title }} - {{ answer.artist }}</strong>
+            <strong>So close!</strong> The answer was <br><strong>{{ answer.name }}</strong>
           </div>
         </div>
       </div>
@@ -139,15 +148,13 @@ import { useUserStore } from '@/store/user'
 // --- State ---
 
 // Game State
-const allSongs = ref([]) // Will be filled by API
+const allArtists = ref([]) // Will be filled by API
 const answer = ref(null)
 const query = ref('')
 const attempts = ref([])
 const currentLevel = ref(0) // 0-5
 const MAX_ATTEMPTS = 6
-const snippetDurations = [1, 2, 4, 8, 16, 30]
-const sessionStartedAt = ref(new Date())
-const sessionFinalized = ref(false)
+const blurLevels = [24, 16, 8, 4, 2, 0] // Blur radius in pixels
 
 // UI State
 const isLoading = ref(true)
@@ -155,10 +162,6 @@ const errorMessage = ref(null)
 const showSuggestions = ref(false)
 const focusedIndex = ref(-1)
 const showInfo = ref(false)
-
-// Audio State
-const audioCtx = ref(null)
-const currentAudioSource = ref(null) // This will hold the AudioBufferSourceNode
 
 // Stores
 const userStore = useUserStore()
@@ -172,13 +175,16 @@ const isLoss = computed(() => attempts.value.length >= MAX_ATTEMPTS && !isWin.va
 const suggestions = computed(() => {
   if (query.value.length < 2) return []
   const q = query.value.toLowerCase()
-  return allSongs.value.filter(song => {
-    const fullText = `${song.title} ${song.artist}`.toLowerCase()
-    return fullText.includes(q) && !attempts.value.some(a => a.id === song.id)
+  return allArtists.value.filter(artist => {
+    return artist.name.toLowerCase().includes(q) && 
+           !attempts.value.some(a => a.id === artist.id)
   }).slice(0, 5) // Limit to 5 suggestions
 })
 
-// Points helpers
+// Blur control: unblur immediately on win
+const effectiveBlur = computed(() => (isWin.value ? 0 : blurLevels[currentLevel.value]))
+
+// Points helpers (same as Heardle)
 const currentAttemptNumber = computed(() => Math.min(attempts.value.length + 1, MAX_ATTEMPTS))
 function pointsForAttempt(n) {
   return Math.max(10, 70 - n * 10)
@@ -199,156 +205,34 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
-  if (!sessionFinalized.value && attempts.value.length > 0) {
-    finalizeMiniGameSession({ outcome: 'abandoned', pointsEarned: 0 })
-  }
 })
 
-// --- Audio Logic ---
-
-// Ensures the AudioContext is created (must be after user interaction)
-async function ensureAudio() {
-  if (audioCtx.value) return
-  try {
-    audioCtx.value = new (window.AudioContext || window.webkitAudioContext)()
-    await audioCtx.value.resume()
-  } catch (e) {
-    console.error("Failed to create AudioContext:", e)
-    errorMessage.value = "Could not initialize audio. Please interact with the page and try again."
-  }
-}
-
-// Stops any currently playing audio snippet
-function stopAudio() {
-  if (currentAudioSource.value) {
-    try {
-      currentAudioSource.value.stop()
-    } catch (e) {
-      // Ignore errors if source already stopped
-    }
-    currentAudioSource.value = null
-  }
-}
-
-/**
- * NEW: Plays an MP3 snippet from a URL for a specific duration.
- * This replaces the old playToneSequence function.
- */
-async function playAudioSnippet(url, duration) {
-  stopAudio()
-  await ensureAudio()
-  if (!audioCtx.value) return
-
-  try {
-    // 1. Fetch the MP3 file
-    const response = await fetch(url)
-    const arrayBuffer = await response.arrayBuffer()
-
-    // 2. Decode the MP3 data into an AudioBuffer
-    const audioBuffer = await audioCtx.value.decodeAudioData(arrayBuffer)
-
-    // 3. Create a source node to play the buffer
-    const source = audioCtx.value.createBufferSource()
-    source.buffer = audioBuffer
-    source.connect(audioCtx.value.destination)
-    
-    // 4. Play only the specified duration
-    // source.start(when, offset, duration)
-    source.start(0, 0, duration) 
-
-    // 5. Keep track of the source so we can stop it
-    currentAudioSource.value = source
-    
-    // 6. Set a timeout to clear the ref after the snippet finishes
-    setTimeout(() => {
-      if (currentAudioSource.value === source) {
-        currentAudioSource.value = null
-      }
-    }, duration * 1000)
-
-  } catch (err) {
-    console.error("Error playing audio snippet:", err)
-    errorMessage.value = "Failed to play audio snippet."
-  }
-}
-
-// This function is called by the "Play" button
-function playSnippet() {
-  if (!answer.value) return
-  const duration = snippetDurations[currentLevel.value]
-  playAudioSnippet(answer.value.previewUrl, duration)
-}
+// Show newest attempts first
+const reversedAttempts = computed(() => [...attempts.value].reverse())
 
 // --- Game Logic ---
 
-function beginSession() {
-  sessionStartedAt.value = new Date()
-  sessionFinalized.value = false
-}
-
-function formatAttemptsForSession() {
-  return attempts.value.map((guess) => ({
-    id: guess?.id ?? null,
-    title: guess?.title ?? null,
-    artist: guess?.artist ?? null,
-    isCorrect: guess?.isCorrect === true,
-  }))
-}
-
-function finalizeMiniGameSession({ outcome, pointsEarned }) {
-  if (sessionFinalized.value) return
-  sessionFinalized.value = true
-
-  userStore
-    .recordMiniGameResult('heardle', {
-      pointsEarned,
-      outcome,
-      attemptCount: attempts.value.length,
-      attempts: formatAttemptsForSession(),
-      answer: answer.value
-        ? {
-            id: answer.value.id,
-            title: answer.value.title,
-            artist: answer.value.artist,
-          }
-        : null,
-      sessionStartedAt: sessionStartedAt.value,
-      completedAt: new Date(),
-    })
-    .catch((error) => {
-      console.error('Failed to record Heardle session:', error)
-    })
-}
-
-function makeGuess(song) {
+function makeGuess(artist) {
   if (isComplete.value) return
 
-  const isCorrect = song.id === answer.value.id
-  attempts.value.push({ ...song, isCorrect })
-
+  const isCorrect = artist.id === answer.value.id
+  attempts.value.push({ ...artist, isCorrect })
+  
   // Award points if correct based on attempt number (1st=60, 2nd=50, ... 6th=10)
   if (isCorrect) {
     const attemptNumber = attempts.value.length // after push => 1..6
     const points = pointsForAttempt(attemptNumber)
-    // Fire-and-forget; store handles optimistic update and persistence
     userStore.awardPoints(points).catch((e) => {
       console.error('Failed to award points:', e)
     })
-    finalizeMiniGameSession({ outcome: 'win', pointsEarned: points })
   }
-
+  
   query.value = ''
   showSuggestions.value = false
 
   if (!isCorrect && attempts.value.length < MAX_ATTEMPTS) {
     currentLevel.value++
   }
-
-  if (!isCorrect && isLoss.value) {
-    finalizeMiniGameSession({ outcome: 'loss', pointsEarned: 0 })
-  }
-
-  stopAudio()
 }
 
 function skipAttempt() {
@@ -356,27 +240,17 @@ function skipAttempt() {
 
   attempts.value.push({ 
     id: `skip-${Date.now()}`, 
-    title: 'Skipped', 
-    artist: '', 
+    name: 'Skipped', 
     isCorrect: false 
   })
   
   if (attempts.value.length < MAX_ATTEMPTS) {
     currentLevel.value++
   }
-
-  if (isLoss.value) {
-    finalizeMiniGameSession({ outcome: 'loss', pointsEarned: 0 })
-  }
-
-  stopAudio()
 }
 
 // --- Data Fetching ---
 
-/**
- * NEW: Fetches songs from the Deezer API on component mount.
- */
 async function fetchAndSetGame() {
   isLoading.value = true
   errorMessage.value = null
@@ -390,26 +264,32 @@ async function fetchAndSetGame() {
     
     const data = await res.json()
 
-    // Map the API response and *filter out* songs without a preview URL
-    const fetchedSongs = data.data
-      .filter(track => track.preview)
-      .map(track => ({
-        id: track.id,
-        title: track.title,
-        artist: track.artist.name,
-        previewUrl: track.preview
-      }))
+    // De-duplicate artists from the track list
+    const artistsMap = new Map()
+    data.data.forEach(track => {
+      // Use picture_big for better quality
+      if (track.artist && track.artist.picture_big) { 
+        if (!artistsMap.has(track.artist.id)) {
+          artistsMap.set(track.artist.id, {
+            id: track.artist.id,
+            name: track.artist.name,
+            pictureUrl: track.artist.picture_big 
+          })
+        }
+      }
+    })
 
-    if (fetchedSongs.length === 0) {
-      throw new Error("No songs with playable previews were found.")
+    const fetchedArtists = Array.from(artistsMap.values())
+
+    if (fetchedArtists.length === 0) {
+      throw new Error("No artists with pictures were found.")
     }
 
-    allSongs.value = fetchedSongs
-    answer.value = pickRandom(allSongs.value)
-    beginSession()
-
+    allArtists.value = fetchedArtists
+    answer.value = pickRandom(allArtists.value)
+    
   } catch (err) {
-    console.error("Failed to load songs:", err)
+    console.error("Failed to load artists:", err)
     errorMessage.value = err.message
   } finally {
     isLoading.value = false
@@ -421,31 +301,32 @@ onMounted(fetchAndSetGame)
 
 // --- Event Handlers & Utilities ---
 
+function onImageError() {
+  // If an image fails to load, pick a new artist
+  errorMessage.value = "An artist image failed to load. Picking a new one..."
+  resetGame()
+}
+
 function resetGame() {
-  stopAudio()
-  if (!sessionFinalized.value && attempts.value.length > 0 && !isComplete.value) {
-    finalizeMiniGameSession({ outcome: 'abandoned', pointsEarned: 0 })
-  }
   attempts.value = []
   currentLevel.value = 0
   query.value = ''
   showSuggestions.value = false
   focusedIndex.value = -1
   
-  // Pick a new random song from the *existing* list
-  if (allSongs.value.length > 0) {
-    answer.value = pickRandom(allSongs.value)
-    beginSession()
+  // Pick a new random artist from the *existing* list
+  if (allArtists.value.length > 0) {
+    answer.value = pickRandom(allArtists.value)
   } else {
     // If list is empty (e.g., initial fetch failed), try fetching again
     fetchAndSetGame()
   }
 }
 
-function selectSuggestion(song) {
-  query.value = `${song.title} - ${song.artist}`
+function selectSuggestion(artist) {
+  query.value = artist.name
   showSuggestions.value = false
-  makeGuess(song)
+  makeGuess(artist)
 }
 
 function hideSuggestions() {
@@ -470,11 +351,8 @@ function onEnter() {
   if (focusedIndex.value >= 0 && suggestions.value[focusedIndex.value]) {
     selectSuggestion(suggestions.value[focusedIndex.value])
   } else if (query.value.length > 0) {
-    // Allow guessing without selecting (less friendly, but works)
     const q = query.value.toLowerCase()
-    const directMatch = allSongs.value.find(s => 
-      `${s.title} - ${s.artist}`.toLowerCase() === q
-    )
+    const directMatch = allArtists.value.find(s => s.name.toLowerCase() === q)
     if(directMatch) {
       makeGuess(directMatch)
     }
@@ -494,10 +372,6 @@ function pickRandom(list) {
 </script>
 
 <style scoped>
-:root {
-  --primary-1: #6a11cb;
-  --primary-2: #2575fc;
-}
 .game-card {
   border: 1px solid rgba(0,0,0,0.04);
   border-radius: 1rem;
@@ -511,6 +385,21 @@ function pickRandom(list) {
   display: inline-grid; place-items: center; color: #fff;
   background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
   box-shadow: 0 6px 14px rgba(96,75,200,0.18);
+}
+.image-container {
+  width: min(100%, 360px); /* make image area smaller and centered */
+  aspect-ratio: 1 / 1;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background-color: #eee;
+  margin-left: auto;
+  margin-right: auto;
+}
+.image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: filter 0.5s ease-out; /* Smooth transition for the blur */
 }
 .guess-box { 
   position: relative; 
@@ -531,9 +420,13 @@ function pickRandom(list) {
   cursor: pointer;
 }
 
-.info-trigger {
-  position: relative;
+/* ensure inner body doesn't clip overflow either */
+.game-card :deep(.card-body) {
+  overflow: visible;
 }
+
+/* popover styles shared with Heardle */
+.info-trigger { position: relative; }
 .info-popover {
   position: absolute;
   right: 0;
@@ -541,11 +434,6 @@ function pickRandom(list) {
   width: 260px;
   max-width: min(90vw, 280px);
   z-index: 1080;
-}
-
-/* ensure inner body doesn't clip overflow either */
-.game-card :deep(.card-body) {
-  overflow: visible;
 }
 
 /* Responsive tweaks */
@@ -572,10 +460,6 @@ function pickRandom(list) {
     flex: 1 1 100%;
     width: 100%;
   }
-  /* ensure the info popover is not cut off on tiny screens */
-  .info-popover {
-    right: 0;
-    left: auto;
-  }
+  .info-popover { right: 0; left: auto; }
 }
 </style>

@@ -44,7 +44,7 @@
               :to="{ name: 'MiniGames' }"
             >
               <font-awesome-icon :icon="['fas','puzzle-piece']" class="me-2" />
-              <span>Mini Games</span>
+              <span>Games</span>
             </router-link>
           </li>
 
