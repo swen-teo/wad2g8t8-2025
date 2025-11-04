@@ -5,11 +5,11 @@
     </h1>
 
     <!-- Access gating: require Gold tier -->
-    <div v-if="!userStore.isLoggedIn" class="alert alert-warning d-flex align-items-center justify-content-center gap-2 mb-4">
+    <div v-if="!userStore.isLoggedIn" class="alert alert-warning d-flex align-items-center justify-content-center gap-2">
       <font-awesome-icon :icon="['fas','sign-in-alt']" class="me-2" />
       <div>Please log in to participate in quests and rewards.</div>
     </div>
-    <div v-else-if="userStore.currentUser?.currentTier !== 'Gold'" class="alert alert-warning text-center mb-4">
+    <div v-else-if="userStore.currentUser?.currentTier !== 'Gold'" class="alert alert-warning text-center">
       <div class="d-flex align-items-center justify-content-center mb-1">
         <font-awesome-icon :icon="['fas','lock']" class="me-2" />
         <span class="lead mb-0">This exclusive merch creator is unlocked at <strong>Gold Tier</strong>.</span>
@@ -472,7 +472,8 @@ async function addToCart() {
 }
 
 .merch-creator-page {
-  font-family: "Inter", sans-serif;
+  /* Use the site-wide Poppins font to match the rest of the app */
+  font-family: 'Poppins', sans-serif;
 }
 
 .product-selector .btn-check:checked + .btn-outline-primary {
