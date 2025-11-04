@@ -5,9 +5,11 @@
     </h1>
 
     <div class="row g-4">
+      <!-- LEFT COLUMN: Product Selection + Customization -->
       <div class="col-lg-6 mb-4">
         <div class="card shadow-sm p-4 h-100">
           <h2 class="h4 mb-3">1. Choose Your Product</h2>
+
           <div class="product-selector btn-group d-flex mb-4" role="group">
             <input
               type="radio"
@@ -48,6 +50,7 @@
 
           <h2 class="h4 mb-3">2. Customize Your Design</h2>
 
+          <!-- TEXT CUSTOMIZATION -->
           <div class="card mb-3">
             <div class="card-header bg-light fw-semibold">Add Text</div>
             <div class="card-body">
@@ -59,6 +62,7 @@
                   v-model="merchConfig.text.content"
                 />
               </div>
+
               <div class="row g-2">
                 <div class="col-6">
                   <label for="textColor" class="form-label small">Color</label>
@@ -81,6 +85,7 @@
                   />
                 </div>
               </div>
+
               <div class="mb-3">
                 <label for="fontFamily" class="form-label small">Font</label>
                 <select
@@ -95,6 +100,7 @@
                   <option value="QuestFont">QuestFont (Custom)</option>
                 </select>
               </div>
+
               <div class="d-flex justify-content-between align-items-center mt-2">
                 <div>
                   <button class="btn btn-sm btn-outline-secondary me-1" @click="merchConfig.text.x -= 5">
@@ -110,10 +116,10 @@
                     <font-awesome-icon :icon="['fas', 'arrow-right']" />
                   </button>
                 </div>
-                
-                <button 
-                  v-if="merchConfig.text.content" 
-                  class="btn btn-sm btn-outline-danger" 
+
+                <button
+                  v-if="merchConfig.text.content"
+                  class="btn btn-sm btn-outline-danger"
                   @click="removeText"
                 >
                   <font-awesome-icon :icon="['fas', 'trash']" class="me-1" /> Remove
@@ -122,6 +128,7 @@
             </div>
           </div>
 
+          <!-- IMAGE CUSTOMIZATION -->
           <div class="card mb-3">
             <div class="card-header bg-light fw-semibold">Add Image</div>
             <div class="card-body">
@@ -155,8 +162,9 @@
                   />
                 </div>
               </div>
-              <div 
-                v-if="merchConfig.image.src" 
+
+              <div
+                v-if="merchConfig.image.src"
                 class="d-flex justify-content-between align-items-center mt-2"
               >
                 <div>
@@ -173,9 +181,9 @@
                     <font-awesome-icon :icon="['fas', 'arrow-right']" />
                   </button>
                 </div>
-                
-                <button 
-                  class="btn btn-sm btn-outline-danger" 
+
+                <button
+                  class="btn btn-sm btn-outline-danger"
                   @click="removeImage"
                 >
                   <font-awesome-icon :icon="['fas', 'trash']" class="me-1" /> Remove
@@ -186,6 +194,7 @@
         </div>
       </div>
 
+      <!-- RIGHT COLUMN: Live Preview -->
       <div class="col-lg-6">
         <div class="card shadow-sm p-4 h-100 d-flex flex-column">
           <h2 class="h4 mb-3 text-center">3. Live Preview</h2>
@@ -218,14 +227,14 @@
 
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h3>Price: <span class="text-success">{{ formattedPrice }}</span></h3>
-            
+
             <div class="d-flex gap-3 align-items-center">
               <div>
                 <label for="size" class="form-label me-2 mb-0">Size:</label>
-                <select 
-                  id="size" 
-                  v-model="selectedSize" 
-                  class="form-select d-inline-block" 
+                <select
+                  id="size"
+                  v-model="selectedSize"
+                  class="form-select d-inline-block"
                   style="width: 100px;"
                 >
                   <option v-for="size in sizeOptions" :key="size" :value="size">
@@ -233,7 +242,7 @@
                   </option>
                 </select>
               </div>
-              
+
               <div>
                 <label for="quantity" class="form-label me-2 mb-0">Qty:</label>
                 <input
@@ -249,8 +258,8 @@
           </div>
 
           <button class="btn btn-primary btn-lg w-100" @click="addToCart">
-            <font-awesome-icon :icon="['fas', 'cart-plus']" class="me-2" />Add to
-            Cart
+            <font-awesome-icon :icon="['fas', 'cart-plus']" class="me-2" />
+            Add to Cart
           </button>
         </div>
       </div>
@@ -261,55 +270,31 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
-// Import your Pinia Cart Store if you have one
-// import { useCartStore } from '@/store/cart';
+import { useCartStore } from "@/store/cart";
 
 const router = useRouter();
-// const cartStore = useCartStore(); // Assuming you have a cart store
+const cartStore = useCartStore();
 
-const selectedProduct = ref("tshirt"); // Default selection
-const selectedSize = ref("M"); 
+const selectedProduct = ref("tshirt");
+const selectedSize = ref("M");
 const quantity = ref(1);
 const basePrice = ref(25.0);
 
-// Base configuration for the merch design
 const merchConfig = ref({
-  text: {
-    content: "",
-    color: "#000000",
-    size: 24,
-    fontFamily: "Arial",
-    x: 50, // Position relative to parent container (percentage)
-    y: 50,
-  },
-  image: {
-    src: null,
-    size: 150, // Width in pixels
-    x: 50,
-    y: 50,
-  },
+  text: { content: "", color: "#000000", size: 24, fontFamily: "Arial", x: 50, y: 50 },
+  image: { src: null, size: 150, x: 50, y: 50 },
 });
 
-// === COMPUTED PROPERTIES ===
-
-// Computed property for dynamic size options
 const sizeOptions = computed(() => {
-  const product = selectedProduct.value;
-  if (product === 'cap') {
-    return ['One Size'];
-  }
-  // For shirt and jacket
-  return ['S', 'M', 'L', 'XL'];
+  return selectedProduct.value === "cap" ? ["One Size"] : ["S", "M", "L", "XL"];
 });
 
-// Computed property for dynamic product image
 const baseProductImage = computed(() => {
-  // Replaced placeholders with actual mockup images
   switch (selectedProduct.value) {
     case "tshirt":
       return "https://cdn.shopify.com/s/files/1/0522/5313/0909/files/Studio-Tee_White_Front.png?v=1682412237";
     case "cap":
-      return "https://i5.walmartimages.com/asr/bb869401-0a35-42c6-871a-90d4b3e7e8f5.5b8f2bccbc83b09043a2792e6c2e96f7.png?odnHeight=768&odnWidth=768&odnBg=FFFFFF";
+      return "https://i5.walmartimages.com/asr/bb869401-0a35-42c6-871a-90d4b3e7e8f5.5b8f2bccbc83b09043a2792e6c2e96f7.png";
     case "jacket":
       return "https://5.imimg.com/data5/SELLER/Default/2022/5/JI/HN/LX/98045881/white-hoodie.png";
     default:
@@ -317,67 +302,54 @@ const baseProductImage = computed(() => {
   }
 });
 
-// Computed properties for dynamic styles
 const textStyle = computed(() => ({
   color: merchConfig.value.text.color,
   fontSize: `${merchConfig.value.text.size}px`,
   fontFamily: merchConfig.value.text.fontFamily,
   left: `${merchConfig.value.text.x}%`,
   top: `${merchConfig.value.text.y}%`,
-  transform: "translate(-50%, -50%)", // Center text around its x,y
+  transform: "translate(-50%, -50%)",
   whiteSpace: "nowrap",
 }));
 
 const imageStyle = computed(() => ({
   width: `${merchConfig.value.image.size}px`,
-  height: "auto", // Maintain aspect ratio
+  height: "auto",
   left: `${merchConfig.value.image.x}%`,
   top: `${merchConfig.value.image.y}%`,
   transform: "translate(-50%, -50%)",
 }));
 
-const formattedPrice = computed(() => {
-  // Simple pricing for now
-  return `$${(basePrice.value * quantity.value).toFixed(2)}`;
-});
+const formattedPrice = computed(() => `$${(basePrice.value * quantity.value).toFixed(2)}`);
 
-// === WATCHERS ===
-
-// Watch for product change to update base price AND reset size
 watch(selectedProduct, (newValue) => {
   switch (newValue) {
     case "tshirt":
       basePrice.value = 25.0;
-      selectedSize.value = "M"; 
+      selectedSize.value = "M";
       break;
     case "cap":
       basePrice.value = 20.0;
-      selectedSize.value = "One Size"; 
+      selectedSize.value = "One Size";
       break;
     case "jacket":
       basePrice.value = 60.0;
-      selectedSize.value = "M"; 
+      selectedSize.value = "M";
       break;
   }
-  // Reset customizations (optional, but good practice)
   merchConfig.value.text.content = "";
   merchConfig.value.image.src = null;
 });
-
-// === METHODS ===
 
 function handleImageUpload(event) {
   const file = event.target.files[0];
   if (file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      merchConfig.value.image.src = e.target.result;
-    };
+    reader.onload = (e) => (merchConfig.value.image.src = e.target.result);
     reader.readAsDataURL(file);
   }
 }
 
-// --- ADDED: Methods to remove text and image ---
 function removeText() {
   merchConfig.value.text.content = "";
 }
@@ -388,24 +360,21 @@ function removeImage() {
 
 function addToCart() {
   const customMerchItem = {
+    id: Date.now(),
     product: selectedProduct.value,
-    size: selectedSize.value, 
-    config: JSON.parse(JSON.stringify(merchConfig.value)), // Deep copy the config
+    size: selectedSize.value,
+    config: JSON.parse(JSON.stringify(merchConfig.value)),
     quantity: quantity.value,
-    price: basePrice.value, // Price per item
+    price: basePrice.value,
+    previewImage: baseProductImage.value,
   };
 
-  console.log("Adding to cart:", customMerchItem);
-  // Example: Add to a Pinia cart store
-  // cartStore.addItem(customMerchItem);
-
-  // After adding to cart, redirect to the cart page
-  router.push({ name: 'Cart' });
+  cartStore.addItem(customMerchItem);
+  router.push({ name: "Cart" });
 }
 </script>
 
 <style scoped>
-/* Use your project's global variables if available */
 :root {
   --primary-1: #8b5cf6;
 }
@@ -427,21 +396,21 @@ function addToCart() {
 }
 
 .merch-preview-container {
-  height: 550px; 
+  height: 550px;
   position: relative;
-  overflow: hidden; 
+  overflow: hidden;
 }
 
 .base-product-image {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain; 
+  object-fit: contain;
   pointer-events: none;
 }
 
 .design-overlay {
   position: absolute;
-  pointer-events: none; 
+  pointer-events: none;
   z-index: 10;
 }
 
@@ -457,7 +426,7 @@ function addToCart() {
 }
 
 .image-overlay {
-  max-width: 80%; 
+  max-width: 80%;
   max-height: 80%;
   object-fit: contain;
 }
@@ -469,14 +438,4 @@ function addToCart() {
 .btn-group .btn:last-child {
   margin-right: 0;
 }
-
-/* Example Custom Font (if you have one) */
-/*
-@font-face {
-  font-family: 'QuestFont';
-  src: url('/fonts/QuestFont-Regular.woff2') format('woff2');
-  font-weight: normal;
-  font-style: normal;
-}
-*/
 </style>
