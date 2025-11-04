@@ -40,7 +40,7 @@ onAuthStateChanged(auth, async (userAuth) => {
     appInstance.config.globalProperties.$axios = axios
 
     appInstance.component('font-awesome-icon', FontAwesomeIcon)
-
+    
     setActivePinia(pinia)
 
     appInstance.mount('#app')
