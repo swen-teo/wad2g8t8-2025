@@ -41,6 +41,16 @@
             <router-link
               class="nav-link d-flex align-items-center"
               active-class="active"
+              :to="{ name: 'MiniGames' }"
+            >
+              <font-awesome-icon :icon="['fas','puzzle-piece']" class="me-2" />
+              <span>Mini Games</span>
+            </router-link>
+          </li>
+          <li class="nav-item">
+            <router-link
+              class="nav-link d-flex align-items-center"
+              active-class="active"
               to="/profile"
             >
               <font-awesome-icon :icon="['fas','user']" class="me-2" />
