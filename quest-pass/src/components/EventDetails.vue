@@ -294,11 +294,11 @@
                     <div class="map-embed-wrapper">
                       <div class="map-overlay-controls">
                         <a class="btn btn-primary btn-sm" :href="mapsSearchUrl" target="_blank" rel="noopener">
-                          <i class="fas fa-directions me-1"></i>
+                            <font-awesome-icon :icon="['fas', 'directions']" class="me-1" />
                           Directions
                         </a>
                         <button class="btn btn-outline-secondary btn-sm" type="button" :disabled="isCopyingAddress" @click="copyVenueAddress">
-                          <i class="far fa-copy me-1"></i>
+                          <font-awesome-icon :icon="['far', 'copy']" class="me-1" />
                           {{ addressCopyLabel }}
                         </button>
                       </div>

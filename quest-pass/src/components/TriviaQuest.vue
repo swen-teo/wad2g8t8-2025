@@ -5,7 +5,9 @@
 
       <div class="modal-header border-bottom-0 header-music" style="border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;">
         <div class="d-flex align-items-center gap-3">
-          <span class="music-badge"><i class="fa-solid fa-music"></i></span>
+          <span class="music-badge">
+            <font-awesome-icon :icon="['fas', 'music']" />
+          </span>
           <div>
             <h5 class="modal-title fw-bold m-0">{{ artistName }} Trivia</h5>
             <small class="text-muted">Test your music knowledge</small>
@@ -52,7 +54,7 @@
           </div>
 
           <h4 class="fw-bold mb-4 display-question">
-            <i class="fas fa-record-vinyl me-2 question-icon"></i>
+            <font-awesome-icon icon="record-vinyl" class="me-2 question-icon" />
             {{ currentTriviaQuestion.question }}
           </h4>
 
@@ -71,7 +73,11 @@
                 <span class="option-chip">{{ String.fromCharCode(65 + index) }}</span>
                 <span class="option-text">{{ option }}</span>
               </div>
-              <i class="far" :class="selectedAnswer === option ? 'fa-check-circle selected-icon' : 'fa-circle unselected-icon'"></i>
+              <font-awesome-icon
+                :icon="selectedAnswer === option ? ['far', 'check-circle'] : ['far', 'circle']"
+                :class="selectedAnswer === option ? 'selected-icon' : 'unselected-icon'"
+              />
+
             </button>
           </div>
           <div class="d-flex justify-content-end mt-4">
@@ -81,7 +87,11 @@
               :disabled="selectedAnswer === null"
             >
               Next
-              <i class="fas fa-arrow-right ms-2"></i>
+              <font-awesome-icon 
+                :icon="['fas', 'arrow-right']" 
+                class="ms-2" 
+              />
+
             </button>
           </div>
         </div>
