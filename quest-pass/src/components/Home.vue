@@ -36,11 +36,10 @@
       />
       <div class="card-body d-flex flex-column">
         <h5 class="card-title fw-bold">{{ event.title }}</h5>
-        <p class="card-text text-muted small">
-          {{ fmtDateRange(event.earliest, event.latest) }}
-          &nbsp;•&nbsp; {{ event.instances.length }} date<span v-if="event.instances.length>1">s</span>
-          <br />
-          {{ event.venueName }}, {{ event.venueCity }}
+        <p class="card-text text-muted small event-meta">
+        <span>{{ fmtDateRange(event.earliest, event.latest) }}</span><br />
+        <span>{{ event.instances.length }} date<span v-if="event.instances.length>1">s</span></span><br />
+        <span>{{ event.venueName }}, {{ event.venueCity }}</span>
         </p>
         <p class="card-text description-truncate flex-grow-1">
           {{ event.description }}
@@ -246,7 +245,6 @@ onMounted(() => {
 // fetches the list of events from the Jambase API
 async function loadEvents() {
   isLoading.value = true;
-
   // --- NEW API KEY CHECK ---
   // This is the new, improved check. It will give you a clear
   // error in the console if the key is missing.
@@ -290,10 +288,23 @@ async function loadEvents() {
       // --- FIX: Make data mapping safer ---
       // Check for missing venue or performer data using optional chaining (?.)
       // and provide fallback text ('??')
+      const derivedVenue = deriveVenueFromTitle(apiEvent.name);
 
-      const venueName = apiEvent.venue?.name ?? 'Venue TBA';
+      const venueName =
+        apiEvent.venue?.name ||
+        apiEvent.venue?.venueName ||
+        apiEvent.venue?.address?.name ||
+        derivedVenue ||
+        'Venue TBA';
+
       const venueLocation =
-        apiEvent.venue?.address?.addressLocality ?? 'Location TBA';
+        apiEvent.venue?.addressLocality ||
+        apiEvent.venue?.address?.addressLocality ||
+        apiEvent.venue?.address?.city ||
+        apiEvent.venue?.location?.city ||
+        apiEvent.venue?.city ||
+        'Singapore'; // last-resort since you already filter to SG
+
       const performerName = apiEvent.performer?.[0]?.name;
 
       const directGenres = apiEvent.genres ?? [];
@@ -443,6 +454,17 @@ const groupedEvents = computed(() => {
     (a, b) => new Date(a.earliest) - new Date(b.earliest)
   );
 });
+
+function deriveVenueFromTitle(title) {
+  if (!title) return null;
+  // prefer “... at VENUE ( ... )” or “... at VENUE”
+  const m1 = title.match(/\bat\s+([^()\-•|,]+?)(?:\s*\(|\s*-\s*|\s*•|\s*\||\s*$)/i);
+  if (m1) return m1[1].trim();
+  // fallback for “@ VENUE”
+  const m2 = title.match(/@\s*([^()\-•|,]+?)(?:\s*\(|\s*-\s*|\s*•|\s*\||\s*$)/i);
+  return m2 ? m2[1].trim() : null;
+}
+
 
 </script>
 
@@ -719,6 +741,7 @@ header h1 {
   position: relative;
   z-index: 4; /* ensure button sits *behind* the semicircle notches */
 }
+
 
 .event-cta:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(91,33,182,0.12); }
 

@@ -460,6 +460,14 @@ const groupMeta = ref(
     : null
 );
 
+function deriveVenueFromTitle(title) {
+  if (!title) return null;
+  const m1 = title.match(/\bat\s+([^()\-•|,]+?)(?:\s*\(|\s*-\s*|\s*•|\s*\||\s*$)/i);
+  if (m1) return m1[1].trim();
+  const m2 = title.match(/@\s*([^()\-•|,]+?)(?:\s*\(|\s*-\s*|\s*•|\s*\||\s*$)/i);
+  return m2 ? m2[1].trim() : null;
+}
+
 function fmtRangeDate(d) {
   const dt = new Date(d);
   if (Number.isNaN(dt.getTime())) return 'Date TBA';
@@ -542,9 +550,22 @@ watch(userId, async (newId, oldId) => {
 
 function mapJambaseEvent(apiEvent) {
   if (!apiEvent) return null;
-
-  const venueName = apiEvent.venue?.name ?? 'Venue TBA';
-  const venueCity = apiEvent.venue?.address?.addressLocality ?? 'Location TBA';
+  const derivedVenue = deriveVenueFromTitle(apiEvent.name);
+  const venueName =
+  apiEvent.venue?.name ||
+  apiEvent.venue?.venueName ||
+  apiEvent.venue?.address?.name ||
+  derivedVenue ||
+  'Venue TBA';
+  
+  const venueCity =
+  apiEvent.venue?.addressLocality ||
+  apiEvent.venue?.address?.addressLocality ||
+  apiEvent.venue?.address?.city ||
+  apiEvent.venue?.location?.city ||
+  apiEvent.venue?.city ||
+  'Singapore';
+  
   const startDate = apiEvent.startDate ? new Date(apiEvent.startDate) : null;
   const endDate = apiEvent.endDate ? new Date(apiEvent.endDate) : null;
 
