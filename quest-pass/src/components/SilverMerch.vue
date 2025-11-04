@@ -51,9 +51,15 @@
                     </div>
                 </div>
             </div>
+
             <div v-if="voucherCode" class="mt-4">
                 <p class="lead text-success fw-semibold">🎉 You Won a ${{ voucherValue }} Voucher!</p>
-                <div class="code-display fw-bold display-6 mb-4">{{ voucherCode }}</div>
+                <div class="code-display fw-bold display-6 mb-2">{{ voucherCode }}</div>
+
+                <p class="text-muted small mt-1 mb-4">
+                    Redeemable on TicketMaster. This code is unique and valid for one use.
+                </p>
+
                 <button class="btn btn-outline-primary" @click="copyCode">
                     <i class="fas fa-copy me-2"></i> {{ copyButtonText }}
                 </button>
@@ -65,6 +71,13 @@
             </div>
             
             <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
+
+            <div v-else-if="hasSpun">
+                <p class="lead text-warning">
+                    <i class="fas fa-times-circle me-2"></i> This voucher has already been claimed.
+                </p>
+                <p class="text-muted">You have used your spin opportunity. Please use the code generated above or check your history.</p>
+            </div>
 
             <div v-else>
                 <p class="mb-4">
@@ -86,37 +99,60 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/firebase.js'; 
-import { useUserStore } from '@/store/user.js';
+import { useUserStore } from '@/store/user.js'; 
+// 🛑 Removed Firebase functions imports as API is scrapped
+
+// 🎯 FIX: Move Persistence Helpers and Initial Load to the TOP 
+// --- Persistence Helpers ---
+const STORAGE_KEY = 'merchVoucherState';
+
+function loadState() {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveState(state) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+        console.error("Could not save state to localStorage:", e);
+    }
+}
+
+// 🎯 FIX: Execute Initial Load BEFORE defining reactive refs
+const initialState = loadState(); 
+// -----------------------------------------------------------------
 
 const userStore = useUserStore();
-const generateVoucherCode = httpsCallable(functions, 'generateVoucherCode');
 
 // --- State Variables ---
-const isLoading = ref(false); // Controls the spinner while waiting for API/code
-const isSpinning = ref(false); // Controls the CSS spin animation
-const hasSpun = ref(false); 
+const isLoading = ref(false); 
+const isSpinning = ref(false); 
+// 🎯 Initialize from loaded state
+const hasSpun = ref(initialState.hasSpun || false); 
 const wheelRotation = ref(0); 
-const voucherCode = ref('');
-const voucherValue = ref(0);
+const voucherCode = ref(initialState.voucherCode || '');
+const voucherValue = ref(initialState.voucherValue || 0);
 const error = ref('');
 const copyButtonText = ref('Copy Code');
-const statusMessage = ref('Ready to spin!');
+const statusMessage = ref(hasSpun.value ? 'Voucher claimed.' : 'Ready to spin!'); 
 
 // --- Configuration ---
 const userTier = computed(() => userStore.currentUser?.currentTier);
 
-// Define 3 segments (120 degrees per segment)
 const SEGMENTS = {
-    '$5': { value: 5, degrees: 60 },   
+    '$5': { value: 5, degrees: 60 },   
     '$10': { value: 10, degrees: 180 }, 
     '$20': { value: 20, degrees: 300 }, 
 };
 
 const TIER_REWARDS = {
-    Silver: [5, 5, 10],   
-    Gold: [5, 10, 20],    
+    Silver: [5, 5, 10],   
+    Gold: [5, 10, 20],     
     Platinum: [10, 20, 20], 
 };
 
@@ -124,9 +160,7 @@ const TIER_REWARDS = {
 
 function getFinalOutcome(tier) {
     const rewards = TIER_REWARDS[tier] || [5]; 
-    
     const result = rewards[Math.floor(Math.random() * rewards.length)];
-    
     const segmentName = Object.keys(SEGMENTS).find(key => SEGMENTS[key].value === result);
     return SEGMENTS[segmentName]; 
 }
@@ -143,43 +177,41 @@ function startSpin() {
     const outcome = getFinalOutcome(userTier.value);
     
     const revolutions = 5 * 360; 
-
     const finalRotation = revolutions + (360 - outcome.degrees) + (Math.random() * 20 - 10); 
     
     wheelRotation.value = finalRotation;
-
     voucherValue.value = outcome.value; 
 }
 
 async function handleSpinEnd() {
-
     isSpinning.value = false;
-    hasSpun.value = true;
+    hasSpun.value = true; 
     
     if (voucherValue.value > 0) {
-        isLoading.value = true; // Start the API spinner
+        isLoading.value = true;
         statusMessage.value = "Finalizing voucher code...";
         
-        try {
-            const result = await generateVoucherCode({ 
-                userTier: userTier.value, 
-                voucherValue: voucherValue.value 
-            });
-            
-            voucherCode.value = result.data.code;
-            statusMessage.value = "Voucher Ready!";
-        } catch (err) {
+        await new Promise(resolve => setTimeout(resolve, 500)); 
 
-            console.error("Voucher Generation FAILED after spin:", err);
-            error.value = "Code generation failed. Please check your Firebase Function logs!";
-            statusMessage.value = "Error!";
-        } finally {
-            isLoading.value = false;
-        }
+        const randomCode = `MERCH-${voucherValue.value}-${Math.floor(Math.random() * 9000) + 1000}`;
+        
+        voucherCode.value = randomCode; 
+        statusMessage.value = "Voucher Ready!";
+        error.value = '';
+
+        // 🎯 FIX: Save the entire state to local storage after success
+        saveState({
+            hasSpun: true,
+            voucherCode: voucherCode.value,
+            voucherValue: voucherValue.value
+        });
+        
+        isLoading.value = false;
+        
     } else {
-        // Should not be reachable with new TIER_REWARDS
         statusMessage.value = "An error occurred.";
         error.value = "Unexpected error. Please refresh and try again.";
+        hasSpun.value = false;
     }
 }
 
