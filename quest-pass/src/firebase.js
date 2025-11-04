@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 // import { getFirestore } from 'firebase/firestore';
 import { initializeFirestore } from 'firebase/firestore';
+import { getFunctions } from "firebase/functions";
 
 // Your web app's Firebase configuration
 // (You provided this)
@@ -28,3 +29,4 @@ export const db = initializeFirestore(app, {
 });
 // You can also export the main 'app' if you need it elsewhere
 export default app;
+export const functions = getFunctions(app);
