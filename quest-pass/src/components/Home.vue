@@ -4,71 +4,75 @@
     <header class="mb-4">
       <!-- 🎟️ Emoji removed -->
       <h1 class="mb-3">Upcoming Events</h1>
-      <div class="home-search col-md-6 col-lg-4 px-0">
-        <input
-          type="search"
-          class="form-control"
-          placeholder="Search events..."
-          v-model="searchQuery"
-        />
+      <!-- Vinyl spinner picker above search + filters -->
+      <EventPicker :events="filteredEvents" class="mb-3" />
+
+      <!-- Spinner sits above search + filters row -->
+      <Loading :is-loading="isLoading" class="mb-3" />
+
+      <!-- Search + Show Filters on the same row (responsive) -->
+      <div class="search-row d-flex flex-column flex-sm-row align-items-stretch gap-2">
+        <div class="home-search flex-grow-1 px-0">
+          <input
+            type="search"
+            class="form-control"
+            placeholder="Search events..."
+            v-model="searchQuery"
+          />
+        </div>
+        <div class="filters-toggle flex-sm-grow-0">
+          <button class="btn btn-outline-primary" @click="toggleFilters">
+            <font-awesome-icon :icon="['fas', showFilters ? 'times' : 'filter']" class="me-2" />
+            {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+          </button>
+        </div>
       </div>
     </header>
 
-    <Loading :is-loading="isLoading" />
-    <!-- 🔽 Filters toggle -->
-<div class="d-flex justify-content-end mb-3">
-  <button class="btn btn-outline-primary" @click="toggleFilters">
-    <font-awesome-icon :icon="['fas', showFilters ? 'times' : 'filter']" class="me-2" />
-    {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
-  </button>
-</div>
+    <!-- 🎛 Collapsible filters -->
+    <transition name="slide-fade">
+      <div v-if="showFilters" class="filter-panel p-3 mb-4 rounded shadow-sm bg-light">
+        <div class="row g-3">
+          <!-- Venue -->
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label small text-muted">Venue</label>
+            <select class="form-select" v-model="selectedVenue">
+              <option value="all">All venues</option>
+              <option v-for="v in venueOptions" :key="v" :value="v">{{ v }}</option>
+            </select>
+          </div>
 
-<!-- 🎛 Collapsible filters -->
-<transition name="slide-fade">
-  <div v-if="showFilters" class="filter-panel p-3 mb-4 rounded shadow-sm bg-light">
-    <div class="row g-3">
-      <!-- Venue -->
-      <div class="col-md-4 col-sm-6">
-        <label class="form-label small text-muted">Venue</label>
-        <select class="form-select" v-model="selectedVenue">
-          <option value="all">All venues</option>
-          <option v-for="v in venueOptions" :key="v" :value="v">{{ v }}</option>
-        </select>
+          <!-- Date from -->
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label small text-muted">Date from</label>
+            <input type="date" class="form-control" v-model="dateFrom" />
+          </div>
+
+          <!-- Date to -->
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label small text-muted">Date to</label>
+            <input type="date" class="form-control" v-model="dateTo" />
+          </div>
+
+          <!-- Quick range (reuses your existing selectedDateRange) -->
+          <div class="col-md-2 col-sm-6">
+            <label class="form-label small text-muted">Quick range</label>
+            <select class="form-select" v-model="selectedDateRange">
+              <option value="all">Any time</option>
+              <option value="today">Today</option>
+              <option value="week">This week</option>
+              <option value="month">This month</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <button class="btn btn-outline-primary btn-sm rounded-3" @click="resetFilters">Reset filters</button>
+        </div>
       </div>
-
-      <!-- Date from -->
-      <div class="col-md-3 col-sm-6">
-        <label class="form-label small text-muted">Date from</label>
-        <input type="date" class="form-control" v-model="dateFrom" />
-      </div>
-
-      <!-- Date to -->
-      <div class="col-md-3 col-sm-6">
-        <label class="form-label small text-muted">Date to</label>
-        <input type="date" class="form-control" v-model="dateTo" />
-      </div>
-
-      <!-- Quick range (reuses your existing selectedDateRange) -->
-      <div class="col-md-2 col-sm-6">
-        <label class="form-label small text-muted">Quick range</label>
-        <select class="form-select" v-model="selectedDateRange">
-          <option value="all">Any time</option>
-          <option value="today">Today</option>
-          <option value="week">This week</option>
-          <option value="month">This month</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="mt-3">
-      <button class="btn btn-outline-secondary btn-sm" @click="resetFilters">Reset filters</button>
-    </div>
-  </div>
-</transition>
+    </transition>
     <!-- event discovery + grid -->
-    <section v-if="!isLoading">
-      <!-- Fun discovery widget: random event picker based on current filters -->
-      <EventPicker :events="filteredEvents" />
+  <section v-if="!isLoading">
 
       <div class="event-grid">
   <div
@@ -165,10 +169,7 @@
       </div> -->
 
       <!-- no events found message -->
-      <!-- 👇 Class reverted back to original -->
       <div v-if="!isLoading && groupedEvents.length === 0" class="text-center py-5 text-muted">
-        <i class="fas fa-search fa-3x mb-3" aria-hidden="true"></i>
-        <!-- 👇 Emoji removed -->
         <h4 class="fw-bold">No Events Found</h4>
         <p>Try adjusting your search or check back later for new events.</p>
         <div class="mt-3">
@@ -558,7 +559,8 @@ function deriveVenueFromTitle(title) {
 <style scoped>
 
 .home-search {
-  max-width: 360px;
+  width: 100%;
+  max-width: none;
 }
 
 .home-search .form-control {
@@ -832,6 +834,39 @@ header h1 {
 /* Optional: panel look */
 .filter-panel {
   border: 1px solid rgba(0,0,0,0.06);
+}
+.filter-panel .form-select,
+.filter-panel .form-control {
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--bs-border-color, #ced4da);
+  background-color: #fff;
+  box-shadow: none;
+}
+.filter-panel .btn {
+  border-radius: 0.75rem;
+}
+
+/* Ensure search + filter toggle align nicely */
+.search-row .form-control {
+  height: 3rem;
+}
+.filters-toggle .btn {
+  height: 3rem;
+  border-radius: 0.75rem;
+  width: 100%;            /* full width on xs when stacked */
+  white-space: nowrap;    /* keep text on one line */
+}
+.filters-toggle {
+  flex: 0 0 auto;         /* don't shrink below content on row layout */
+}
+@media (min-width: 576px) { /* Bootstrap sm */
+  .filters-toggle {
+    min-width: max-content; /* expand to fit button text + icon */
+  }
+  .filters-toggle .btn {
+    width: auto;           /* allow intrinsic width on sm and up */
+  }
 }
 .event-cta {
   display: block;
