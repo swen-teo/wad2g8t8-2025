@@ -56,13 +56,15 @@
                 data-bs-placement="right" 
                 data-bs-title="Tier Information"
     
-                data-bs-html="true" data-bs-content="
-                  <strong>Bronze:</strong> Levels 1–10<br>
-                  <strong>Silver:</strong> Levels 11–20<br>
-                  <strong>Gold:</strong> Levels 21–30<br>
-                  <strong>Platinum:</strong> Levels 31+" 
-                  
-                style="cursor: pointer;">
+                data-bs-html="true"
+                data-bs-content="
+                <strong>Bronze:</strong> Levels 1–10<br>
+                <strong>Silver:</strong> Levels 11–20<br>
+                <strong>Gold:</strong> Levels 21–30<br>
+                <strong>Platinum:</strong> Levels 31+"
+    
+                data-bs-custom-class="tier-popover-wide" style="cursor: pointer;"
+              >
 
               <font-awesome-icon 
                 :icon="['fas','info-circle']" 
@@ -621,6 +623,7 @@ function goToEvent(id) {
 }
 .chevron { color: var(--primary-1); opacity: .7; }
 .event-item:hover .chevron { opacity: 1; }
+
 </style>
 
 
