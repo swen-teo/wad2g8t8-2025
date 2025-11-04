@@ -28,17 +28,25 @@
           This event runs from <strong>{{ dateRangeText }}</strong>
 </div>
 
-<div class="meta-chips d-flex flex-wrap gap-2 mt-2">
-          <div class="meta-chips d-flex flex-wrap gap-2 mt-2">
-            <div class="chip">
-              <font-awesome-icon :icon="['fas', 'map-marker-alt']" class="me-1" />
-              {{ event.venueName }}, {{ event.venueCity }}
-            </div>
-            <div class="chip">
-              <font-awesome-icon :icon="['fas', 'star']" class="me-1" />
-              Points to goal: {{ pointsRemaining }}
-            </div>
-          </div>
+      <div class="meta-chips d-flex flex-wrap gap-2 mt-2">
+                
+      <a
+      id="venue-chip"
+      class="chip chip--clickable"
+      :href="mapsSearchUrl"
+      target="_blank"
+      rel="noopener"
+      tabindex="0"
+      aria-label="Open venue in Google Maps"
+    >
+      <font-awesome-icon :icon="['fas','map-marker-alt']" class="me-1" />
+      {{ displayVenueName }}, {{ displayVenueCity }}
+    </a>
+
+        <div class="chip">
+          <font-awesome-icon :icon="['fas', 'star']" class="me-1" />
+          Points to goal: {{ pointsRemaining }}
+        </div>
         </div></div>
       </section>
 
@@ -313,6 +321,9 @@ import MusicQuestButton from './MusicQuestButton.vue';
 import Loading from './Loading.vue';
 import ScrollObserver from './ScrollObserver.vue';
 
+import {onUnmounted } from 'vue';
+import { Popover} from 'bootstrap';
+let venuePopover; // keep a handle to dispose later
 
 // --- configuration ---
 const MUSIC_MAX = 300;
@@ -508,30 +519,68 @@ function getProgressDocRef() {
   if (!userId.value) return null;
   return doc(db, 'users', userId.value, 'eventProgress', eventId);
 }
+// --- GOOGLE MAPS SETUP ---
+const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+
+// Compute the venue name and city (existing data from event)
+const displayVenueName = computed(() =>
+  event.value?.venueName || groupMeta?.value?.venueName || 'Venue TBA'
+);
+const displayVenueCity = computed(() =>
+  event.value?.venueCity || groupMeta?.value?.venueCity || 'Singapore'
+);
+
+// Build Google Maps URLs
+const mapQuery = computed(() => {
+  const q = `${displayVenueName.value}, ${displayVenueCity.value}`;
+  return encodeURIComponent(q);
+});
+
+// Static Maps API image (hover preview)
+const staticMapUrl = computed(() => {
+  if (!mapsKey) return null;
+  return `https://maps.googleapis.com/maps/api/staticmap?size=480x260&scale=2&maptype=roadmap&markers=color:red|${mapQuery.value}&key=${mapsKey}`;
+});
+
+// Regular Google Maps search URL (opens new tab)
+const mapsSearchUrl = computed(() =>
+  `https://www.google.com/maps/search/?api=1&query=${mapQuery.value}`
+);
 
 onMounted(async () => {
+  // ✅ Only create the popover if we have a maps key AND the element exists
+  const el = document.getElementById('venue-chip');
+  if (mapsKey && el) {
+    venuePopover = new Popover(el, {
+      container: 'body',          // <-- ensures it’s above overlays
+      trigger: 'hover focus',     // <-- shows on hover; click still opens link
+      placement: 'bottom',
+      html: true,
+      sanitize: false,
+      fallbackPlacements: ['top','right','left'],
+      content: () =>
+        staticMapUrl.value
+          ? `<img src="${staticMapUrl.value}" alt="Map preview" style="display:block;width:100%;height:auto;border-radius:8px;" />`
+          : 'Map preview unavailable'
+    });
+  }
+
+  // (keep the rest of your modal + data loading logic)
   try {
     const modalEl = document.getElementById('rewardModal');
     if (modalEl && typeof Modal === 'function') {
-      try {
-        rewardModal.value = new Modal(modalEl);
-      } catch (modalError) {
-        console.warn('Could not init modal:', modalError);
-      }
+      rewardModal.value = new Modal(modalEl);
     }
-
     await loadEventDetails();
-
-    if (event.value && userId.value) {
-      await loadProgress();
-    }
-
-    if (route.query.spotify === '1') {
-      showMusicQuest.value = true;
-    }
+    if (event.value && userId.value) await loadProgress();
+    if (route.query.spotify === '1') showMusicQuest.value = true;
   } finally {
     isLoading.value = false;
   }
+});
+
+onUnmounted(() => {
+  venuePopover?.dispose();
 });
 
 watch(userId, async (newId, oldId) => {
@@ -1673,6 +1722,17 @@ function buildTitleInitials(title) {
   border: 1px solid rgba(255,255,255,.35);
   backdrop-filter: blur(4px);
   font-size: .9rem;
+}
+.chip--clickable {
+  cursor: pointer;
+  text-decoration: none;
+}
+.chip--clickable:hover {
+  filter: brightness(1.03);
+}
+.popover {
+  z-index: 2000 !important;
+  max-width: 480px;
 }
 </style>
 
