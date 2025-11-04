@@ -121,10 +121,7 @@ async function handleGoogleLogin() {
 
         <div class="card shadow-lg border-0" style="border-radius: 1rem">
           <div class="card-body p-4 p-md-5 text-center">
-            <div class="brand d-flex align-items-center justify-content-center gap-3 mb-4">
-              <font-awesome-icon icon="fa-solid fa-ticket-simple" class="fa-3x text-primary-1" />
-              <span class="app-name">QuestPass</span>
-            </div>
+            <i class="fas fa-ticket-alt fa-3x text-primary-1 mb-4"></i>
             <h1 class="fw-bold mb-3">Welcome Back</h1>
             <p class="text-muted mb-4">Log in to continue your quest.</p>
 
@@ -297,20 +294,6 @@ async function handleGoogleLogin() {
 .card {
   position: relative;
   z-index: 2; /* ensure the card sits above stars and blobs */
-}
-
-.brand {
-  color: var(--bs-purple);
-}
-
-.app-name {
-  font-size: 1.75rem;
-  font-weight: 700;
-  background: linear-gradient(90deg, #8b5cf6 0%, #c084fc 50%, #a855f7 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 @keyframes gradientShift {
