@@ -17,10 +17,18 @@
         :style="{ backgroundImage: 'url(' + (event.bannerImage || FALLBACK_BANNER_IMAGE) + ')' }"
       >
         <div class="event-banner__content container-lg p-4 p-md-5">
-          <h1 class="display-4 fw-bold text-white mb-2">
-            {{ event.title }}
-          </h1>
-          <h4 class="text-white-75 mb-2">{{ event.date }}</h4>
+            <h4 class="text-white-75 mb-2">{{ event.date }}</h4>
+            <h1 class="display-4 fw-bold text-white mb-2">
+          {{ event.title }}
+        </h1>
+
+        <!-- NEW: date-range panel -->
+        <div v-if="dateRangeText" class="date-range-chip mt-2">
+          <font-awesome-icon :icon="['fas', 'calendar-alt']" class="me-2" />
+          This event runs from <strong>{{ dateRangeText }}</strong>
+</div>
+
+<div class="meta-chips d-flex flex-wrap gap-2 mt-2">
           <div class="meta-chips d-flex flex-wrap gap-2 mt-2">
             <div class="chip">
               <font-awesome-icon :icon="['fas', 'map-marker-alt']" class="me-1" />
@@ -31,7 +39,7 @@
               Points to goal: {{ pointsRemaining }}
             </div>
           </div>
-        </div>
+        </div></div>
       </section>
 
       <main class="container-lg main-content-wrapper pb-5 px-3 px-md-0">
@@ -443,6 +451,26 @@ const rewardCodeDisplay = computed(() => {
 
 watch(rewardCode, () => {
   copyState.value = 'idle';
+});
+
+// --- date-range panel (read from router state passed by Home.vue) ---
+const groupMeta = ref(
+  (typeof history !== 'undefined' && history.state && history.state.groupMeta)
+    ? history.state.groupMeta
+    : null
+);
+
+function fmtRangeDate(d) {
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return 'Date TBA';
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+const dateRangeText = computed(() => {
+  if (!groupMeta.value?.earliest || !groupMeta.value?.latest) return null;
+  const a = fmtRangeDate(groupMeta.value.earliest);
+  const b = fmtRangeDate(groupMeta.value.latest);
+  return a === b ? a : `${a} – ${b}`;
 });
 
 function resetQuestState() {
@@ -1613,7 +1641,18 @@ function buildTitleInitials(title) {
   .score-ring { width: 110px; height: 110px; }
   .score-number { font-size: 1.5rem; }
 }
-
+.date-range-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .5rem .75rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.35);
+  backdrop-filter: blur(4px);
+  font-size: .9rem;
+}
 </style>
 
 <style>

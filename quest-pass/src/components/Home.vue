@@ -22,52 +22,54 @@
       <EventPicker :events="filteredEvents" />
 
       <div class="event-grid">
-        <div
-          v-for="event in filteredEvents"
-          :key="event.id"
-          class="event-grid-item"
-        >
-          <!--
-            this <router-link> is the vue-way of doing <a> tags.
-            it'll navigate to the eventdetails page without a full page reload.
-          -->
-          <!-- If event.id is present make the card a router-link, otherwise render a non-clickable div
-               This prevents Vue Router from throwing "Missing required param 'id'" when id is undefined. -->
-          <!-- event card with CTA -->
-          <div class="card event-card shadow-sm border-0">
-            <img
-              :src="event.image"
-              class="card-img-top"
-              alt="Event Image"
-              @error="onImageError"
-            />
-          <!-- The card-body now has the perforation and notches -->
-          <div class="card-body d-flex flex-column">
-              <h5 class="card-title fw-bold">{{ event.title }}</h5>
-              <p class="card-text text-muted small">
-                {{ event.date }}
-              </p>
-              <p class="card-text description-truncate flex-grow-1">
-                {{ event.description }}
-              </p>
-
-              <!-- CTA moved out of card-body into a tear-off stub below -->
-            </div>
-            <div class="ticket-stub">
-              <router-link
-                v-if="event && event.id"
-                :to="{ name: 'EventDetails', params: { id: event.id } }"
-                class="event-cta"
-              >
-                View Details & Start Quests →
-              </router-link>
-              <button v-else class="event-cta btn btn-secondary w-100" disabled>
-                Details unavailable
-              </button>
-            </div>
-          </div>
-        </div>
+  <div
+    v-for="event in groupedEvents"
+    :key="event.groupKey"
+    class="event-grid-item"
+  >
+    <div class="card event-card shadow-sm border-0">
+      <img
+        :src="event.image"
+        class="card-img-top"
+        alt="Event Image"
+        @error="onImageError"
+      />
+      <div class="card-body d-flex flex-column">
+        <h5 class="card-title fw-bold">{{ event.title }}</h5>
+        <p class="card-text text-muted small">
+          {{ fmtDateRange(event.earliest, event.latest) }}
+          &nbsp;•&nbsp; {{ event.instances.length }} date<span v-if="event.instances.length>1">s</span>
+          <br />
+          {{ event.venueName }}, {{ event.venueCity }}
+        </p>
+        <p class="card-text description-truncate flex-grow-1">
+          {{ event.description }}
+        </p>
       </div>
+      <div class="ticket-stub">
+       <router-link
+          :to="{
+            name: 'EventDetails',
+            params: { id: event.primaryInstanceId },
+            state: {
+              groupMeta: {
+                title: event.title,
+                venueName: event.venueName,
+                venueCity: event.venueCity,
+                earliest: event.earliest,
+                latest: event.latest
+              }
+            }
+          }"
+          class="event-cta"
+        >
+          View Details & Start Quests →
+        </router-link>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 
           <router-link
             v-if="event.id"
@@ -116,7 +118,7 @@
 
       <!-- no events found message -->
       <!-- 👇 Class reverted back to original -->
-      <div v-if="!isLoading && filteredEvents.length === 0" class="text-center py-5 text-muted">
+      <div v-if="!isLoading && groupedEvents.length === 0" class="text-center py-5 text-muted">
         <i class="fas fa-search fa-3x mb-3" aria-hidden="true"></i>
         <!-- 👇 Emoji removed -->
         <h4 class="fw-bold">No Events Found</h4>
@@ -381,6 +383,67 @@ function matchesDateRange(startDate) {
       return true;
   }
 }
+// --- GROUPING HELPERS (add) ---
+function slugify(s) {
+  return String(s ?? '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9\-|]/g, '');
+}
+function makeGroupKey(ev) {
+  return slugify(`${ev.title}|${ev.venueName}|${ev.venueCity}`);
+}
+function fmtDate(d) {
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function fmtDateRange(earliest, latest) {
+  const a = new Date(earliest);
+  const b = new Date(latest);
+  const sameDay = a.toDateString() === b.toDateString();
+  if (sameDay) return fmtDate(a);
+  const sameYear = a.getFullYear() === b.getFullYear();
+  const aStr = a.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const bStr = sameYear
+    ? b.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : b.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return `${aStr} – ${bStr}`;
+}
+
+const groupedEvents = computed(() => {
+  const map = new Map();
+  for (const ev of filteredEvents.value) {
+    const key = makeGroupKey(ev);
+    if (!map.has(key)) {
+      map.set(key, {
+        groupKey: key,
+        title: ev.title,
+        venueName: ev.venueName,
+        venueCity: ev.venueCity,
+        image: ev.image,
+        description: ev.description,
+        genres: ev.genres,
+        earliest: ev.startDate,
+        latest: ev.startDate,
+        instances: [{ id: ev.id, startDate: ev.startDate }],
+        primaryInstanceId: ev.id, // will keep the earliest
+      });
+    } else {
+      const g = map.get(key);
+      if (new Date(ev.startDate) < new Date(g.earliest)) {
+        g.earliest = ev.startDate;
+        g.primaryInstanceId = ev.id; // keep earliest instance id
+      }
+      if (new Date(ev.startDate) > new Date(g.latest)) g.latest = ev.startDate;
+      g.instances.push({ id: ev.id, startDate: ev.startDate });
+    }
+  }
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(a.earliest) - new Date(b.earliest)
+  );
+});
+
 </script>
 
 <style scoped>
