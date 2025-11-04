@@ -1,5 +1,6 @@
 <template>
   <div>
+    <SparkleBackground />
     <Navbar />
 
 
@@ -43,6 +44,7 @@ import { auth } from '@/firebase.js'; // our firebase config
 import { useUserStore } from '@/store/user.js'; // our pinia store
 import { useRouter } from 'vue-router';
 import Navbar from '@/components/Navbar.vue'; // our navbar component
+import SparkleBackground from '@/components/SparkleBackground.vue';
 
 // a simple, local state for toasts.
 // can move this into a store later if needed.
@@ -76,8 +78,3 @@ onMounted(() => {
 });
 </script>
 
-<style>
-body {
-  background-color: #f8f9fa; /* a light gray background */
-}
-</style>

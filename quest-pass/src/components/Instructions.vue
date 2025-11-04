@@ -1,7 +1,5 @@
 <template>
 
-    <div id="sparkle-container"></div>
-
     <div id="scroll-indicator">
         <i class="fa fa-angle-down" aria-hidden="true"></i>
     </div>
@@ -167,39 +165,6 @@ onMounted(() => {
     // This page is guest-only via router guard; no redirect needed here for logged-in users.
 
     
-    // --- Sparkle Generation ---
-    // This targets the #sparkle-container in the main HTML file
-    const container = document.getElementById('sparkle-container');
-    if (container) {
-        const sparkleCount = 25;
-        const starSVG = `<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
-        
-        const color1 = '#a78bfa'; // Theme color 1
-        const color2 = '#c8b6ff'; // Theme color 2 (lighter)
-
-        for (let i = 0; i < sparkleCount; i++) {
-            const sparkle = document.createElement('div');
-            sparkle.classList.add('sparkle');
-            sparkle.innerHTML = starSVG;
-
-            const randomDuration = 8 + Math.random() * 7;
-            const randomStartOffset = Math.random() * randomDuration;
-
-            sparkle.style.left = `${Math.random() * 100}%`;
-            sparkle.style.top = `${-Math.random() * 1}%`;
-            sparkle.style.animationDuration = `${randomDuration}s`;
-            sparkle.style.animationDelay = `${-randomStartOffset}s`;
-            
-            if (Math.random() > 0.5) {
-                sparkle.style.color = color1;
-            } else {
-                sparkle.style.color = color2;
-            }
-
-            container.appendChild(sparkle);
-        }
-    }
-
     // --- Scroll Indicator ---
     // This targets the #scroll-indicator in the main HTML file
     // THIS CODE IS NOW ACTIVE BECAUSE THE ELEMENT EXISTS
@@ -468,52 +433,6 @@ grid-template-columns: repeat(1, minmax(0, 1fr));
     max-height: 150px; /* <-- INCREASED THIS VALUE */
     transition: max-height 0.35s ease-in;
 }
-
-
-/* STAR THING */
-/* --- Animation Keyframes --- */
-/* NEW: Keyframes for falling stars */
-@keyframes fall-and-fade {
-    0% {
-        transform: translateY(-100%) scale(0.5);
-        opacity: 0;
-    }
-    25% {
-        opacity: 1; /* Fade in as they start falling */
-    }
-    100% {
-        transform: translateY(100vh) scale(0.7); /* Fall beyond viewport */
-        opacity: 0;
-    }
-}
-
-/* --- Sparkle Container --- */
-#sparkle-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    overflow: hidden; /* Crucial to prevent horizontal scroll if stars go too wide */
-    pointer-events: none;
-}
-
-#sparkle-container .sparkle {
-    position: absolute;
-    /* REPLACED: animation-name with the new falling animation */
-    animation-name: fall-and-fade;
-    animation-timing-function: linear; /* Changed for a more natural fall */
-    animation-iteration-count: infinite;
-    animation-fill-mode: forwards; /* Ensures it stays at 100% state after animation */
-}
-#sparkle-container .sparkle svg {
-width: 2.5rem; /* Changed from 1rem */
-height: 2.5rem; /* Changed from 1rem */
-fill: currentColor;
-filter: drop-shadow(0 0 7px currentColor);
-}
-
 
 
 /* --- Scroll Animations --- */
