@@ -146,6 +146,8 @@ const attempts = ref([])
 const currentLevel = ref(0) // 0-5
 const MAX_ATTEMPTS = 6
 const snippetDurations = [1, 2, 4, 8, 16, 30]
+const sessionStartedAt = ref(new Date())
+const sessionFinalized = ref(false)
 
 // UI State
 const isLoading = ref(true)
@@ -197,6 +199,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
+  if (!sessionFinalized.value && attempts.value.length > 0) {
+    finalizeMiniGameSession({ outcome: 'abandoned', pointsEarned: 0 })
+  }
 })
 
 // --- Audio Logic ---
@@ -276,12 +281,51 @@ function playSnippet() {
 
 // --- Game Logic ---
 
+function beginSession() {
+  sessionStartedAt.value = new Date()
+  sessionFinalized.value = false
+}
+
+function formatAttemptsForSession() {
+  return attempts.value.map((guess) => ({
+    id: guess?.id ?? null,
+    title: guess?.title ?? null,
+    artist: guess?.artist ?? null,
+    isCorrect: guess?.isCorrect === true,
+  }))
+}
+
+function finalizeMiniGameSession({ outcome, pointsEarned }) {
+  if (sessionFinalized.value) return
+  sessionFinalized.value = true
+
+  userStore
+    .recordMiniGameResult('heardle', {
+      pointsEarned,
+      outcome,
+      attemptCount: attempts.value.length,
+      attempts: formatAttemptsForSession(),
+      answer: answer.value
+        ? {
+            id: answer.value.id,
+            title: answer.value.title,
+            artist: answer.value.artist,
+          }
+        : null,
+      sessionStartedAt: sessionStartedAt.value,
+      completedAt: new Date(),
+    })
+    .catch((error) => {
+      console.error('Failed to record Heardle session:', error)
+    })
+}
+
 function makeGuess(song) {
   if (isComplete.value) return
 
   const isCorrect = song.id === answer.value.id
   attempts.value.push({ ...song, isCorrect })
-  
+
   // Award points if correct based on attempt number (1st=60, 2nd=50, ... 6th=10)
   if (isCorrect) {
     const attemptNumber = attempts.value.length // after push => 1..6
@@ -290,15 +334,20 @@ function makeGuess(song) {
     userStore.awardPoints(points).catch((e) => {
       console.error('Failed to award points:', e)
     })
+    finalizeMiniGameSession({ outcome: 'win', pointsEarned: points })
   }
-  
+
   query.value = ''
   showSuggestions.value = false
 
   if (!isCorrect && attempts.value.length < MAX_ATTEMPTS) {
     currentLevel.value++
   }
-  
+
+  if (!isCorrect && isLoss.value) {
+    finalizeMiniGameSession({ outcome: 'loss', pointsEarned: 0 })
+  }
+
   stopAudio()
 }
 
@@ -315,7 +364,11 @@ function skipAttempt() {
   if (attempts.value.length < MAX_ATTEMPTS) {
     currentLevel.value++
   }
-  
+
+  if (isLoss.value) {
+    finalizeMiniGameSession({ outcome: 'loss', pointsEarned: 0 })
+  }
+
   stopAudio()
 }
 
@@ -353,7 +406,8 @@ async function fetchAndSetGame() {
 
     allSongs.value = fetchedSongs
     answer.value = pickRandom(allSongs.value)
-    
+    beginSession()
+
   } catch (err) {
     console.error("Failed to load songs:", err)
     errorMessage.value = err.message
@@ -369,6 +423,9 @@ onMounted(fetchAndSetGame)
 
 function resetGame() {
   stopAudio()
+  if (!sessionFinalized.value && attempts.value.length > 0 && !isComplete.value) {
+    finalizeMiniGameSession({ outcome: 'abandoned', pointsEarned: 0 })
+  }
   attempts.value = []
   currentLevel.value = 0
   query.value = ''
@@ -378,6 +435,7 @@ function resetGame() {
   // Pick a new random song from the *existing* list
   if (allSongs.value.length > 0) {
     answer.value = pickRandom(allSongs.value)
+    beginSession()
   } else {
     // If list is empty (e.g., initial fetch failed), try fetching again
     fetchAndSetGame()
