@@ -12,6 +12,7 @@ import Login from '../components/Login.vue';
 import Profile from '../components/Profile.vue';
 import EventDetails from '../components/EventDetails.vue';
 import LandingPage from "../components/LandingPage.vue";
+import MiniGames from "../components/MiniGames.vue";
 import Instructions from "../components/Instructions.vue";
 import LoadingScreen from '../components/Loading.vue';
 
@@ -49,6 +50,12 @@ const routes = [
     name: 'Profile',
     component: Profile,
     meta: { requiresAuth: true }, // we can add this to protect pages
+  },
+  {
+    path: '/minigames',
+    name: 'MiniGames',
+    component: MiniGames,
+    meta: { requiresAuth: true },
   },
   {
     path: '/event/:id', // A dynamic route for event details

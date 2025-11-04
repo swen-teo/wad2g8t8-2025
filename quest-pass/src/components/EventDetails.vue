@@ -473,32 +473,6 @@ function getProgressDocRef() {
   return doc(db, 'users', userId.value, 'eventProgress', eventId);
 }
 
-// --- lifecycle ---
-// onMounted(async () => {
-//   if (!userId) {
-//     error.value = 'you must be logged in to view this page.';
-//     isLoading.value = false;
-//     return;
-//   }
-  
-//   rewardModal.value = new Modal(document.getElementById('rewardModal'));
-
-//   await loadEventDetails();
-
-//   if (event.value) {
-//     await loadProgress();
-//   }
-
-//   // Check for spotify redirect *on load*
-//   // If the user is returning from Spotify, show the MusicQuest overlay immediately.
-//   const params = new URLSearchParams(window.location.search);
-//   if (params.has('code')) {
-//     showMusicQuest.value = true;
-//   }
-
-//   isLoading.value = false;
-// });
-
 onMounted(async () => {
   try {
     const modalEl = document.getElementById('rewardModal');
@@ -604,33 +578,6 @@ async function fetchJambaseEventFlexible(idOrName) {
 
 
 // --- data loading functions ---
-// async function loadEventDetails() {
-//   try {
-//     const docSnap = await getDoc(eventDocRef);
-//     if (docSnap.exists()) {
-//       const data = docSnap.data();
-//       const startDate = data.startDate?.toDate ? data.startDate.toDate() : null;
-//       const endDate = data.endDate?.toDate ? data.endDate.toDate() : null;
-//       event.value = {
-//         id: docSnap.id,
-//         ...data,
-//         startDate,
-//         endDate,
-//         bannerImage:
-//           data.bannerImage || data.cardImage || FALLBACK_BANNER_IMAGE,
-//       };
-//       artistName.value =
-//         event.value.artistName ||
-//         event.value.performer?.[0]?.name ||
-//         event.value.title;
-//     } else {
-//       error.value = 'this event does not exist.';
-//     }
-//   } catch (e) {
-//     console.error('error loading event:', e);
-//     error.value = 'could not load event details. please try again.';
-//   }
-// }
 
 async function loadEventDetails() {
   // 1) Try Firestore first, but don't abort if it errors
@@ -699,28 +646,6 @@ async function loadEventDetails() {
   // 3) Nothing matched anywhere
   error.value = 'could not load event details. please try again.';
 }
-
-
-
-// async function loadProgress() {
-//   try {
-//     const docSnap = await getDoc(progressDocRef);
-//     if (docSnap.exists()) {
-//       const progress = docSnap.data();
-//       if (progress.music) quests.value.music = progress.music;
-//       if (progress.trivia) quests.value.trivia = progress.trivia;
-      
-//       if (progress.rewardClaimed) {
-//          quests.value.music.points = MUSIC_MAX;
-//          quests.value.trivia.points = TRIVIA_AWARD;
-//       }
-//     } else {
-//       await saveProgress();
-//     }
-//   } catch (e) {
-//     console.error('error loading progress:', e);
-//   }
-// }
 
 function applyQuestProgress(key, rawProgress) {
   const current = quests.value[key] || { points: 0, completed: false };
@@ -793,19 +718,6 @@ async function loadProgress() {
     console.error('error loading progress:', e);
   }
 }
-
-
-// async function saveProgress() {
-//   try {
-//     await setDoc(progressDocRef, {
-//       music: quests.value.music,
-//       trivia: quests.value.trivia,
-//       lastUpdated: Timestamp.now(),
-//     });
-//   } catch (e) {
-//     console.error('failed to save progress:', e);
-//   }
-// }
 
 async function saveProgress(options = {}) {
   const progressDocRef = getProgressDocRef();
