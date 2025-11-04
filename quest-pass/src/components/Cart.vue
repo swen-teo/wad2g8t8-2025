@@ -78,10 +78,13 @@ const router = useRouter()
 function proceedToCheckout() {
   // Placeholder for checkout functionality
   console.log('Proceeding to checkout with:', cartStore.items)
-  alert('Checkout not implemented yet!')
+  router.push({ name: 'Paymentform' })
 }
 
 function keepShopping() {
   router.push({ name: 'Merch' })
 }
+
+
+
 </script>

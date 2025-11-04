@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "questpass-b3680"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }
