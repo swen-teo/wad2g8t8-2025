@@ -155,11 +155,8 @@ async function enterApp() {
     isCompleting.value = true;
 
     try {
-        if (userStore.currentUser && !userStore.currentUser.hasSeenInstructions) {
-            await userStore.markInstructionsSeen();
-        }
-
-        await router.push({ name: 'Home' });
+        // Guests proceed to Login after onboarding
+        await router.push({ name: 'Login' });
     } finally {
         isCompleting.value = false;
     }
@@ -167,10 +164,7 @@ async function enterApp() {
 
 // The logic from setup() goes directly inside <script setup>
 onMounted(() => {
-    if (userStore.currentUser?.hasSeenInstructions) {
-        router.replace({ name: 'Home' });
-        return;
-    }
+    // This page is guest-only via router guard; no redirect needed here for logged-in users.
 
     
     // --- Sparkle Generation ---

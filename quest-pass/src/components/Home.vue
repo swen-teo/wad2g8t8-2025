@@ -21,7 +21,7 @@
           />
         </div>
         <div class="filters-toggle flex-sm-grow-0">
-          <button class="btn btn-outline-primary" @click="toggleFilters">
+          <button class="btn btn-outline-primary w-100" @click="toggleFilters">
             <font-awesome-icon :icon="['fas', showFilters ? 'times' : 'filter']" class="me-2" />
             {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
           </button>
@@ -169,7 +169,10 @@
       </div> -->
 
       <!-- no events found message -->
+      <!-- 👇 Class reverted back to original -->
       <div v-if="!isLoading && groupedEvents.length === 0" class="text-center py-5 text-muted">
+        <i class="fas fa-search fa-3x mb-3" aria-hidden="true"></i>
+        <!-- 👇 Emoji removed -->
         <h4 class="fw-bold">No Events Found</h4>
         <p>Try adjusting your search or check back later for new events.</p>
         <div class="mt-3">
@@ -854,19 +857,9 @@ header h1 {
 .filters-toggle .btn {
   height: 3rem;
   border-radius: 0.75rem;
-  width: 100%;            /* full width on xs when stacked */
-  white-space: nowrap;    /* keep text on one line */
 }
 .filters-toggle {
-  flex: 0 0 auto;         /* don't shrink below content on row layout */
-}
-@media (min-width: 576px) { /* Bootstrap sm */
-  .filters-toggle {
-    min-width: max-content; /* expand to fit button text + icon */
-  }
-  .filters-toggle .btn {
-    width: auto;           /* allow intrinsic width on sm and up */
-  }
+  min-width: 180px; /* keeps button readable next to search */
 }
 .event-cta {
   display: block;

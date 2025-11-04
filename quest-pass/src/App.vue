@@ -71,55 +71,8 @@ const router = useRouter();
 
 // onmounted runs once when the app component is first created.
 onMounted(() => {
-  // this firebase function listens for any change in login state
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      // a user is logged in!
-      // fetch their profile data
-      // from the firestore database.
-
-      // --- THE FIX ---
-      // We must pass the *entire user object* to the store,
-      // not just the user.uid. The store needs the whole
-      // object to get the email, name, and photo URL.
-      await userStore.fetchUserProfile(user);
-    } else {
-      // user is logged out.
-      // clear any old data from our store.
-      userStore.clearUser();
-    }
-  });
-
-  // router guard to protect routes
-  router.beforeEach((to, from) => {
-    if (userStore.loading) {
-      return true;
-    }
-
-    // check if the route we're going to needs auth
-    if (to.meta.requiresAuth && !userStore.isLoggedIn) {
-      // not logged in. send to the login page.
-      // store where they *wanted* to go,
-      // send them back there after login.
-      return {
-        path: '/login',
-        query: { redirect: to.fullPath },
-      };
-    }
-
-    if (userStore.isLoggedIn) {
-      const hasSeenInstructions = userStore.currentUser?.hasSeenInstructions;
-
-      if (!hasSeenInstructions && to.name !== 'Instructions') {
-        return { name: 'Instructions' };
-      }
-
-      if (hasSeenInstructions && to.name === 'Instructions') {
-        return { name: 'Home' };
-      }
-    }
-    return true;
-  });
+  // Auth listener centralized in main.js and routing guard centralized in routes.js
+  // Keeping App.vue lean to avoid duplicate guards that may conflict with navigation.
 });
 </script>
 

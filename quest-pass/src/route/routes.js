@@ -42,7 +42,8 @@ const routes = [
     path: '/instructions',
     name: 'Instructions',
     component: Instructions,
-    meta: { requiresAuth: true },
+    // Show only to guests (not logged-in users)
+    meta: { guestOnly: true },
   },
   {
     path: '/home',
@@ -150,15 +151,28 @@ router.beforeEach((to, from, next) => {
 
   // this function decides where to go once we know auth state
   function proceed() {
-    // 1. if user is logged in and tries to go to /login, send them to /home
+    // 1a. if user is logged in and tries to go to /login, send them to /home
     if (to.path === "/login" && cachedUser) {
+      next("/home");
+      return;
+    }
+
+    // 1b. if user is logged in and goes to LandingPage, send them to /home
+    if (to.path === "/" && cachedUser) {
       next("/home");
       return;
     }
 
     // 2. if the route needs auth and there's no logged-in user, send to /login
     if (needsAuth && !cachedUser) {
-      next("/login");
+      next({ path: "/login", query: { redirect: to.fullPath } });
+      return;
+    }
+
+    // 2b. if the route is guest-only and user is logged in, send to /home
+    const guestOnly = to.matched.some((record) => record.meta.guestOnly);
+    if (guestOnly && cachedUser) {
+      next("/home");
       return;
     }
 

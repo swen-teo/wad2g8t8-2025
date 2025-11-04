@@ -580,4 +580,12 @@ function pickRandom(list) {
 .header-badges { row-gap: .5rem; }
 .header-badges .badge { white-space: nowrap; }
 .header-badges .info-trigger { flex: 0 0 auto; }
+
+/* Responsive container sizing for larger screens */
+@media (min-width: 768px) {
+  .game-card { max-width: 720px; margin-left: auto; margin-right: auto; }
+}
+@media (min-width: 992px) {
+  .game-card { max-width: 840px; }
+}
 </style>

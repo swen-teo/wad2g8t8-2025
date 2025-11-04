@@ -464,7 +464,7 @@ onMounted(fetchArtists)
   box-shadow: 0 6px 14px rgba(96,75,200,0.18);
 }
 .image-container {
-  width: min(100%, 360px);
+  width: min(100%, 340px);
   aspect-ratio: 1 / 1;
   border-radius: 0.75rem;
   overflow: hidden;
@@ -504,5 +504,15 @@ onMounted(fetchArtists)
   .game-icon { width: 32px; height: 32px; }
   .controls .btn { flex: 1 1 100%; width: 100%; }
   .info-popover { right: 0; left: auto; }
+}
+
+/* Center and constrain card on larger screens */
+@media (min-width: 768px) {
+  .game-card { max-width: 720px; margin-left: auto; margin-right: auto; }
+  .image-container { width: 420px; }
+}
+@media (min-width: 992px) {
+  .game-card { max-width: 840px; }
+  .image-container { width: 520px; }
 }
 </style>

@@ -433,7 +433,7 @@ function pickRandom(list) {
   box-shadow: 0 6px 14px rgba(96,75,200,0.18);
 }
 .image-container {
-  width: min(100%, 360px); /* make image area smaller and centered */
+  width: min(100%, 340px); /* make image area smaller and centered */
   aspect-ratio: 1 / 1;
   border-radius: 0.75rem;
   overflow: hidden;
@@ -529,4 +529,14 @@ function pickRandom(list) {
 .header-badges { row-gap: .5rem; }
 .header-badges .badge { white-space: nowrap; }
 .header-badges .info-trigger { flex: 0 0 auto; }
+
+/* Center and constrain card + scale image on larger screens */
+@media (min-width: 768px) {
+  .game-card { max-width: 720px; margin-left: auto; margin-right: auto; }
+  .image-container { width: 420px; }
+}
+@media (min-width: 992px) {
+  .game-card { max-width: 840px; }
+  .image-container { width: 520px; }
+}
 </style>

@@ -115,7 +115,7 @@ function enterSite() {
   isLoading.value = false;
 
   setTimeout(() => {
-    router.push({ name: 'Login' });
+    router.push({ name: 'Instructions' });
   }, 600);
 }
 </script>

@@ -4,7 +4,20 @@
       Design Your QuestPass Merch!
     </h1>
 
-    <div class="row g-4">
+    <!-- Access gating: require Gold tier -->
+    <div v-if="!userStore.isLoggedIn" class="alert alert-warning d-flex align-items-center justify-content-center gap-2 mb-4">
+      <font-awesome-icon :icon="['fas','sign-in-alt']" class="me-2" />
+      <div>Please log in to participate in quests and rewards.</div>
+    </div>
+    <div v-else-if="userStore.currentUser?.currentTier !== 'Gold'" class="alert alert-warning text-center mb-4">
+      <div class="d-flex align-items-center justify-content-center mb-1">
+        <font-awesome-icon :icon="['fas','lock']" class="me-2" />
+        <span class="lead mb-0">This exclusive merch creator is unlocked at <strong>Gold Tier</strong>.</span>
+      </div>
+      <div class="text-muted small">Keep completing quests to earn more points!</div>
+    </div>
+
+    <div class="row g-4" v-else>
       <!-- LEFT COLUMN: Product Selection + Customization -->
       <div class="col-lg-6 mb-4">
         <div class="card shadow-sm p-4 h-100">
@@ -271,9 +284,11 @@
 import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useCartStore } from "@/store/cart";
+import { useUserStore } from "@/store/user";
 
 const router = useRouter();
 const cartStore = useCartStore();
+const userStore = useUserStore();
 
 const selectedProduct = ref("tshirt");
 const selectedSize = ref("M");

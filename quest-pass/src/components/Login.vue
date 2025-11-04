@@ -25,11 +25,7 @@ const userStore = useUserStore();
 
 function resolvePostLoginDestination() {
   const redirectTarget = route.query.redirect;
-
-  if (!userStore.currentUser?.hasSeenInstructions) {
-    return { name: 'Instructions' };
-  }
-
+  // After login, go to requested redirect or Home
   return redirectTarget || { name: 'Home' };
 }
 

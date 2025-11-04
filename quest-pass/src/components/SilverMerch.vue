@@ -4,15 +4,17 @@
       <div class="card-body p-4 p-md-5 text-center">
         <h2 class="fw-bold mb-4">🛒 Spin to Win Merch Voucher!</h2>
         
-        <div v-if="!userStore.isLoggedIn">
-            <p class="text-warning">Please log in to participate in quests and rewards.</p>
-        </div>
-        <div v-else-if="userStore.currentUser?.currentTier === 'Bronze'">
-            <p class="lead text-warning">
-                <i class="fas fa-lock me-2"></i> This exclusive voucher is unlocked at **Silver Tier**.
-            </p>
-            <p class="text-muted">Keep completing quests to earn more points!</p>
-        </div>
+                <div v-if="!userStore.isLoggedIn" class="alert alert-warning d-flex align-items-center justify-content-center gap-2">
+                    <font-awesome-icon :icon="['fas','sign-in-alt']" class="me-2" />
+                    <div>Please log in to participate in quests and rewards.</div>
+                </div>
+                <div v-else-if="userStore.currentUser?.currentTier === 'Bronze'" class="alert alert-warning text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-1">
+                        <font-awesome-icon :icon="['fas','lock']" class="me-2" />
+                        <span class="lead mb-0">This exclusive voucher is unlocked at <strong>Silver Tier</strong>.</span>
+                    </div>
+                    <div class="text-muted small">Keep completing quests to earn more points!</div>
+                </div>
         
         <div v-else>
             
