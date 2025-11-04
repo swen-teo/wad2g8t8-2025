@@ -60,8 +60,7 @@
                 data-bs-content="
                 <strong>Bronze:</strong> Levels 1–10<br>
                 <strong>Silver:</strong> Levels 11–20<br>
-                <strong>Gold:</strong> Levels 21–30<br>
-                <strong>Platinum:</strong> Levels 31+"
+                <strong>Gold:</strong> Levels 20+""
     
                 data-bs-custom-class="tier-popover-wide" style="cursor: pointer;"
               >
