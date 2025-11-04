@@ -12,30 +12,45 @@ import { signOut } from 'firebase/auth';
 // fix: remove useRouter, it's not reliable to use it inside a pinia store.
 // We will call router.push() from the component *after* logout completes.
 
-// // This is the "demo user" data from your app (2).js
-// // We use this as a template for new users.
-// const demoUserTemplate = {
-//   id: 9999, // This will be replaced by Firebase UID
-//   name: 'Jungkook',
-//   email: 'demo@questpass.com',
-//   spotifyConnected: true,
-//   totalPoints: 888,
-//   level: 9,
-//   currentTier: 'Gold',
-//   badges: ['First Quest', 'Quiz Master', 'Superfan'],
-//   avatar:
-//     'https://i.pinimg.com/474x/55/41/a6/5541a64a6e9c00ffaa0e552d7f102d62.jpg',
-//   favoriteGenres: ['Pop', 'K-pop', 'Indie Rock'],
-//   streakDays: 5,
-//   joinDate: '2025-08-01',
-//   completedQuests: 11,
-//   purchasedTickets: 4,
-//   activeQuests: [],
-// };
+const POINTS_PER_LEVEL = 500;
+
+const DEFAULT_PROGRESS = calculateProgressFromPoints(0);
+
+function determineTier(level) {
+  if (level >= 21) return 'Gold';
+  if (level >= 11) return 'Silver';
+  return 'Bronze';
+}
+
+function calculateProgressFromPoints(totalPoints) {
+  const safePoints = Math.max(0, Number(totalPoints) || 0);
+  const level = Math.floor(safePoints / POINTS_PER_LEVEL) + 1;
+  const pointsIntoLevel = safePoints % POINTS_PER_LEVEL;
+  const progressPercentage = Math.floor(
+    (pointsIntoLevel / POINTS_PER_LEVEL) * 100
+  );
+
+  return {
+    level,
+    currentTier: determineTier(level),
+    levelProgress: progressPercentage,
+    pointsIntoLevel,
+    pointsPerLevel: POINTS_PER_LEVEL,
+    pointsToNextLevel: POINTS_PER_LEVEL - pointsIntoLevel,
+  };
+}
+
+function applyProgressFields(profile) {
+  const progress = calculateProgressFromPoints(profile.totalPoints);
+  return {
+    ...profile,
+    ...progress,
+  };
+}
 
 function createDefaultUserProfile(user) {
   const now = new Date().toISOString().split('T')[0]; // e.g. "2025-10-28"
-  return {
+  return applyProgressFields({
     id: user.uid,
     uid: user.uid,
     name: user.displayName || 'New User',
@@ -44,19 +59,16 @@ function createDefaultUserProfile(user) {
 
     // Default progress fields (all fresh!)
     totalPoints: 0,
-    level: 1,
-    currentTier: 'Bronze',
     badges: ['First Quest'],
 
     favoriteGenres: [],
     streakDays: 1,
     joinDate: now,
     completedQuests: 0,
-    levelProgress: 0,
     purchasedTickets: 0,
     activeQuests: [],
     hasSeenInstructions: false,
-  };
+  });
 }
 
 // Define the store
@@ -70,16 +82,36 @@ export const useUserStore = defineStore('user', {
   // getters are like computed properties for stores
   getters: {
     isLoggedIn: (state) => !!state.currentUser,
-    levelProgress: (state) => state.currentUser?.levelProgress ?? 0,
-    currentTier: (state) => {
+    progressSnapshot(state) {
+      if (!state.currentUser) {
+        return { ...DEFAULT_PROGRESS };
+      }
+
+      return calculateProgressFromPoints(state.currentUser.totalPoints);
+    },
+    levelProgress() {
+      return this.progressSnapshot.levelProgress;
+    },
+    pointsIntoLevel() {
+      return this.progressSnapshot.pointsIntoLevel;
+    },
+    pointsToNextLevel() {
+      return this.progressSnapshot.pointsToNextLevel;
+    },
+    pointsPerLevel() {
+      return this.progressSnapshot.pointsPerLevel;
+    },
+    currentTier(state) {
       // (This is from your app(2).js logic)
       const tiers = {
         Bronze: { bg: '#f0e6de', color: '#aa7a53' },
         Silver: { bg: '#eef0f2', color: '#8d9ca9' },
         Gold: { bg: '#fff6d9', color: '#a88c3a' },
       };
+      const tierName =
+        state.currentUser?.currentTier || this.progressSnapshot.currentTier;
       return (
-        tiers[state.currentUser?.currentTier] || {
+        tiers[tierName] || {
           bg: '#eef0f2',
           color: '#8d9ca9',
         }
@@ -120,7 +152,40 @@ export const useUserStore = defineStore('user', {
             }
           }
 
-          this.currentUser = { id: docSnap.id, ...data };
+          const profileWithProgress = applyProgressFields({
+            id: docSnap.id,
+            ...data,
+          });
+
+          const progressUpdates = {};
+          if (data.level !== profileWithProgress.level) {
+            progressUpdates.level = profileWithProgress.level;
+          }
+          if (data.currentTier !== profileWithProgress.currentTier) {
+            progressUpdates.currentTier = profileWithProgress.currentTier;
+          }
+          if (data.levelProgress !== profileWithProgress.levelProgress) {
+            progressUpdates.levelProgress = profileWithProgress.levelProgress;
+          }
+          if (data.pointsIntoLevel !== profileWithProgress.pointsIntoLevel) {
+            progressUpdates.pointsIntoLevel = profileWithProgress.pointsIntoLevel;
+          }
+          if (data.pointsToNextLevel !== profileWithProgress.pointsToNextLevel) {
+            progressUpdates.pointsToNextLevel = profileWithProgress.pointsToNextLevel;
+          }
+          if (data.pointsPerLevel !== profileWithProgress.pointsPerLevel) {
+            progressUpdates.pointsPerLevel = profileWithProgress.pointsPerLevel;
+          }
+
+          if (Object.keys(progressUpdates).length > 0) {
+            try {
+              await updateDoc(userDocRef, progressUpdates);
+            } catch (progressError) {
+              console.error('Error syncing progress fields:', progressError);
+            }
+          }
+
+          this.currentUser = profileWithProgress;
         } else {
           // // User profile doesn't exist (first-time login)
           // // Create one using their Google info and the demo template
@@ -203,14 +268,25 @@ export const useUserStore = defineStore('user', {
 
       const previousTotal = this.currentUser.totalPoints ?? 0;
       const newTotal = previousTotal + value;
+      const updatedProfile = applyProgressFields({
+        ...this.currentUser,
+        totalPoints: newTotal,
+      });
+
       // Optimistically update the local store so the UI reacts immediately.
-      this.currentUser = { ...this.currentUser, totalPoints: newTotal };
+      this.currentUser = updatedProfile;
 
       const userDocRef = doc(db, 'users', uid);
 
       try {
         await updateDoc(userDocRef, {
           totalPoints: increment(value),
+          level: updatedProfile.level,
+          currentTier: updatedProfile.currentTier,
+          levelProgress: updatedProfile.levelProgress,
+          pointsIntoLevel: updatedProfile.pointsIntoLevel,
+          pointsToNextLevel: updatedProfile.pointsToNextLevel,
+          pointsPerLevel: updatedProfile.pointsPerLevel,
           lastPointsUpdate: serverTimestamp(),
         });
       } catch (error) {
@@ -220,6 +296,12 @@ export const useUserStore = defineStore('user', {
             userDocRef,
             {
               totalPoints: newTotal,
+              level: updatedProfile.level,
+              currentTier: updatedProfile.currentTier,
+              levelProgress: updatedProfile.levelProgress,
+              pointsIntoLevel: updatedProfile.pointsIntoLevel,
+              pointsToNextLevel: updatedProfile.pointsToNextLevel,
+              pointsPerLevel: updatedProfile.pointsPerLevel,
               lastPointsUpdate: serverTimestamp(),
             },
             { merge: true }
@@ -227,7 +309,10 @@ export const useUserStore = defineStore('user', {
         } catch (secondError) {
           console.error('Failed to persist points:', secondError);
           // Revert optimistic update if the write ultimately fails.
-          this.currentUser = { ...this.currentUser, totalPoints: previousTotal };
+          this.currentUser = applyProgressFields({
+            ...this.currentUser,
+            totalPoints: previousTotal,
+          });
           throw secondError;
         }
       }

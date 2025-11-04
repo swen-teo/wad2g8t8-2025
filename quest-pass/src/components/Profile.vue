@@ -115,7 +115,9 @@
                         <font-awesome-icon :icon="['fas','tachometer-alt']" class="me-1 text-muted" />
                         Progress to next level
                       </h5>
-                      <div class="small text-muted fw-semibold">{{ userStore.levelProgress }}%</div>
+                      <div class="small text-muted fw-semibold">
+                        {{ userStore.levelProgress }}%
+                      </div>
                     </div>
               <div class="progress profile-progress">
                 <div
@@ -126,6 +128,13 @@
                   aria-valuemin="0"
                   aria-valuemax="100"
                 ></div>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mt-2 small text-muted">
+                <span>{{ userStore.pointsIntoLevel }} / {{ userStore.pointsPerLevel }} pts</span>
+                <span>
+                  {{ userStore.pointsToNextLevel }} pts to Level
+                  {{ userStore.currentUser.level + 1 }}
+                </span>
               </div>
             </div>
           </div>
