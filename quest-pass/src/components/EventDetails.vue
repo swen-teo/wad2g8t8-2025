@@ -291,13 +291,24 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body p-0">
-            <div class="map-embed-wrapper">
-              <iframe
+                    <div class="map-embed-wrapper">
+                      <div class="map-overlay-controls">
+                        <a class="btn btn-primary btn-sm" :href="mapsSearchUrl" target="_blank" rel="noopener">
+                          <i class="fas fa-directions me-1"></i>
+                          Directions
+                        </a>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" :disabled="isCopyingAddress" @click="copyVenueAddress">
+                          <i class="far fa-copy me-1"></i>
+                          {{ addressCopyLabel }}
+                        </button>
+                      </div>
+                      <iframe
                 ref="mapIframe"
                 :src="embedMapUrl"
                 width="100%"
                 height="100%"
                 style="border:0;"
+                :class="{ 'map-embed--neutral': !mapId }"
                 allowfullscreen
                 loading="lazy"
                 referrerpolicy="no-referrer-when-downgrade"
@@ -556,6 +567,8 @@ function getProgressDocRef() {
 }
 // --- GOOGLE MAPS SETUP ---
 const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+// Cloud-styled Map ID from Google Maps Platform (Cloud Customization)
+const mapId = import.meta.env.VITE_GOOGLE_MAP_ID || '';
 
 // Compute the venue name and city (existing data from event)
 const displayVenueName = computed(() =>
@@ -571,10 +584,28 @@ const mapQuery = computed(() => {
   return encodeURIComponent(q);
 });
 
+// High-contrast, neutral style for Static Maps (fallback when cloud style isn't applied)
+const MAP_STYLES = [
+  'feature:all|saturation:-20|lightness:5',
+  'feature:poi|visibility:off',
+  'feature:road|saturation:-10|gamma:1.1|lightness:0',
+  'feature:road.arterial|lightness:-10',
+  'feature:water|color:0xd6e4f0',
+  'feature:landscape|color:0xf6f6fb',
+  'element:labels.text.fill|color:0x1f2937',
+  'element:labels.text.stroke|color:0xffffff|weight:2',
+];
+
+function buildStaticStyleQuery() {
+  return MAP_STYLES.map((s) => `&style=${encodeURIComponent(s)}`).join('');
+}
+
 // Static Maps API image (hover preview)
 const staticMapUrl = computed(() => {
   if (!mapsKey) return null;
-  return `https://maps.googleapis.com/maps/api/staticmap?size=480x260&scale=2&maptype=roadmap&markers=color:red|${mapQuery.value}&key=${mapsKey}`;
+  const markerColor = '0x4f46e5'; // indigo to match app accents
+  const styles = buildStaticStyleQuery();
+  return `https://maps.googleapis.com/maps/api/staticmap?size=480x260&scale=2&maptype=roadmap&zoom=13&markers=color:${markerColor}|${mapQuery.value}${styles}&key=${mapsKey}`;
 });
 
 // Regular Google Maps search URL (opens new tab)
@@ -587,12 +618,48 @@ const mapsSearchUrl = computed(() =>
 const embedMapUrl = computed(() => {
   const q = mapQuery.value;
   if (mapsKey) {
-    return `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(mapsKey)}&q=${q}`;
+    const id = mapId ? `&map_id=${encodeURIComponent(mapId)}` : '';
+    return `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(mapsKey)}&q=${q}${id}`;
   }
   return `https://www.google.com/maps?q=${q}&output=embed`;
 });
 
 const mapIframe = ref(null);
+
+// Derived venue label for copying
+const venueLabel = computed(() => `${displayVenueName.value}, ${displayVenueCity.value}`);
+const isCopyingAddress = ref(false);
+const addressCopyState = ref('idle'); // idle | copied | error
+const addressCopyLabel = computed(() => {
+  if (addressCopyState.value === 'copied') return 'Copied!';
+  if (addressCopyState.value === 'error') return 'Try Again';
+  return 'Copy address';
+});
+
+async function copyVenueAddress() {
+  try {
+    isCopyingAddress.value = true;
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(venueLabel.value);
+    } else if (typeof document !== 'undefined') {
+      const temp = document.createElement('input');
+      temp.value = venueLabel.value;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+    } else {
+      throw new Error('No clipboard API available');
+    }
+    addressCopyState.value = 'copied';
+  } catch (e) {
+    console.error('Failed to copy address:', e);
+    addressCopyState.value = 'error';
+  } finally {
+    isCopyingAddress.value = false;
+    setTimeout(() => (addressCopyState.value = 'idle'), 2200);
+  }
+}
 
 function handleVenueClick(event) {
   // If we have a key (and thus a richer embed), open the modal instead of navigating away.
@@ -618,18 +685,30 @@ onMounted(async () => {
       placement: 'bottom',
       html: true,
       sanitize: false,
+      customClass: 'map-popover', // add custom class so we can style globally
       fallbackPlacements: ['top','right','left'],
       content: () => {
-        if (staticMapUrl.value) {
-          return `<img src="${staticMapUrl.value}" alt="Map preview" style="display:block;width:100%;height:auto;border-radius:8px;" />`;
-        }
-        // Fallback: lightweight embedded map without API key
-        return `<iframe src="${embedMapUrl.value}"
-                  class="map-popover-embed"
-                  width="360" height="200"
-                  style="border:0; pointer-events:none; border-radius:8px; display:block;"
-                  loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-                  title="Map preview"></iframe>`;
+        const title = `${displayVenueName.value}, ${displayVenueCity.value}`;
+        const media = staticMapUrl.value
+          ? `<img src="${staticMapUrl.value}" alt="Map preview of ${title}" class="map-popover-img" />`
+          : `<iframe src="${embedMapUrl.value}" class="map-popover-embed" width="420" height="236" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map preview of ${title}"></iframe>`;
+
+        return `
+          <div class="map-popover-card">
+            <div class="map-popover-media">
+              ${media}
+              <div class="map-popover-chip">
+                <i class="fas fa-map-marker-alt me-1"></i>
+                ${title}
+              </div>
+            </div>
+            <div class="map-popover-actions">
+              <a href="${mapsSearchUrl.value}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
+                <i class="fas fa-external-link-alt me-1"></i>
+                Open in Google Maps
+              </a>
+            </div>
+          </div>`;
       }
     });
   }
@@ -1805,9 +1884,93 @@ function buildTitleInitials(title) {
 .chip--clickable:hover {
   filter: brightness(1.03);
 }
-.popover {
+/* Map popover styles must be global since Bootstrap appends to body */
+:global(.map-popover) {
   z-index: 2000 !important;
-  max-width: 480px;
+  max-width: 520px;
+  border: 0;
+  background: transparent;
+}
+:global(.map-popover .popover-arrow) { display: none; }
+:global(.map-popover .popover-body) { padding: 0; }
+
+:global(.map-popover .map-popover-card) {
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.94)) padding-box,
+    linear-gradient(120deg, rgba(167,139,250,0.6), rgba(96,165,250,0.5)) border-box;
+  border: 2px solid transparent;
+  box-shadow: 0 18px 40px rgba(16,24,40,0.22), 0 6px 18px rgba(79,70,229,0.16);
+  overflow: hidden;
+}
+:global(.map-popover .map-popover-media) {
+  position: relative;
+}
+:global(.map-popover .map-popover-img),
+:global(.map-popover .map-popover-embed) {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16/9;
+  border: 0;
+}
+:global(.map-popover .map-popover-embed) {
+  pointer-events: none;
+}
+:global(.map-popover .map-popover-chip) {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .35rem .6rem;
+  font-size: .8rem;
+  border-radius: 999px;
+  background: rgba(17,24,39,0.65);
+  color: #fff;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.35);
+}
+:global(.map-popover .map-popover-actions) {
+  padding: .6rem .75rem .8rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Neutralize default embed when Cloud Map ID isn't set */
+.map-embed--neutral {
+  filter: saturate(0.9) contrast(1.06) brightness(1.02);
+}
+
+/* Modal map beautification */
+.map-embed-wrapper {
+  position: relative;
+  aspect-ratio: 16/9;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.94)) padding-box,
+    linear-gradient(120deg, rgba(167,139,250,0.6), rgba(96,165,250,0.5)) border-box;
+  border: 2px solid transparent;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(16,24,40,0.18), 0 6px 18px rgba(79,70,229,0.12);
+}
+.map-embed-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.map-overlay-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: .5rem;
+  z-index: 5;
+}
+@media (max-width: 575.98px) {
+  .map-embed-wrapper { aspect-ratio: 4/3; }
+  .map-overlay-controls { top: 8px; right: 8px; }
 }
 </style>
 
