@@ -18,7 +18,7 @@
       >
         <div class="event-banner__content container-lg p-4 p-md-5">
             <h4 class="text-white-75 mb-2">{{ event.date }}</h4>
-            <h1 class="page-title page-title--invert mb-2">
+            <h1 class="display-4 fw-bold text-white mb-2">
           {{ event.title }}
         </h1>
 
@@ -136,15 +136,17 @@
 
           <div class="col-12 col-xl-4 d-flex">
             <div
-              class="reward-access-card w-100 h-100"
+              class="card shadow reward-access-card animate-float-in w-100 h-100"
               :class="{
                 'reward-access-card--locked': !isComplete,
                 'reward-access-card--pending': isComplete && !isRewardUnlocked,
                 'reward-access-card--unlocked': isRewardUnlocked,
               }"
             >
-              <div class="reward-access-card__inner d-flex flex-column gap-3 h-100">
-                <div class="reward-access-card__status d-flex align-items-center text-center text-sm-start gap-3">
+              <div class="card-body p-4 p-xl-5 d-flex flex-column gap-4 justify-content-between">
+                <div
+                  class="reward-access-card__status d-flex flex-column flex-sm-row align-items-center align-items-sm-start text-center text-sm-start gap-3 gap-sm-4"
+                >
                   <div
                     class="status-icon"
                     :class="{
@@ -154,14 +156,17 @@
                   >
                     <font-awesome-icon :icon="rewardStatusIcon" />
                   </div>
-                  <div>
-                    <div class="status-eyebrow text-uppercase small fw-semibold text-muted mb-1">Presale Access</div>
-                    <h5 class="fw-bold mb-1">{{ rewardStatusHeading }}</h5>
+                  <div class="reward-access-card__status-text">
+                    <div class="status-eyebrow text-uppercase small fw-semibold text-muted mb-2">Presale Access</div>
+                    <h5 class="fw-bold mb-2">{{ rewardStatusHeading }}</h5>
                     <p class="text-muted small mb-0">{{ rewardStatusMessage }}</p>
                   </div>
                 </div>
 
                 <div class="reward-access-card__code text-center text-sm-start">
+                  <div class="reward-access-card__code-label text-uppercase small fw-semibold text-muted mb-2">
+                    Access Code
+                  </div>
                   <div class="code-chip" :class="{ 'code-chip--locked': !isRewardUnlocked }">
                     <span class="code-value">{{ rewardCodeDisplay }}</span>
                     <button
@@ -1072,8 +1077,7 @@ async function handleTriviaProgress(progress) {
     await saveProgress();
     await checkForCompletion();
   }
-  // Close the overlay
-  showTriviaQuest.value = false;
+  // Leave the overlay open so users can review the success screen and dismiss manually
 }
 
 // --- reward logic ---
@@ -1471,11 +1475,21 @@ function buildTitleInitials(title) {
 .reward-access-card {
   display: flex;
   flex-direction: column;
-  border-radius: 1rem;
-  padding: 1.25rem 1.4rem;
+  border-radius: 1.25rem;
   border: 1px solid rgba(15, 23, 42, 0.06);
   background: linear-gradient(160deg, rgba(255, 248, 241, 0.92), rgba(255, 255, 255, 0.9));
   box-shadow: var(--card-elev);
+  position: relative;
+  overflow: hidden;
+}
+
+.reward-access-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(251, 191, 36, 0.18), transparent 55%);
+  opacity: 0.75;
+  pointer-events: none;
 }
 
 
@@ -1491,6 +1505,18 @@ function buildTitleInitials(title) {
 .reward-access-card--unlocked {
   background: linear-gradient(160deg, rgba(236, 253, 245, 0.95), rgba(255, 255, 255, 0.92));
   border-color: rgba(16, 185, 129, 0.35);
+}
+
+.reward-access-card--locked::before {
+  background: radial-gradient(circle at top right, rgba(251, 191, 36, 0.22), transparent 55%);
+}
+
+.reward-access-card--pending::before {
+  background: radial-gradient(circle at top right, rgba(129, 140, 248, 0.2), transparent 55%);
+}
+
+.reward-access-card--unlocked::before {
+  background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.18), transparent 55%);
 }
 
 .reward-access-card--summary.reward-access-card--locked {
@@ -1520,10 +1546,22 @@ function buildTitleInitials(title) {
   }
 }
 
-.reward-access-card__inner {
+.reward-access-card .card-body {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2.5rem;
   flex: 1 1 auto;
+}
+
+.reward-access-card__status-text h5 {
+  font-size: 1.25rem;
+}
+
+.reward-access-card__code-label {
+  letter-spacing: 0.08em;
 }
 
 .status-icon {

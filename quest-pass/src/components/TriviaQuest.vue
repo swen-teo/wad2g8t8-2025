@@ -297,6 +297,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 // Import from the service file
 import { generateQuizQuestions } from '../services/gemini-quiz.js';
+import { logTriviaError } from '@/utils/quizLogger.js';
 
 // --- configuration ---
 const TRIVIA_QS = 5; // 5 questions for a quicker demo
@@ -381,7 +382,7 @@ async function loadTriviaQuestions() {
     // limit to 5 questions
     triviaQuestions.value = questions.slice(0, TRIVIA_QS);
   } catch (e) {
-    console.error('failed to load trivia:', e);
+    logTriviaError('Failed to load trivia questions.', e);
     triviaError.value = e.message || 'Could not load trivia questions.';
   } finally {
     triviaLoading.value = false;
@@ -439,7 +440,7 @@ function finishTrivia() {
       points: TRIVIA_AWARD,
       completed: true,
     });
-    // Parent will hear this and close the overlay
+    // Parent will award points but leave the overlay open for manual dismissal
   }
 }
 
