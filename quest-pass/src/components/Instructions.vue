@@ -1,8 +1,8 @@
 <template>
 
-    <div id="scroll-indicator">
+    <!-- <div id="scroll-indicator">
         <font-awesome-icon icon="fa-solid fa-angle-down" aria-hidden="true" />
-    </div>
+    </div> -->
 
     <div class="container d-block text-center mt-5 mb-5 hero-section">
         <div class="qp-logo-badge">
