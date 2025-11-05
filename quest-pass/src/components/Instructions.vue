@@ -14,6 +14,23 @@
         <div class="h5 mt-4 qp-subtitle">
             Complete quests. Earn points. Unlock exclusive presale access <br>to your favorite concerts.
         </div>
+        <!-- Moved CTA upward so it's visible without scrolling -->
+        <div class="mt-4 d-flex justify-content-center">
+            <button
+                class="btn btn-primary btn-lg px-5"
+                type="button"
+                @click="enterApp"
+                :disabled="isCompleting"
+            >
+                <span
+                    v-if="isCompleting"
+                    class="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                ></span>
+                Enter QuestPass
+            </button>
+        </div>
     </div>
 
     <div class="container mt-5 mb-5 fade-in-sequential-cards" >
@@ -116,25 +133,7 @@
         </div>
     </div>
 
-    <div class="container my-5 py-4 text-center">
-        <p class="fs-5 text-secondary mb-4">
-            Ready to start completing quests? Head into the app to see your personalized dashboard.
-        </p>
-        <button
-            class="btn btn-primary btn-lg px-5"
-            type="button"
-            @click="enterApp"
-            :disabled="isCompleting"
-        >
-            <span
-                v-if="isCompleting"
-                class="spinner-border spinner-border-sm me-2"
-                role="status"
-                aria-hidden="true"
-            ></span>
-            Enter QuestPass
-        </button>
-    </div>
+    
 </template>
 
 <script setup>

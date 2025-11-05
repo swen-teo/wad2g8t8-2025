@@ -147,19 +147,7 @@
           </li>
         </ul>
 
-        <!-- Login Button (Logged Out) -->
-        <ul
-          class="navbar-nav ms-auto"
-          v-if="!userStore.isLoggedIn && !userStore.loading && !hideAuthCtas"
-        >
-          <li class="nav-item">
-            <router-link
-              class="btn btn-primary"
-              to="/login"
-              >Login / Sign Up</router-link
-            >
-          </li>
-        </ul>
+        <!-- Auth CTA removed intentionally: no Login/Sign Up button in navbar -->
       </div>
     </div>
   </nav>
@@ -170,7 +158,7 @@
 import { useUserStore } from '@/store/user';
 import { useRouter, useRoute } from 'vue-router';
 
-import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -234,11 +222,7 @@ async function handleLogout() {
   router.push({ name: 'Login' });
 }
 
-// Hide auth CTAs (Login/Sign Up) on specific guest pages like Login and Instructions
-const hideAuthCtas = computed(() => {
-  const name = route.name;
-  return name === 'Login' || name === 'Instructions';
-});
+// Note: Login/Sign Up CTA was intentionally removed from the navbar per design.
 
 // Programmatically hide the mobile navbar when navigating or clicking a nav item
 function getCollapseInstance() {
