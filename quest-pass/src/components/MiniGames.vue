@@ -1,7 +1,7 @@
 <template>
   <div class="container py-5">
     <div class="d-flex align-items-center justify-content-between mb-3 mb-md-4">
-      <h1 class="fw-bold mb-0">Mini Games</h1>
+  <h1 class="page-title mb-3">Mini Games</h1>
       <span class="text-muted d-none d-sm-inline">Pick a game and earn points</span>
     </div>
 

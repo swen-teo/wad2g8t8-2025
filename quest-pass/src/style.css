@@ -54,6 +54,31 @@ h1, h2, h3, h4, h5, h6 {
 }
 .display-4 { font-size: 3rem; line-height: 1.1; }
 
+/* Unified page title style for top-of-page headings */
+.page-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+  /* gradient ink using theme tokens with graceful fallback */
+  color: var(--ink);
+  background: linear-gradient(90deg, var(--primary-1) 0%, var(--primary-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Variant for dark/imagery backgrounds: keep typography but force white text */
+.page-title--invert {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
 .main-content { padding-top: 2rem; }
 .hero-section { padding: 3rem 0; }
 

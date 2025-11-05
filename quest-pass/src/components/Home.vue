@@ -3,12 +3,12 @@
     <!-- header and search bar -->
     <header class="mb-4">
       <!-- 🎟️ Emoji removed -->
-      <h1 class="mb-3">Upcoming Events</h1>
+    <h1 class="page-title mb-3">Upcoming Events</h1>
       <!-- Vinyl spinner picker above search + filters -->
       <EventPicker :events="filteredEvents" class="mb-3" />
 
-      <!-- Spinner sits above search + filters row -->
-      <Loading :is-loading="isLoading" class="mb-3" />
+  <!-- Spinner sits above search + filters row (overlayed; no external margins) -->
+  <Loading :is-loading="isLoading" />
 
       <!-- Search + Show Filters on the same row (responsive) -->
       <div class="search-row d-flex flex-column flex-sm-row align-items-stretch gap-2">
@@ -765,14 +765,7 @@ function deriveVenueFromTitle(title) {
   .card-img-top { height: 160px; }
 }
 
-/* reduce the size of the page header (Upcoming Events) slightly */
-header h1 {
-  font-size: 1.45rem; /* slightly smaller than before */
-  font-weight: 600;
-}
-@media (max-width: 575.98px) {
-  header h1 { font-size: 1.15rem; }
-}
+/* Use the global .page-title sizes everywhere for consistency */
 
 /* --- NEW: Provide a page background variable so notches can "cut out" the card */
 .container {

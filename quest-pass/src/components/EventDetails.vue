@@ -18,7 +18,7 @@
       >
         <div class="event-banner__content container-lg p-4 p-md-5">
             <h4 class="text-white-75 mb-2">{{ event.date }}</h4>
-            <h1 class="display-4 fw-bold text-white mb-2">
+            <h1 class="page-title page-title--invert mb-2">
           {{ event.title }}
         </h1>
 
