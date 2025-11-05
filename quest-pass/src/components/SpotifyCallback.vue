@@ -17,7 +17,7 @@ const msg = ref('Exchanging code for tokens…');
 function postBack(ok, errorText = '') {
   try {
     window.opener?.postMessage(
-      { source: 'spotify', ok, error: errorText },   // <— ok is not hardcoded now
+      { source: 'spotify', ok, error: errorText }, 
       window.location.origin
     );
   } catch {}
