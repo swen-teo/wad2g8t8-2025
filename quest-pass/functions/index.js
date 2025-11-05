@@ -15,7 +15,7 @@ const stripelib = require("stripe");
 // Stripe Payment Intent (Callable)
 // ----------------------
 exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
-  const stripeSecret = functions.config().stripe?.secret;
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
   if (!stripeSecret) {
     console.error("Missing Stripe secret in functions config");
     throw new functions.https.HttpsError(
