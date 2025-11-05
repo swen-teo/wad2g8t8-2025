@@ -1617,6 +1617,10 @@ function buildTitleInitials(title) {
 .code-copy-btn {
   white-space: nowrap;
   min-width: 120px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .copy-feedback-region {
