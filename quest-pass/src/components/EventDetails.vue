@@ -22,7 +22,7 @@
           {{ event.title }}
         </h1>
 
-        <!-- NEW: date-range panel -->
+        <!--date-range panel -->
         <div v-if="dateRangeText" class="date-range-chip mt-2">
           <font-awesome-icon :icon="['fas', 'calendar-days']" class="me-2" />
           This event runs from <strong>{{ dateRangeText }}</strong>
@@ -355,7 +355,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-// fix: use relative paths instead of '@' alias
 import { useUserStore } from '../store/user.js';
 import { db } from '../firebase.js';
 import {
@@ -393,7 +392,7 @@ const QUEST_MAX_POINTS = {
   music: MUSIC_MAX,
   trivia: TRIVIA_AWARD,
 };
-// Jambase API key (same as Home.vue)
+// Jambase API key 
 const apiKey = import.meta.env.VITE_JAMBASE_API_KEY;
 
 // --- component setup ---
@@ -575,15 +574,6 @@ function resetQuestState() {
 
 // --- database path helpers ---
 const eventDocRef = doc(db, 'events', eventId);
-// const progressDocRef = doc(
-//   db,
-//   'users',
-//   userId,
-//   'eventProgress',
-//   eventId
-// );
-
-// (MusicQuest component owns Spotify auth/check flow)
 
 
 function getProgressDocRef() {
@@ -638,7 +628,6 @@ const mapsSearchUrl = computed(() =>
   `https://www.google.com/maps/search/?api=1&query=${mapQuery.value}`
 );
 
-// Prefer the official Embed API when a key is present (better UX and controls);
 // fall back to a generic embed that doesn't require a key.
 const embedMapUrl = computed(() => {
   const q = mapQuery.value;
@@ -855,7 +844,6 @@ async function fetchJambaseEventFlexible(idOrName) {
 
 
 // --- data loading functions ---
-
 async function loadEventDetails() {
   // 1) Try Firestore first, but don't abort if it errors
   let fsDoc = null;
@@ -902,7 +890,7 @@ async function loadEventDetails() {
       event.value.performer?.[0]?.name ||
       event.value.title;
 
-    return; // done (we got Firestore)
+    return;
   }
 
   // 2) Firestore not available or no doc — try Jambase by id OR title
@@ -1077,19 +1065,8 @@ async function handleTriviaProgress(progress) {
     await saveProgress();
     await checkForCompletion();
   }
-  // Leave the overlay open so users can review the success screen and dismiss manually
 }
 
-// --- reward logic ---
-// async function checkForCompletion() {
-//   if (isComplete.value) {
-//     await setDoc(progressDocRef, 
-//       { rewardClaimed: true }, 
-//       { merge: true }
-//     );
-//     rewardModal.value.show();
-//   }
-// }
 async function checkForCompletion() {
   if (!isComplete.value) return;
 
@@ -1190,7 +1167,6 @@ function buildTitleInitials(title) {
 </script>
 
 <style scoped>
-/* --- ADDED: Theme variables and accents (scoped but declared on :root globally) --- */
 :global(:root) {
   --accent-1: #a78bfa; /* purple */
   --accent-2: #60a5fa; /* blue */
@@ -1205,7 +1181,7 @@ function buildTitleInitials(title) {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 1; /* sits between bg and content */
+  z-index: 1; 
   background: linear-gradient(120deg, rgba(167,139,250,0.14), rgba(96,165,250,0.10), rgba(125,120,255,0.06));
   pointer-events: none;
   mix-blend-mode: overlay;
@@ -2019,6 +1995,7 @@ function buildTitleInitials(title) {
 .chip--clickable:hover {
   filter: brightness(1.03);
 }
+
 /* Map popover styles must be global since Bootstrap appends to body */
 :global(.map-popover) {
   z-index: 2000 !important;

@@ -9,46 +9,7 @@ admin.initializeApp();
 const db = admin.firestore();
 const { Timestamp, FieldValue } = admin.firestore;
 
-
-// ----------------------
-// Stripe Payment Intent (Callable)
-// ----------------------
-// Get Stripe secret from environment
-exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
-  cors(req, res, async () => {
-    if (req.method === "OPTIONS") return res.status(204).send("");
-    if (req.method !== "POST") return res.status(405).send({ error: "Method not allowed" });
-
-    try {
-      let body = req.body;
-      if (typeof body === "string") body = JSON.parse(body);
-
-      console.log("Received body:", body);
-
-      const amount = body.amount;
-      if (!amount || amount <= 0) {
-        return res.status(400).send({ error: "Amount must be a positive number" });
-      }
-
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency: "usd",
-        automatic_payment_methods: { enabled: true },
-      });
-
-      console.log("PaymentIntent created:", paymentIntent.id);
-
-      return res.status(200).send({ clientSecret: paymentIntent.client_secret });
-    } catch (err) {
-      console.error("Stripe error:", err);
-      return res.status(500).send({ error: err.message });
-    }
-  });
-});
-
-// ----------------------
 // Populate Events from Jambase
-// ----------------------
 exports.populateEventsFromJambase = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     if (req.method === "OPTIONS") return res.status(204).send("");
@@ -115,9 +76,8 @@ exports.populateEventsFromJambase = functions.https.onRequest((req, res) => {
   });
 });
 
-// ----------------------
-// Generate Gemini Quiz
-// ----------------------
+
+// Generate Gemini Quiz for Trivia
 async function requestGeminiQuiz(apiKey, prompt) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
   const { data } = await axios.post(

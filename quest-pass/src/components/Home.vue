@@ -10,7 +10,6 @@
   <!-- Spinner sits above search + filters row (overlayed; no external margins) -->
   <Loading :is-loading="isLoading" />
 
-      <!-- Search + Show Filters on the same row (responsive) -->
       <div class="search-row d-flex flex-column flex-sm-row align-items-stretch gap-2">
         <div class="home-search flex-grow-1 px-0">
           <input
@@ -29,7 +28,7 @@
       </div>
     </header>
 
-    <!-- 🎛 Collapsible filters -->
+    <!-- Collapsible filters -->
     <transition name="slide-fade">
       <div v-if="showFilters" class="filter-panel p-3 mb-4 rounded shadow-sm bg-light">
         <div class="row g-3">
@@ -54,7 +53,6 @@
             <input type="date" class="form-control" v-model="dateTo" />
           </div>
 
-          <!-- Quick range (reuses your existing selectedDateRange) -->
           <div class="col-md-2 col-sm-6">
             <label class="form-label small text-muted">Quick range</label>
             <select class="form-select" v-model="selectedDateRange">
@@ -122,57 +120,9 @@
   </div>
 </div>
 
-<!-- 
-          <router-link
-            v-if="event.id"
-            :to="{ name: 'EventDetails', params: { id: event.id } }"
-            class="event-card-link"
-          >
-            <div class="card event-card shadow-sm border-0">
-              <img
-                :src="event.image"
-                class="card-img-top"
-                alt="Event Image"
-                @error="onImageError"
-              />
-              <div class="card-body d-flex flex-column">
-                <h5 class="card-title fw-bold">{{ event.title }}</h5>
-                <p class="card-text text-muted small flex-grow-1">
-                  {{ event.description }}
-                </p>
-                <p class="card-text description-truncate">
-                  {{ event.description }}
-                </p>
-              </div>
-            </div>
-          </router-link>
-          <div v-else class="event-card-link">
-            <div class="card event-card shadow-sm border-0">
-              <img
-                :src="event.image"
-                class="card-img-top"
-                alt="Event Image"
-                @error="onImageError"
-              />
-              <div class="card-body d-flex flex-column">
-                <h5 class="card-title fw-bold">{{ event.title }}</h5>
-                <p class="card-text text-muted small flex-grow-1">
-                  {{ event.description }}
-                </p>
-                <p class="card-text description-truncate">
-                  {{ event.description }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div> -->
-
       <!-- no events found message -->
-      <!-- 👇 Class reverted back to original -->
       <div v-if="!isLoading && groupedEvents.length === 0" class="text-center py-5 text-muted">
         <font-awesome-icon icon="fa-solid fa-magnifying-glass" class="fa-3x mb-3" aria-hidden="true" />
-        <!-- 👇 Emoji removed -->
         <h4 class="fw-bold">No Events Found</h4>
         <p>Try adjusting your search or check back later for new events.</p>
         <div class="mt-3">
@@ -188,9 +138,6 @@ import { ref, onMounted, computed } from 'vue';
 import FilterSelect from './FilterSelect.vue';
 import EventPicker from './EventPicker.vue';
 import Loading from './Loading.vue';
-// Firebase imports are no longer needed here
-// import { db } from '@/firebase.js';
-// import { collection, getDocs } from 'firebase/firestore';
 
 // page state
 const searchQuery = ref('');
@@ -214,14 +161,9 @@ const dateRangeOptions = [
   { value: 'month', label: 'This month' },
 ];
 
-// Get your secure API key from environment variables
+// Get secure API key from environment variables
 const apiKey = import.meta.env.VITE_JAMBASE_API_KEY;
 
-// --- DEBUG LINE ---
-// This will log "My API Key is: your_key_here" if it's working,
-// or "My API Key is: undefined" if it's not.
-// console.log('My API Key is:', apiKey);
-// --- END DEBUG LINE ---
 
 // this computed property will automatically update
 // whenever 'searchQuery' or 'allEvents' changes.
@@ -336,9 +278,7 @@ onMounted(() => {
 // fetches the list of events from the Jambase API
 async function loadEvents() {
   isLoading.value = true;
-  // --- NEW API KEY CHECK ---
-  // This is the new, improved check. It will give you a clear
-  // error in the console if the key is missing.
+
   if (!apiKey) {
     console.error('--- VITE_JAMBASE_API_KEY is missing! ---');
     console.error(
@@ -349,9 +289,9 @@ async function loadEvents() {
     );
     console.error('*** YOU MUST RESTART your server (npm run dev) ***');
     isLoading.value = false;
-    return; // Stop the function here
+    return; 
   }
-  // --- END NEW CHECK ---
+
 
   const jambaseApiUrl = `https://www.jambase.com/jb-api/v1/events?apikey=${apiKey}&geoCountryIso2=SG`;
 
@@ -362,7 +302,6 @@ async function loadEvents() {
     }
     const data = await response.json();
 
-    // THIS IS THE DATA MAPPING
     // We transform the Jambase API response (data.events)
     // into the structure our template expects.
     const eventsFromApi = data.events.map((apiEvent) => {
@@ -376,9 +315,8 @@ async function loadEvents() {
         }
       );
 
-      // --- FIX: Make data mapping safer ---
-      // Check for missing venue or performer data using optional chaining (?.)
-      // and provide fallback text ('??')
+      // Check for missing venue or performer data using optional chaining
+      // and provide fallback text
       const derivedVenue = deriveVenueFromTitle(apiEvent.name);
 
       const venueName =
@@ -394,7 +332,7 @@ async function loadEvents() {
         apiEvent.venue?.address?.city ||
         apiEvent.venue?.location?.city ||
         apiEvent.venue?.city ||
-        'Singapore'; // last-resort since you already filter to SG
+        'Singapore'; // filter to SG
 
       const performerName = apiEvent.performer?.[0]?.name;
 
@@ -413,17 +351,15 @@ async function loadEvents() {
       const uniqueEventGenres = [...new Set(eventGenres)];
 
       return {
-        // id: apiEvent.id,
         id: apiEvent.id ?? apiEvent.name ?? Math.random().toString(36).slice(2, 9),
         title: apiEvent.name,
-        // Use our new safe variables
         date: `${eventDate} at ${venueName}, ${venueLocation}`,
         description:
           apiEvent.description ||
           (performerName
             ? `See ${performerName} live!`
-            : 'Check out this event!'), // Use a fallback description
-        image: apiEvent.image ?? null, // Handle missing images
+            : 'Check out this event!'), 
+        image: apiEvent.image ?? null, 
         startDate: apiEvent.startDate,
         venueName,
         venueCity: venueLocation,
@@ -434,12 +370,10 @@ async function loadEvents() {
     allEvents.value = eventsFromApi;
   } catch (error) {
     console.error('Error fetching events from Jambase:', error);
-    // here you could use your toast notification
   }
   isLoading.value = false;
 }
 
-// a little fallback for broken images
 function onImageError(event) {
   event.target.src = 'https://placehold.co/400x200/a78bfa/ffffff?text=Event';
 }
@@ -485,7 +419,7 @@ function matchesDateRange(startDate) {
       return true;
   }
 }
-// --- GROUPING HELPERS (add) ---
+
 function slugify(s) {
   return String(s ?? '')
     .toLowerCase()
@@ -605,7 +539,7 @@ function deriveVenueFromTitle(title) {
 .search-wrapper .form-control {
   height: 3rem;
   display: flex;
-  align-items: center; /* <-- This line was fixed (was align-items-center;) */
+  align-items: center; 
   border: 0;
   box-shadow: none;
 }
@@ -657,7 +591,7 @@ function deriveVenueFromTitle(title) {
   text-decoration: none;
 }
 
-/* --- MODIFIED: Event Card for Ticket Shape --- */
+
 .event-card {
   height: 100%;
   width: 100%;
@@ -666,12 +600,10 @@ function deriveVenueFromTitle(title) {
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
-  border-radius: 0.75rem; /* 12px */
-  /* --- MODIFIED: overflow is now 'visible' to allow notches --- */
+  border-radius: 0.75rem; 
   overflow: visible;
-  /* --- ADDED: position: relative is needed for notches --- */
   position: relative;
-  background-color: #fff; /* Ensure card is white */
+  background-color: #fff; 
 }
 
 
@@ -680,55 +612,44 @@ function deriveVenueFromTitle(title) {
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
-/* --- MODIFIED: Card Image --- */
+
 .card-img-top {
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
-  /* ADDED to replace parent's overflow:hidden */
   border-radius: 0.75rem 0.75rem 0 0;
-  position: relative; /* Establish stacking context */
-  z-index: 1; /* Below the notches */
+  position: relative;
+  z-index: 1;
 }
 
-/* --- MODIFIED: Card Body --- */
 .event-card .card-body {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   padding-top: 1.25rem;
-  /* stacking/positioning for notches */
   position: relative;
   z-index: 1;
 }
 
-/* --- NEW: The Ticket Notches --- */
-/* These pseudo-elements are attached to the card-body */
 .event-card .card-body::before,
 .event-card .card-body::after {
   content: '';
   position: absolute;
-  /* Positioned at the top of the card-body, then moved up by half height */
   top: -12px; 
   width: 28px;
   height: 28px;
-  /* Make the notch blend with the page so the card looks like a ticket cutout */
   background:
     #f4edff;
   border-radius: 50%;
-  /* subtle separation and depth so the notch reads as a cutout */
-  /* box-shadow: 0 1px 2px rgba(0,0,0,0.06); */
-  /* border: 1px solid rgba(0,0,0,0.04); */
   z-index: 2;
-  
 }
 
 .event-card .card-body::before {
-  left: -12px; /* Halfway out the left side */
+  left: -12px; 
 }
 
 .event-card .card-body::after {
-  right: -12px; /* Halfway out the right side */
+  right: -12px; 
 }
 
 
@@ -736,68 +657,51 @@ function deriveVenueFromTitle(title) {
   margin-top: auto;
 }
 
-/* new style to truncate long descriptions */
 .description-truncate {
-  /* Use the WebKit box model for multi-line truncation */
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* show 2 lines */
-  /* standard (future) property for compatibility */
+  -webkit-line-clamp: 2; 
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* New decorative styles for Home cards */
 .description-truncate {
-  /* Use the WebKit box model for multi-line truncation */
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* show 2 lines */
-  /* standard (future) property for compatibility */
+  -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* small adjustments for small screens */
 @media (max-width: 575.98px) {
   .card-img-top { height: 160px; }
 }
 
-/* Use the global .page-title sizes everywhere for consistency */
-
-/* --- NEW: Provide a page background variable so notches can "cut out" the card */
 .container {
-  /* Use a soft, subtle page background gradient. The notches will inherit this via --page-bg */
   --page-bg: linear-gradient(135deg, #f8f9fa 0%, #eef2ff 100%);
 }
 
-/* --- NEW: Make the "View Details" CTA look like a tear-off ticket stub --- */
 .ticket-stub {
   position: relative;
   overflow: visible;
   border-radius: 0 0 0.75rem 0.75rem;
-  /* the perforation sits along the top edge of the stub */
   margin-top: 0.8rem;
-  z-index: 1; /* place the stub container behind the button's stacking context */
+  z-index: 1;
 }
 
 .ticket-stub::before,
 .ticket-stub::after {
-  /* semicircular notches that visually 'cut' into the card */
   content: '';
   position: absolute;
-  top: -14px; /* half of notch height to sit across the seam */
+  top: -14px;
   width: 28px;
   height: 28px;
   border-radius: 50%;
   background: #f4edff;
   border-radius: 50%;
-  /* subtle separation and depth so the notch reads as a cutout */
-  /* box-shadow: 0 1px 2px rgba(0,0,0,0.06); */
-  /* border: 1px solid rgba(0,0,0,0.04); */
-  z-index: 5; /* in FRONT of the button so the notch overlaps the button */
+  z-index: 5;
   pointer-events: none;
 }
 
@@ -808,7 +712,6 @@ function deriveVenueFromTitle(title) {
   border-top: 2px dashed rgba(0,0,0,0.08);
 }
 
-/* Collapsible filter panel animation */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
   transition: all 0.25s ease;
@@ -823,11 +726,10 @@ function deriveVenueFromTitle(title) {
 .slide-fade-enter-to,
 .slide-fade-leave-from {
   opacity: 1;
-  max-height: 540px; /* big enough for content */
+  max-height: 540px;
   transform: translateY(0);
 }
 
-/* Optional: panel look */
 .filter-panel {
   border: 1px solid rgba(0,0,0,0.06);
 }
@@ -843,7 +745,6 @@ function deriveVenueFromTitle(title) {
   border-radius: 0.75rem;
 }
 
-/* Ensure search + filter toggle align nicely */
 .search-row .form-control {
   height: 3rem;
 }
@@ -852,10 +753,8 @@ function deriveVenueFromTitle(title) {
   border-radius: 0.75rem;
 }
 
-/* Ensure the filter button text never wraps and the button sizes to content on sm+ */
 @media (min-width: 576px) {
   .filters-toggle { flex: 0 0 auto; }
-  /* Override w-100 from Bootstrap on sm+ so the button is only as wide as its label */
   .filters-toggle .btn {
     width: auto !important;
     white-space: nowrap;
@@ -870,22 +769,20 @@ function deriveVenueFromTitle(title) {
   text-align: center;
   font-weight: 600;
   color: rgba(255,255,255,0.95);
-  font-size: 0.9rem; /* slightly smaller text */
+  font-size: 0.9rem;
   line-height: 1.1;
-  /* use the app-wide gradient tokens for consistency */
   background: linear-gradient(90deg, var(--primary-1) 0%, var(--primary-2) 100%);
   border: 0;
   border-radius: 0 0 0.75rem 0.75rem;
   box-shadow: 0 6px 18px rgba(91, 33, 182, 0.08);
   transition: transform 160ms ease, box-shadow 160ms ease;
   position: relative;
-  z-index: 4; /* ensure button sits *behind* the semicircle notches */
+  z-index: 4;
 }
 
 
 .event-cta:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(91,33,182,0.12); }
 
-/* remove underline and ensure anchor styles don't add decoration */
 .event-cta,
 .event-cta:visited,
 .event-cta:active,
@@ -894,7 +791,6 @@ function deriveVenueFromTitle(title) {
   -webkit-text-decoration-skip: none;
 }
 
-/* slightly smaller on very small screens */
 @media (max-width: 375px) {
   .event-cta { font-size: 0.84rem; }
 }

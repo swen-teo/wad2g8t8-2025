@@ -146,13 +146,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/store/user'
 
 // --- State ---
-
 // Game State
-const allSongs = ref([]) // Will be filled by API
+const allSongs = ref([])
 const answer = ref(null)
 const query = ref('')
 const attempts = ref([])
-const currentLevel = ref(0) // 0-5
+const currentLevel = ref(0) 
 const MAX_ATTEMPTS = 6
 const snippetDurations = [1, 2, 4, 8, 16, 30]
 const sessionStartedAt = ref(new Date())
@@ -176,7 +175,6 @@ const currentAudioSource = ref(null) // This will hold the AudioBufferSourceNode
 const userStore = useUserStore()
 
 // --- Computed Properties ---
-
 const isComplete = computed(() => isWin.value || isLoss.value)
 const isWin = computed(() => attempts.value.some(g => g.isCorrect))
 const isLoss = computed(() => attempts.value.length >= MAX_ATTEMPTS && !isWin.value)
@@ -220,7 +218,6 @@ onUnmounted(() => {
 })
 
 // --- Audio Logic ---
-
 // Ensures the AudioContext is created (must be after user interaction)
 async function ensureAudio() {
   if (audioCtx.value) return
@@ -245,10 +242,7 @@ function stopAudio() {
   }
 }
 
-/**
- * NEW: Plays an MP3 snippet from a URL for a specific duration.
- * This replaces the old playToneSequence function.
- */
+// Plays an MP3 snippet from a URL for a specific duration.
 async function playAudioSnippet(url, duration) {
   stopAudio()
   await ensureAudio()
@@ -295,7 +289,6 @@ function playSnippet() {
 }
 
 // --- Game Logic ---
-
 function beginSession() {
   sessionStartedAt.value = new Date()
   sessionFinalized.value = false
@@ -341,11 +334,9 @@ function makeGuess(song) {
   const isCorrect = song.id === answer.value.id
   attempts.value.push({ ...song, isCorrect })
 
-  // Award points if correct based on attempt number (1st=60, 2nd=50, ... 6th=10)
   if (isCorrect) {
-    const attemptNumber = attempts.value.length // after push => 1..6
+    const attemptNumber = attempts.value.length
     const points = pointsForAttempt(attemptNumber)
-    // Fire-and-forget; store handles optimistic update and persistence
     userStore.awardPoints(points).catch((e) => {
       console.error('Failed to award points:', e)
     })
@@ -388,10 +379,6 @@ function skipAttempt() {
 }
 
 // --- Data Fetching ---
-
-/**
- * NEW: Fetches songs from the Deezer API on component mount.
- */
 async function fetchAndSetGame() {
   isLoading.value = true
   errorMessage.value = null
@@ -435,7 +422,6 @@ async function fetchAndSetGame() {
 onMounted(fetchAndSetGame)
 
 // --- Event Handlers & Utilities ---
-
 function resetGame() {
   stopAudio()
   if (!sessionFinalized.value && attempts.value.length > 0 && !isComplete.value) {
@@ -451,7 +437,6 @@ function resetGame() {
   if (allSongs.value.length > 0) {
     answer.value = pickRandom(allSongs.value)
     beginSession()
-    // Visual feedback: disable button briefly and show confirmation text
     if (regenBtnTimer.value) clearTimeout(regenBtnTimer.value)
     isRegenerating.value = true
     regenBtnTimer.value = setTimeout(() => {
@@ -459,7 +444,7 @@ function resetGame() {
       regenBtnTimer.value = null
     }, 1500)
   } else {
-    // If list is empty (e.g., initial fetch failed), try fetching again
+    // If list is empty, try fetching again
     fetchAndSetGame()
     if (regenBtnTimer.value) clearTimeout(regenBtnTimer.value)
     isRegenerating.value = true
@@ -498,7 +483,6 @@ function onEnter() {
   if (focusedIndex.value >= 0 && suggestions.value[focusedIndex.value]) {
     selectSuggestion(suggestions.value[focusedIndex.value])
   } else if (query.value.length > 0) {
-    // Allow guessing without selecting (less friendly, but works)
     const q = query.value.toLowerCase()
     const directMatch = allSongs.value.find(s => 
       `${s.title} - ${s.artist}`.toLowerCase() === q
@@ -531,8 +515,8 @@ function pickRandom(list) {
   border-radius: 1rem;
   background: linear-gradient(180deg, #ffffff 0%, #fbfaff 100%);
   width: 100%;
-  max-width: 100%; /* allow parent column to control width */
-  overflow: visible; /* allow popovers/lists to extend beyond */
+  max-width: 100%;
+  overflow: visible; 
   display: flex;
   height: 100%;
   position: relative;
@@ -574,20 +558,13 @@ function pickRandom(list) {
   z-index: 1080;
 }
 
-/* (Toast removed per inline-button feedback request) */
-
-/* ensure inner body doesn't clip overflow either and fills height */
 .game-card :deep(.card-body) {
   overflow: visible;
   display: flex;
   flex-direction: column;
 }
 
-/* Responsive tweaks */
-/* Removed fixed max-width so cards fill their grid columns at all breakpoints */
-
 @media (max-width: 575.98px) {
-  /* tighten paddings slightly on very small screens */
   .game-card :deep(.card-body) {
     padding: 1rem !important;
   }

@@ -62,7 +62,6 @@
 									{{ selectedEvent.description }}
 								</p>
 							</div>
-							<!-- Ticket stub CTA like Home view -->
 							<div class="ticket-stub">
 								<router-link
 									v-if="selectedEvent.id"
@@ -137,7 +136,7 @@ function spinForEvent() {
 	isSpinning.value = true;
 
 	// simulate a short spin duration with a flourish
-	const duration = 2200 + Math.floor(Math.random() * 1000); // 2.2s - 3.2s
+	const duration = 2200 + Math.floor(Math.random() * 1000); 
 
 	// precompute a candidate (uniform)
 	const idx = Math.floor(Math.random() * props.events.length);
@@ -323,8 +322,8 @@ function spinForEvent() {
 	transition:
 	  transform 0.2s ease,
 	  box-shadow 0.2s ease;
-	border-radius: 0.75rem; /* 12px */
-	overflow: visible; /* allow notches */
+	border-radius: 0.75rem; 
+	overflow: visible; 
 	position: relative;
 	background-color: #fff;
 }
