@@ -13,7 +13,7 @@ const TOKEN_URL = 'https://accounts.spotify.com/api/token';
 
 const msg = ref('Exchanging code for tokens…');
 
-// ✅ send the *actual* ok flag + error text back to the opener
+// send the *actual* ok flag + error text back to the opener
 function postBack(ok, errorText = '') {
   try {
     window.opener?.postMessage(
@@ -21,7 +21,9 @@ function postBack(ok, errorText = '') {
       window.location.origin
     );
   } catch {}
-  window.close();
+  setTimeout(() => {
+    window.close();
+  }, 50); // short delay
 }
 
 function getParam(name) {
@@ -38,7 +40,7 @@ onMounted(async () => {
       return postBack(false, 'NO_CODE');
     }
 
-    // ✅ use localStorage (shared across windows)
+    // use localStorage (shared across windows)
     const expectedState = localStorage.getItem('sp_state');
     if (!state || !expectedState || state !== expectedState) {
       msg.value = 'State mismatch.';
@@ -74,7 +76,7 @@ onMounted(async () => {
 
     const json = await res.json();
 
-    // ✅ store & clean
+    // store & clean
     localStorage.setItem('spotify_access_token', json.access_token);
     if (json.refresh_token) localStorage.setItem('spotify_refresh_token', json.refresh_token);
     localStorage.setItem('sp_last_auth_ts', String(Date.now()));
