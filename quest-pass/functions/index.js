@@ -2,6 +2,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const cors = require("cors")({ origin: true });
+const stripe = require("stripe");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -12,44 +13,19 @@ const { Timestamp, FieldValue } = admin.firestore;
 // ----------------------
 // Stripe Payment Intent (Callable)
 // ----------------------
-exports.createPaymentIntent = functions.https.onRequest((req, res) => {
-  // 1. Use CORS, just like Jambase
+// Get Stripe secret from environment
+exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
   cors(req, res, async () => {
-    
-    // 2. Handle OPTIONS and check for POST method, like Jambase
     if (req.method === "OPTIONS") return res.status(204).send("");
-    if (req.method !== "POST") {
-      return res.status(405).send("Method Not Allowed");
-    }
-
-    // 3. Get secret from process.env, like Jambase
-    // NOTE: Make sure you've set this!
-    // Run: firebase functions:config:set stripe.secret=YOUR_KEY (or use Secret Manager)
-    const stripeSecret = process.env.STRIPE_SECRET; 
-    if (!stripeSecret) {
-      console.error("Missing STRIPE_SECRET in environment");
-      return res.status(500).send({ error: "Stripe secret not configured." });
-    }
-
-    const stripe = require("stripe")(stripeSecret);
+    if (req.method !== "POST") return res.status(405).send({ error: "Method not allowed" });
 
     try {
-      // 4. Manual Authentication (replaces context.auth)
-      // Your client must send an "Authorization: Bearer <TOKEN>" header
-      let uid;
-      if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
-        const idToken = req.headers.authorization.split("Bearer ")[1];
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
-        uid = decodedToken.uid;
-      }
+      let body = req.body;
+      if (typeof body === "string") body = JSON.parse(body);
 
-      if (!uid) {
-        // 5. Send error with res.status(), not throw
-        return res.status(401).send({ error: "User must be logged in" });
-      }
+      console.log("Received body:", body);
 
-      // 6. Get data from req.body, not the 'data' object
-      const amount = req.body.amount;
+      const amount = body.amount;
       if (!amount || amount <= 0) {
         return res.status(400).send({ error: "Amount must be a positive number" });
       }
@@ -58,17 +34,14 @@ exports.createPaymentIntent = functions.https.onRequest((req, res) => {
         amount,
         currency: "usd",
         automatic_payment_methods: { enabled: true },
-        // Optional: Associate the payment with the Firebase user
-        metadata: { firebase_uid: uid } 
       });
 
-      // 7. Send success response
-      return res.status(200).send({ clientSecret: paymentIntent.client_secret });
+      console.log("PaymentIntent created:", paymentIntent.id);
 
-    } catch (error) {
-      console.error("Stripe error:", error);
-      // 8. Send error with res.status()
-      return res.status(500).send({ error: error.message });
+      return res.status(200).send({ clientSecret: paymentIntent.client_secret });
+    } catch (err) {
+      console.error("Stripe error:", err);
+      return res.status(500).send({ error: err.message });
     }
   });
 });
