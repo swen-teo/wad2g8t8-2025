@@ -169,9 +169,6 @@ async function requestGeminiQuiz(apiKey, prompt) {
 }
 
 exports.generateQuiz = functions
-  .runWith({
-    timeoutSeconds: 120,
-  })
   .https.onRequest((req, res) => {
     cors(req, res, async () => {
       if (req.method === "OPTIONS") return res.status(204).send("");
