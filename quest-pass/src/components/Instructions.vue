@@ -446,50 +446,27 @@ grid-template-columns: repeat(1, minmax(0, 1fr));
     transform: translateY(0);
 }
 
-/* --- Sequential Card Pop-in --- */
+/* --- Sequential Card Pop-in (removed) -> Replace with gentle text fade-in --- */
+/* Keep cards static; fade in their contents only when section is visible */
+
+/* Ensure the container itself doesn't flash */
 .fade-in-sequential-cards {
-    /* This parent container just acts as a trigger */
-    /* It fades in slightly to not be jarring */
+    opacity: 1;
+}
+
+/* Start card contents hidden */
+.fade-in-sequential-cards .qp-features .card .card-title,
+.fade-in-sequential-cards .qp-features .card .card-text,
+.fade-in-sequential-cards .qp-features .card .qp-card-icon {
     opacity: 0;
-    transition: opacity 0.3s ease-out;
-}
-.fade-in-sequential-cards.is-visible {
-    opacity: 1; /* Once visible, its children can animate */
+    transition: opacity 0.8s ease;
 }
 
-.fade-in-sequential-cards .qp-features .card {
-    opacity: 0; /* Start invisible */
-    transform: scale(0.3) translateY(100px); /* Start small and down */
-    animation-fill-mode: forwards;
-}
-
-/* When the parent is visible, trigger the animation on the cards */
-.fade-in-sequential-cards.is-visible .qp-features .card {
-    /* A 'boing' easing function */
-    animation: pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-/* Define the keyframe */
-@keyframes pop-in {
-    0% {
-        opacity: 0;
-        transform: scale(0.3) translateY(100px);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-/* Add the sequential delays */
-.fade-in-sequential-cards.is-visible .qp-features .card:nth-child(1) {
-    animation-delay: 0.1s;
-}
-.fade-in-sequential-cards.is-visible .qp-features .card:nth-child(2) {
-    animation-delay: 0.3s;
-}
-.fade-in-sequential-cards.is-visible .qp-features .card:nth-child(3) {
-    animation-delay: 0.5s;
+/* On reveal, gently fade in contents */
+.fade-in-sequential-cards.is-visible .qp-features .card .card-title,
+.fade-in-sequential-cards.is-visible .qp-features .card .card-text,
+.fade-in-sequential-cards.is-visible .qp-features .card .qp-card-icon {
+    opacity: 1;
 }
 
 /* --- Scroll Down Indicator --- */
