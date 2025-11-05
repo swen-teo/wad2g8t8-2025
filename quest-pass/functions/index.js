@@ -168,28 +168,32 @@ async function requestGeminiQuiz(apiKey, prompt) {
     .filter((q) => q.question && q.options.length >= 2 && q.correctAnswer);
 }
 
-exports.generateQuiz = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    if (req.method === "OPTIONS") return res.status(204).send("");
-    if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
+exports.generateQuiz = functions
+  .runWith({
+    timeoutSeconds: 120,
+  })
+  .https.onRequest((req, res) => {
+    cors(req, res, async () => {
+      if (req.method === "OPTIONS") return res.status(204).send("");
+      if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
 
-    try {
-      const artist = String(req.body.artist || "").trim();
-      if (!artist) return res.status(400).json({ error: "Missing artist" });
+      try {
+        const artist = String(req.body.artist || "").trim();
+        if (!artist) return res.status(400).json({ error: "Missing artist" });
 
-      const apiKey = process.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+        const apiKey = process.env.VITE_GEMINI_API_KEY;
+        if (!apiKey) return res.status(500).json({ error: "VITE_GEMINI_API_KEY not configured" });
 
-      const prompt = `You are a music trivia generator. Create exactly 5 multiple-choice questions about the artist "${artist}". Return ONLY a JSON array with {"question": string, "options": [string, string, string, string], "correctAnswer": string}.`;
+        const prompt = `You are a music trivia generator. Create exactly 5 multiple-choice questions about the artist "${artist}". Return ONLY a JSON array with {"question": string, "options": [string, string, string, string], "correctAnswer": string}.`;
 
-      const questions = await requestGeminiQuiz(apiKey, prompt);
+        const questions = await requestGeminiQuiz(apiKey, prompt);
 
-      if (!questions.length) return res.status(502).json({ error: "Invalid model response" });
+        if (!questions.length) return res.status(502).json({ error: "Invalid model response" });
 
-      res.json(questions);
-    } catch (err) {
-      console.error("generateQuiz error:", err?.response?.data || err);
-      res.status(500).json({ error: "Quiz generation failed", details: err.message });
-    }
+        res.json(questions);
+      } catch (err) {
+        console.error("generateQuiz error:", err?.response?.data || err);
+        res.status(500).json({ error: "Quiz generation failed", details: err.message });
+      }
   });
 });
