@@ -1,6 +1,6 @@
-# Quest Pass — WAD2 G8T8
+# QuestPass 🎵🎟️
 
-Quest Pass is a Vue 3 + Vite single-page app that gamifies live events with quests and rewards. Users can browse events, complete music and trivia quests, and track progress tied to their Firebase profile.
+Quest Pass is a Vue 3 + Vite single-page app that gamifies live events with quests and rewards. Users can browse events, complete music and trivia quests, and track progress tied to their Firebase profile. A platform that lets fans earn presale access codes and rewards by completing interactive quests.
 
 
 ## Contents
@@ -74,8 +74,6 @@ quest-pass/
     index.js                # Jambase importer, reward code trigger, generateQuiz
     package.json            # engines.node=22
 ```
-
-The root of this repo also contains this README.
 
 ## Prerequisites
 
@@ -285,4 +283,4 @@ Cloud Functions (`quest-pass/functions/package.json`):
 
 ---
 
-If you’re marking this for a school module: this README explains how to set up the environment, run the app, and understand the integration points (Firebase, Spotify, Gemini) in a way that’s reproducible for graders and teammates.
+This README explains how to set up the environment, run the app, and understand the integration points (Firebase, Spotify, Gemini) in a way that’s reproducible for academic graders.

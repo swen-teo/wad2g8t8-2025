@@ -125,7 +125,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     server: {
-      port: 8888
+      port: 3000
     }
   }
 })
