@@ -12,18 +12,7 @@ function normalizePoints(points) {
   return '';
 }
 
-/**
- * Sends a reward unlock email using EmailJS' REST API.
- *
- * @param {Object} options
- * @param {string} options.toEmail - Recipient email address
- * @param {string} [options.toName] - Recipient name
- * @param {number|string} [options.pointsEarned] - Points earned for the event
- * @param {string} [options.eventName] - Name of the event
- * @param {string} [options.rewardCode] - Unlocked reward code
- * @param {string} [options.appName='Quest Pass'] - Application name shown in the email
- * @returns {Promise<{success: boolean, error?: Error, skipped?: boolean}>}
- */
+// Sends a reward unlock email through EmailJS using the configured template.
 export async function sendRewardUnlockEmail({
   toEmail,
   toName = '',

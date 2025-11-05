@@ -673,21 +673,21 @@ onMounted(async () => {
   margin-right: 0;
 }
 @media (max-width: 575.98px) {
-  .product-selector { gap: .5rem; }                    /* spacing between buttons */
+  .product-selector { gap: .5rem; }
   .product-selector label.btn{
     display: flex;
-    flex-direction: column;                            /* icon above text */
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: .6rem .5rem;
-    white-space: normal;                               /* <-- allow wrapping */
+    white-space: normal;
     line-height: 1.2;
-    min-width: 96px;                                   /* optional: ensure tappable area */
+    min-width: 96px;
     text-align: center;
   }
   .product-selector label.btn .me-2{
-    margin-right: 0 !important;                        /* remove icon’s right gap */
-    margin-bottom: .25rem;                             /* small gap under icon */
+    margin-right: 0 !important;
+    margin-bottom: .25rem;
   }
 }
 </style>

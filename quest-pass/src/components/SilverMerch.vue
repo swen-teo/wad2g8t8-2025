@@ -95,12 +95,6 @@
                             <span v-else-if="hasSpun || voucherCode">Voucher Claimed!</span>
                             <span v-else>Spin the Wheel!</span>
                         </button>
-                        
-                        <!-- Error Message
-                        <div v-if="error" class="alert alert-danger mt-3 small p-2" style="max-width: 400px; margin: 1rem auto 0;">{{ error }}</div>
-                        <div v-if="IS_DEV && isButtonDisabled" class="mt-2 small text-muted">
-                            Disabled because: {{ disabledReason || 'unknown' }}
-                        </div> -->
 
                         <!-- Voucher Code Display (appears after spin) -->
                         <div v-if="voucherCode" class="mt-4">
@@ -125,6 +119,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from '@/store/user.js';
+
 // Import Firebase services
 import { db } from "@/firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -330,8 +325,6 @@ async function copyCode() {
 </script>
 
 <style scoped>
-/* Uses global reward color tokens from src/style.css */
-
 .merch-card {
     max-width: 900px;
     margin: 0 auto;
@@ -347,24 +340,23 @@ async function copyCode() {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px; /* Add padding so shadow isn't clipped */
+    padding: 10px;
 }
 
 .wheel-pointer {
     position: absolute;
-    top: calc(var(--wheel-size) * -0.085); /* Positioned above the wheel responsively */
+    top: calc(var(--wheel-size) * -0.085);
     left: 50%;
     transform: translateX(-50%);
-    color: #d4cbc3; /* A muted color */
+    color: #d4cbc3;
     font-size: clamp(28px, 5vw, 45px);
-    z-index: 100; /* On top of the wheel */
+    z-index: 100;
     pointer-events: none;
-    /* Drop shadow for depth */
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
 }
 
 .wheel-pointer :deep(svg) {
-    color: inherit; /* Inherit color from parent */
+    color: inherit;
     width: clamp(24px, 4.5vw, 40px); 
     height: clamp(24px, 4.5vw, 40px);
     display: block;
@@ -376,9 +368,7 @@ async function copyCode() {
     border-radius: 50%;
     position: relative;
     overflow: hidden;
-    /* Smooth transition for spinning */
     transition: transform 5s cubic-bezier(0.2, 0.8, 0.4, 1);
-    /* Conic gradient for segments */
     background: conic-gradient(
         var(--reward-5) 0deg 120deg,        /* $5 segment */
         var(--reward-10) 120deg 240deg,     /* $10 segment */
@@ -390,7 +380,6 @@ async function copyCode() {
 }
 
 .wheel::after {
-    /* Center hub */
     content: '';
     position: absolute;
     top: 50%;
@@ -404,7 +393,7 @@ async function copyCode() {
 }
 
 .wheel-container, .wheel {
-    box-sizing: border-box; /* Ensures padding/border are included in size */
+    box-sizing: border-box;
 }
 
 
@@ -419,17 +408,16 @@ async function copyCode() {
     font-size: clamp(1rem, 3.8vw, 1.5rem);
     text-shadow: 0 1px 3px rgba(0,0,0,0.4);
     pointer-events: none;
-    margin-top: -15px; /* Half of height */
-    margin-left: -25px; /* Half of width */
+    margin-top: -15px;
+    margin-left: -25px;
     width: 50px;
     height: 30px;
     text-align: center;
 }
 
-/* Legend Styling */
 .voucher-legend {
-    width: 250px; /* Fixed width for the legend card */
-    flex-shrink: 0; /* Prevents shrinking when in flex row */
+    width: 250px;
+    flex-shrink: 0;
 }
 
 .legend-color-box {
@@ -442,15 +430,15 @@ async function copyCode() {
 
 /* Voucher Code Display */
 .code-display {
-    background-color: #f8f9fa; /* Light grey background */
-    border: 2px dashed #ced4da; /* Dashed border */
+    background-color: #f8f9fa; 
+    border: 2px dashed #ced4da; 
     padding: 1rem;
     border-radius: 8px;
-    color: #343a40; /* Dark text */
+    color: #343a40;
     max-width: 400px;
     margin: 0 auto;
     letter-spacing: 2px;
-    font-size: clamp(1rem, 3.2vw, 1.25rem); /* Smaller, responsive */
+    font-size: clamp(1rem, 3.2vw, 1.25rem);
     line-height: 1.2;
     font-variant-numeric: tabular-nums;
 }

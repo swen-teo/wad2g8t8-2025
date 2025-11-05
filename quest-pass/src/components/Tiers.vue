@@ -47,8 +47,7 @@
               </div>
             </div>
           </div>
-        </div> <!-- /row -->
-
+        </div> 
       </div>
     </div>
   </div>
@@ -84,9 +83,8 @@ const tiers = computed(() => [
   box-shadow: 0 1px 6px rgba(0,0,0,.06);
 }
 
-/* no yellow glow: just a subtle border change, no bg/shadow */
 .tier-item.is-current {
-  border-color: #f69036ff;   /* tweak or remove if you want zero highlight */
+  border-color: #f69036ff;
   background: #fff;
   box-shadow: none;
 }
@@ -142,7 +140,6 @@ const tiers = computed(() => [
 .accent-silver .left-accent { background: #c0c0c0; }
 .accent-gold   .left-accent { background: #ffd700; }
 
-/* soften any text glows on tiny screens */
 @media (max-width: 575.98px) {
   .tier-bronze .fw-bold, .tier-silver .fw-bold, .tier-gold .fw-bold { text-shadow: none; }
 }

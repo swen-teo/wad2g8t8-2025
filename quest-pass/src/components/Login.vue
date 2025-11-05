@@ -7,7 +7,6 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '@/firebase.js';
-// we don't need the store here, since App.vue handles the login state
 import { useUserStore } from '@/store/user.js';
 
 // --- state ---
@@ -22,16 +21,13 @@ const googleProvider = new GoogleAuthProvider();
 const userStore = useUserStore();
 
 // --- methods ---
-
 function resolvePostLoginDestination() {
   const redirectTarget = route.query.redirect;
   // After login, go to requested redirect or Home
   return redirectTarget || { name: 'Home' };
 }
 
-/**
- * this handles the main email/password login
- */
+// Handles the primary email/password login flow.
 async function handleLogin() {
   if (isLoading.value) return; // don't let the user double-click
   isLoading.value = true;
@@ -48,7 +44,7 @@ async function handleLogin() {
     // update the Pinia user store immediately so components react
     await userStore.fetchUserProfile(userCredential.user);
 
-    // prefer redirect query if present (user tried to access a protected route)
+    // redirect query if present (user tried to access a protected route)
     const destination = resolvePostLoginDestination();
     router.push(destination);
   } catch (err) {
@@ -72,9 +68,7 @@ async function handleLogin() {
   }
 }
 
-/**
- * this handles the "login with google" popup
- */
+// Handles the "Login with Google" popup flow.
 async function handleGoogleLogin() {
   if (isLoading.value) return;
   isLoading.value = true;
@@ -84,13 +78,11 @@ async function handleGoogleLogin() {
     // open the google popup
     const result = await signInWithPopup(auth, googleProvider);
 
-    // update the Pinia user store immediately so components react
     await userStore.fetchUserProfile(result.user);
 
     const destination = resolvePostLoginDestination();
     router.push(destination);
   } catch (err) {
-    // user might have closed the popup
     if (err.code !== 'auth/popup-closed-by-user') {
       error.value = 'failed to sign in with google.';
     }
@@ -104,7 +96,6 @@ async function handleGoogleLogin() {
   <div class="container-fluid vh-100 login-bg">
     <div class="row h-100 align-items-center justify-content-center">
       <div class="col-md-6 col-lg-4">
-        <!-- shared SVG gradient defs for icon fills -->
         <svg aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute">
           <defs>
             <linearGradient id="qpTitleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -115,7 +106,6 @@ async function handleGoogleLogin() {
         </svg>
         <!-- decorative animated background layer -->
         <div class="bg-sparkles" aria-hidden="true">
-          <!-- The dots layer from your original styles -->
           <div class="dots"></div>
           <!-- New falling stars layer -->
           <div class="falling-stars">
@@ -126,7 +116,6 @@ async function handleGoogleLogin() {
             <div class="star">★</div>
           </div>
         </div>
-        <!-- your sparkle animation container can go here -->
 
         <div class="card shadow-lg border-0" style="border-radius: 1rem">
           <div class="card-body p-4 p-md-5 text-center">
@@ -205,10 +194,6 @@ async function handleGoogleLogin() {
                     alt="Google icon"
                     style="width: 20px; height: 20px; margin-right: 10px"
                   />
-                  <!-- 
-                    v-if="isLoading" on the spinner
-                    and v-if="!isLoading" on the text.
-                  -->
                   <span
                     v-if="isLoading"
                     class="spinner-border spinner-border-sm"
@@ -349,7 +334,6 @@ async function handleGoogleLogin() {
 }
 
 /* --- ADDED FOR FALLING STARS --- */
-/* Falling stars: brighter, glowing streaks that sit above blobs */
 .star {
   position: absolute;
   top: -8vh; /* start above viewport */
@@ -404,6 +388,5 @@ async function handleGoogleLogin() {
   animation-delay: -3.8s;
   font-size: 17px;
 }
-/* --- END OF FALLING STARS --- */
 
 </style>

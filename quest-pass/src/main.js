@@ -1,75 +1,72 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './route/routes.js' // make sure to import your router
-import { createPinia, setActivePinia } from 'pinia' // make sure to import pinia
-import axios from 'axios'
-// bootstrap (CSS + JS)
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from './route/routes.js';
+import { createPinia, setActivePinia } from 'pinia';
+import axios from 'axios';
 
-// project global styles 
-import './style.css'
+// Bootstrap assets.
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
-import { library } from '@fortawesome/fontawesome-svg-core'
+// Global project styles.
+import './style.css';
 
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-
-import { fas } from '@fortawesome/free-solid-svg-icons' // Solid icons (fas)
-import { far } from '@fortawesome/free-regular-svg-icons' // Regular icons (far)
-import { fab } from '@fortawesome/free-brands-svg-icons' // Brand icons (fab)
-
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { fas } from '@fortawesome/free-solid-svg-icons';
+import { far } from '@fortawesome/free-regular-svg-icons';
+import { fab } from '@fortawesome/free-brands-svg-icons';
 
 import { auth } from './firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
 
-
 import { useUserStore } from './store/user.js';
 import { useNavigationStore, extractTransitionMessage } from './store/navigation.js';
 
-library.add(fas, far, fab)
+// Register icon packs globally.
+library.add(fas, far, fab);
 
-const pinia = createPinia()
-const navigationStore = useNavigationStore(pinia)
+const pinia = createPinia();
+const navigationStore = useNavigationStore(pinia);
 
+// Track navigation transitions.
 router.beforeEach((to, from, next) => {
   if (from.name) {
-    const message = extractTransitionMessage(to)
-    navigationStore.startTransition(message)
+    const message = extractTransitionMessage(to);
+    navigationStore.startTransition(message);
   }
-  next()
-})
+  next();
+});
 
 router.afterEach(() => {
-  navigationStore.finishTransition()
-})
+  navigationStore.finishTransition();
+});
 
 router.onError(() => {
-  navigationStore.finishTransition()
-})
+  navigationStore.finishTransition();
+});
 
-let appInstance = null; 
+let appInstance = null;
 onAuthStateChanged(auth, async (userAuth) => {
-  
   if (!appInstance) {
-    appInstance = createApp(App)
-    appInstance.use(pinia)
-    appInstance.use(router)
+    appInstance = createApp(App);
+    appInstance.use(pinia);
+    appInstance.use(router);
 
-    appInstance.config.globalProperties.$axios = axios
+    appInstance.config.globalProperties.$axios = axios;
 
-    appInstance.component('font-awesome-icon', FontAwesomeIcon)
-    
-    setActivePinia(pinia)
+    appInstance.component('font-awesome-icon', FontAwesomeIcon);
 
-    appInstance.mount('#app')
+    setActivePinia(pinia);
+
+    appInstance.mount('#app');
   }
 
-  
-  const userStore = useUserStore()
+  const userStore = useUserStore();
 
   if (userAuth) {
-    await userStore.fetchUserProfile(userAuth)
+    await userStore.fetchUserProfile(userAuth);
   } else {
-    userStore.clearUser()
+    userStore.clearUser();
   }
-})
+});

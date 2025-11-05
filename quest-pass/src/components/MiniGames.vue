@@ -143,11 +143,9 @@ const currentGameTitle = computed(() => {
   .container { max-width: 1140px; }
 }
 
-/* Ensure the selected game panel doesn't clip inner content
-   (overrides global .card { overflow: hidden; }) */
+/* Ensure the selected game panel doesn't clip inner content*/
 .game-panel {
   overflow: visible !important;
-  /* If a fixed/sticky navbar exists, this prevents the panel top from hiding under it */
   scroll-margin-top: 72px;
 }
 .game-panel .card-body { overflow: visible; }
@@ -187,7 +185,7 @@ const currentGameTitle = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(91,33,182,0.10); /* matches primary hue subtly */
+  background: rgba(91,33,182,0.10);
   color: var(--primary-1, #5b21b6);
   font-size: 1.35rem;
 }

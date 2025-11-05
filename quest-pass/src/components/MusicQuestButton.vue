@@ -88,7 +88,6 @@ function triggerNotes() {
 </script>
 
 <style scoped>
-/* NOTE: The CSS remains correct and handles the aesthetic and animation */
 .start-quest-button {
     position: relative;
     overflow: visible;
@@ -100,7 +99,6 @@ function triggerNotes() {
     color: white;
     border-radius: 8px;
     transition: transform 0.1s, box-shadow 0.2s;
-    /* Add 'btn' styles from your global CSS if needed, or ensure 'btn' is included in your global style setup */
 }
 
 .button-icon {
@@ -132,7 +130,6 @@ function triggerNotes() {
 }
 
 .start-quest-button:hover .music-particles .note {
-    /* CRITICAL: Force the notes to be visible on hover */
     opacity: 1;}
 
 .note::before {

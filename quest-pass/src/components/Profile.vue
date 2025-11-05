@@ -497,9 +497,6 @@ onMounted(() => {
     [...popoverTriggerList].map(popoverTriggerEl => new Popover(popoverTriggerEl));
 });
 
-// 'watch' for the userStore to finish loading the user
-// a watcher is like a little spy that runs a function
-// when a specific piece of data changes.
 watch(
   () => userStore.currentUser, // the data to watch
   (newUser) => {
@@ -511,7 +508,7 @@ watch(
       eventsInProgress.value = [];
     }
   },
-  { immediate: true } // run this immediately on load, just in case
+  { immediate: true }
 );
 
 // wrapper so we logout from firebase/store and then route to Login page
@@ -539,13 +536,12 @@ function goToEvent(id) {
   max-width: 150px;
   object-fit: cover;
   aspect-ratio: 1 / 1;
-  display: block; /* avoid inline image layout differences */
+  display: block;
 }
 
 /* Avatar wrapper allows decorative halo and positioned tier pill */
 .avatar-wrap { position: relative; display: inline-block; }
 .avatar-wrap::after {
-  /* subtle halo ring */
   content: '';
   position: absolute;
   inset: -6px;
@@ -577,9 +573,9 @@ function goToEvent(id) {
 
 /* Make the profile page progress bar thicker and vertically centered */
 .profile-progress {
-  height: 36px; /* thicker */
+  height: 36px;
   border-radius: 12px;
-  overflow: hidden; /* keep inner bar rounded */
+  overflow: hidden;
 }
 .profile-progress .progress-bar {
   height: 100%;
@@ -588,10 +584,9 @@ function goToEvent(id) {
   justify-content: center;
   font-weight: 600;
   color: #fff;
-  border-radius: 12px; /* match container */
+  border-radius: 12px;
 }
 
-/* Make the header card look more premium */
 .profile-header-card {
   background: linear-gradient(180deg, #ffffff 0%, #fbfaff 100%);
   border: 1px solid rgba(0,0,0,0.04);
@@ -633,7 +628,6 @@ function goToEvent(id) {
   color: var(--ink-muted);
 }
 
-/* Responsive: on very small screens stack the label below the bar */
 @media (max-width: 575.98px) {
   .profile-progress-wrapper {
     flex-direction: column;
@@ -645,7 +639,6 @@ function goToEvent(id) {
   }
 }
 
-/* Responsive adjustments specific to profile page */
 @media (max-width: 575.98px) {
   .profile-avatar {
     width: 96px;
@@ -658,7 +651,6 @@ function goToEvent(id) {
     padding: 1.25rem;
   }
   .profile-header-card h1 { font-size: 1.25rem; }
-  /* Make the small stat pills expand and center on very small screens */
   .stat-pill {
     display: block;
     width: 100%;
@@ -669,7 +661,6 @@ function goToEvent(id) {
   }
 }
 
-/* Spacing tweaks for badges and lists */
 .list-group-item { padding-top: .75rem; padding-bottom: .75rem; }
 .card.card-body { padding: 1rem; }
 
@@ -679,7 +670,6 @@ function goToEvent(id) {
     height: 28px;
     border-radius: 50%; 
     background-color: #e9ecef;
-    /* color: var(--bs-secondary); */
     display: inline-flex; 
     align-items: center; 
     justify-content: center;
@@ -693,7 +683,6 @@ function goToEvent(id) {
     color: white; 
 }
 
-/* Events card styling */
 .events-card {
   border: 1px solid rgba(0,0,0,0.04);
   border-radius: 1rem;

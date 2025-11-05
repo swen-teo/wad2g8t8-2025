@@ -5,20 +5,11 @@ import {
   logTriviaWarn,
 } from '@/utils/quizLogger.js';
 
-/**
- * Generates quiz questions by fetching from the secure backend.
- * @param {string} artist - The name of the artist for the quiz.
- * @returns {Promise<Array<Object>>} A promise that resolves to an array of question objects.
- */
-
+// Generates quiz questions by fetching them from the secure backend service.
 const CLOUD_FUNCTION_URL = firebaseConfig?.projectId
   ? `https://us-central1-${firebaseConfig.projectId}.cloudfunctions.net/generateQuiz`
   : null;
-
-// Prefer the deployed Cloud Function whenever we know the project ID so browsers
-// don't spam the console with "Failed to load resource" errors when the local
-// `/api/quiz` proxy isn't running, but keep the local proxy around as a fallback
-// for when the remote endpoint is temporarily unhappy in development.
+// For error handling (workarounds).
 const RETRYABLE_STATUS = new Set([500, 502, 503, 504, 404, 429]);
 const MAX_ATTEMPTS_PER_ENDPOINT = 3;
 
@@ -137,7 +128,6 @@ async function parseErrorResponse(response) {
     const ct = response.headers.get('Content-Type') || '';
     if (ct.includes('application/json')) {
       const j = await response.json();
-      // Prefer message/error, but include server-provided details/status if present
       const primary = j?.message || j?.error;
       const details = j?.details
         ? ` Details: ${typeof j.details === 'string' ? j.details : JSON.stringify(j.details)}`
@@ -180,7 +170,7 @@ function describeEndpoint(endpoint) {
 function getRetryDelay(attempt) {
   const BASE_DELAY = 1000; // 1 second
   const MAX_DELAY = 5000; // 5 seconds max between attempts
-  const jitter = Math.random() * 250; // add a little jitter to avoid thundering herd
+  const jitter = Math.random() * 250; 
   const delay = Math.min(BASE_DELAY * 2 ** (attempt - 1), MAX_DELAY);
   return delay + jitter;
 }

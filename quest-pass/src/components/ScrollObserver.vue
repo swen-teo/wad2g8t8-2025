@@ -23,14 +23,12 @@ const props = defineProps({
 });
 
 const isVisible = ref(false);
-// 🎯 FIX 2: Define the ref for the root element here
+
 const root = ref(null); 
 
 const animationClass = computed(() => `slide-in-from-${props.direction}`);
 
 onMounted(() => {
-  // 🛑 PROBLEM WAS HERE: We were querying the global document.
-  // We now use the reliable 'root' ref.
   const targetElement = root.value; 
 
   if (!targetElement) {
@@ -47,12 +45,10 @@ onMounted(() => {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        // Element entered the view, trigger reveal
         setTimeout(() => {
           isVisible.value = true;
         }, parseFloat(props.delay));
       } else {
-        // Element left the view, reset state for next animation
         isVisible.value = false;
       }
     });
@@ -64,12 +60,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* -------------------------------------------
-   Base Styles: Hides and Shifts Element
-   ------------------------------------------- */
+/* Base Styles: Hides and Shifts Element */
 .scroll-observer-wrapper {
   opacity: 0;
-  /* CRITICAL: Set transition to ensure smooth reveal AND smooth reset */
   transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
@@ -82,10 +75,7 @@ onMounted(() => {
   transform: translateX(-50px);
 }
 
-/* -------------------------------------------
-   Reveal State: Visible and in position
-   ------------------------------------------- */
-
+/* Reveal State: Visible and in position */
 /* Final state when visible—this overrides the initial transform and opacity */
 .animate-reveal {
   opacity: 1 !important;

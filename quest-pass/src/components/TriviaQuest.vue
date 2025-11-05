@@ -295,6 +295,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+
 // Import from the service file
 import { generateQuizQuestions } from '../services/gemini-quiz.js';
 import { logTriviaError } from '@/utils/quizLogger.js';
@@ -319,13 +320,13 @@ const props = defineProps({
 const emit = defineEmits(['update-progress', 'close']);
 
 // --- local state ---
-const triviaLoading = ref(true); // Start loading immediately
+const triviaLoading = ref(true);
 const triviaCompleted = ref(false);
 const triviaQuestions = ref([]);
 const triviaCurrentIndex = ref(0);
 const selectedAnswer = ref(null);
 const triviaScore = ref(0);
-const triviaError = ref(null); // For handling API errors
+const triviaError = ref(null);
 const loadingMessageIndex = ref(0);
 
 const LOADING_MESSAGES = [
@@ -359,8 +360,6 @@ onMounted(() => {
 onUnmounted(() => {
   stopLoadingMessageRotation();
 });
-
-// --- quest 2: trivia ---
 
 async function loadTriviaQuestions() {
   // Reset state
@@ -440,7 +439,6 @@ function finishTrivia() {
       points: TRIVIA_AWARD,
       completed: true,
     });
-    // Parent will award points but leave the overlay open for manual dismissal
   }
 }
 

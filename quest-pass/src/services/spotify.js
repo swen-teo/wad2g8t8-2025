@@ -1,4 +1,4 @@
-// --- Configuration ---
+// Spotify configuration.
 const SPOTIFY_CLIENT_ID = 'c48d59929a834b6c8a3027177b81fd4f';
 const SPOTIFY_REDIRECT_URI =
   'https://damp-werewolf-x6rr5rjxrq626vrq-8888.app.github.dev/MusicQuest.vue';
@@ -7,13 +7,11 @@ const SPOTIFY_AUTH = 'https://accounts.spotify.com/authorize';
 const SPOTIFY_TOKEN = 'https://accounts.spotify.com/api/token';
 const SPOTIFY_RECENTLY_PLAYED =
   'https://api.spotify.com/v1/me/player/recently-played?limit=50';
-const MUSIC_MAX = 300; // Max points for this quest
+const MUSIC_MAX = 300; // Maximum points for this quest.
 
-// --- Internal PKCE Helper Functions ---
+// Internal PKCE helper functions.
 
-/**
- * Generates a random string for PKCE.
- */
+// Generates a random string for PKCE.
 function generateCodeVerifier(length) {
   let text = '';
   const possible = 'abcdefghijklmnopqrstuvwxyz0123456789-._~';
@@ -23,9 +21,7 @@ function generateCodeVerifier(length) {
   return text;
 }
 
-/**
- * Hashes the verifier string to create a challenge.
- */
+// Hashes the verifier string to create a challenge.
 async function generateCodeChallenge(codeVerifier) {
   const data = new TextEncoder().encode(codeVerifier);
   const digest = await window.crypto.subtle.digest('sha-256', data);
@@ -35,9 +31,7 @@ async function generateCodeChallenge(codeVerifier) {
     .replace(/=+$/, '');
 }
 
-/**
- * Fetches the Spotify access token using the auth code and verifier.
- */
+// Exchanges the auth code and verifier for a Spotify access token.
 async function getSpotifyToken(code, verifier) {
   const params = new URLSearchParams();
   params.append('client_id', SPOTIFY_CLIENT_ID);
@@ -60,10 +54,7 @@ async function getSpotifyToken(code, verifier) {
   return access_token;
 }
 
-/**
- * Validates listening history against the artist.
- * @returns {Promise<Object>} A promise resolving to { points, completed }
- */
+// Validates listening history against the artist and reports quest progress.
 async function validateSpotifyListen(token, artistName) {
   const result = await fetch(SPOTIFY_RECENTLY_PLAYED, {
     headers: { authorization: `bearer ${token}` },
@@ -71,7 +62,7 @@ async function validateSpotifyListen(token, artistName) {
 
   if (!result.ok) {
     if (result.status === 401) {
-      // Token expired or invalid
+      // Token expired or invalid.
       throw new Error('Spotify token is invalid. Please re-authenticate.');
     }
     throw new Error('Failed to fetch recently played tracks.');
@@ -79,14 +70,14 @@ async function validateSpotifyListen(token, artistName) {
 
   const data = await result.json();
 
-  // Find all tracks by the correct artist
+  // Find all tracks by the correct artist.
   const artistTracks = data.items.filter((item) => {
     return item.track.artists.some(
       (a) => a.name.toLowerCase() === artistName.toLowerCase()
     );
   });
 
-  // Calculate points
+  // Calculate points.
   const newPoints = Math.min(artistTracks.length * 10, MUSIC_MAX);
 
   return {
@@ -95,11 +86,9 @@ async function validateSpotifyListen(token, artistName) {
   };
 }
 
-// --- Exported Functions for Components ---
+// Exported functions for components.
 
-/**
- * Initiates the Spotify PKCE Auth flow by redirecting the user.
- */
+// Initiates the Spotify PKCE auth flow by redirecting the user.
 export async function redirectToSpotifyAuth() {
   const verifier = generateCodeVerifier(128);
   const challenge = await generateCodeChallenge(verifier);
@@ -114,22 +103,17 @@ export async function redirectToSpotifyAuth() {
   params.append('code_challenge_method', 's256');
   params.append('code_challenge', challenge);
 
-  // Redirect the user
+  // Redirect the user.
   window.location.href = `${SPOTIFY_AUTH}?${params.toString()}`;
 }
 
-/**
- * Handles the redirect from Spotify, gets the token, validates listening,
- * and returns the progress.
- * @param {string} artistName - The artist to validate against.
- * @returns {Promise<Object|null>} A promise resolving to { points, completed } or null.
- */
+// Handles the Spotify redirect, validates listening history, and returns quest progress.
 export async function handleSpotifyRedirect(artistName) {
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
 
   if (!code) {
-    return null; // Not a redirect
+    return null; // Not a redirect.
   }
 
   const verifier = localStorage.getItem('spotify_verifier');
@@ -138,19 +122,20 @@ export async function handleSpotifyRedirect(artistName) {
   }
 
   try {
-    // 1. Get token
+    // 1. Get token.
     const token = await getSpotifyToken(code, verifier);
-    localStorage.removeItem('spotify_verifier'); // Clean up
+    localStorage.removeItem('spotify_verifier'); // Clean up.
 
-    // 2. Clear code from URL
+    // 2. Clear code from URL.
     window.history.replaceState({}, '', SPOTIFY_REDIRECT_URI);
 
-    // 3. Validate listening history and return progress
+    // 3. Validate listening history and return progress.
     return await validateSpotifyListen(token, artistName);
   } catch (error) {
     console.error('Error handling Spotify redirect:', error);
-    // Clean up URL even if it fails
+    
+    // Clean up the URL even if it fails.
     window.history.replaceState({}, '', SPOTIFY_REDIRECT_URI);
-    throw error; // Re-throw for the component to handle
+    throw error; // Re-throw for the component to handle.
   }
 }

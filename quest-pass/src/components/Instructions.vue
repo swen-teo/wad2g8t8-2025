@@ -1,9 +1,4 @@
 <template>
-
-    <!-- <div id="scroll-indicator">
-        <font-awesome-icon icon="fa-solid fa-angle-down" aria-hidden="true" />
-    </div> -->
-
     <div class="container d-block text-center mt-5 mb-5 hero-section">
         <div class="qp-logo-badge">
             <font-awesome-icon icon="fa-solid fa-music" aria-hidden="true" />
@@ -137,7 +132,6 @@
 </template>
 
 <script setup>
-// In a real .vue file, you'd import Vue features like this
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/store/user.js';
@@ -165,8 +159,6 @@ onMounted(() => {
 
     
     // --- Scroll Indicator ---
-    // This targets the #scroll-indicator in the main HTML file
-    // THIS CODE IS NOW ACTIVE BECAUSE THE ELEMENT EXISTS
     const scrollIndicator = document.getElementById('scroll-indicator');
     if (scrollIndicator) {
         const handleScrollIndicator = () => {
@@ -181,8 +173,6 @@ onMounted(() => {
     }
 
     // --- Intersection Observer for Scroll Animations ---
-    // This targets elements rendered by this component's template
-    // THIS CODE IS WHAT MAKES YOUR CARDS FADE IN ON SCROLL
     const sectionsToAnimate = document.querySelectorAll('.fade-in-section, .fade-in-sequential-cards');
     if (sectionsToAnimate.length > 0) {
         const observerOptions = {
@@ -222,15 +212,6 @@ onMounted(() => {
 </script>
 
 <style>
-/* NOTE: This is NOT 'scoped'.
-  These are global styles that affect the <body>, <html>, and IDs
-  outside of the component (like #loader, #sparkle-container).
-*/
-
-/* =========================================================
-QuestPass — Soft Pastel Theme (Full CSS)
-Font: Poppins (site-wide)
-========================================================= */
 
 /* 1) Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -415,21 +396,15 @@ grid-template-columns: repeat(1, minmax(0, 1fr));
 .qp-features { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-
-/* HOW IT WORKS LOGIN PG */
 .step-hover-reveal .collapse {
-    /* This makes the "collapse" div visible to CSS */
     display: block;
-
-    /* Use max-height and overflow to create the transition */
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.35s ease-out;
 }
 
 .step-hover-reveal:hover .collapse {
-    /* Set a height large enough to show the content */
-    max-height: 150px; /* <-- INCREASED THIS VALUE */
+    max-height: 150px;
     transition: max-height 0.35s ease-in;
 }
 
@@ -446,15 +421,10 @@ grid-template-columns: repeat(1, minmax(0, 1fr));
     transform: translateY(0);
 }
 
-/* --- Sequential Card Pop-in (removed) -> Replace with gentle text fade-in --- */
-/* Keep cards static; fade in their contents only when section is visible */
-
-/* Ensure the container itself doesn't flash */
 .fade-in-sequential-cards {
     opacity: 1;
 }
 
-/* Start card contents hidden */
 .fade-in-sequential-cards .qp-features .card .card-title,
 .fade-in-sequential-cards .qp-features .card .card-text,
 .fade-in-sequential-cards .qp-features .card .qp-card-icon {
@@ -462,15 +432,12 @@ grid-template-columns: repeat(1, minmax(0, 1fr));
     transition: opacity 0.8s ease;
 }
 
-/* On reveal, gently fade in contents */
 .fade-in-sequential-cards.is-visible .qp-features .card .card-title,
 .fade-in-sequential-cards.is-visible .qp-features .card .card-text,
 .fade-in-sequential-cards.is-visible .qp-features .card .qp-card-icon {
     opacity: 1;
 }
 
-/* --- Scroll Down Indicator --- */
-/* THIS CSS WAS ALREADY HERE AND IS NOW BEING USED */
 /* --- Scroll Down Indicator --- */
 #scroll-indicator i {
     position: fixed;
@@ -479,7 +446,7 @@ grid-template-columns: repeat(1, minmax(0, 1fr));
     transform: translateX(-50%);
     z-index: 1000;
     color: var(--primary-1);
-    font-size: 2.5rem; /* <-- Now this will work */
+    font-size: 2.5rem;
     opacity: 0.7;
     transition: opacity 0.4s ease, visibility 0.4s ease;
     animation: bounce-down 2s infinite ease-in-out;

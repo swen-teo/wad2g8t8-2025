@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { auth, db } from '@/firebase.js'; // Import from our firebase.js
+import { auth, db } from '@/firebase.js';
 import {
   collection,
   addDoc,
@@ -11,8 +11,6 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-// fix: remove useRouter, it's not reliable to use it inside a pinia store.
-// We will call router.push() from the component *after* logout completes.
 
 const POINTS_PER_LEVEL = 500;
 
@@ -162,10 +160,7 @@ export const useUserStore = defineStore('user', {
 
   // actions are where we put methods that change the state
   actions: {
-    /**
-     * Fetches the user's profile from Firestore.
-     * If it doesn't exist (e.g., new Google login), it creates one.
-     */
+    // Loads the user's profile from Firestore or creates a default record for new accounts.
     async fetchUserProfile(user) {
       if (!user) {
         this.currentUser = null;
@@ -276,9 +271,7 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    /**
-     * Logs the user out of Firebase and clears the local state.
-     */
+    // Logs the user out of Firebase and clears the local state.
     async logout() {
       try {
         await signOut(auth); // Sign out from Firebase
@@ -288,11 +281,7 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    /**
-     * --- THIS IS THE MISSING FUNCTION ---
-     * Clears the user from the store without logging out.
-     * Used by the auth listener in App.vue when the user is logged out.
-     */
+    // Clears the user from the store without signing them out (used by the auth listener).
     clearUser() {
       this.currentUser = null;
       this.loading = false;
@@ -314,10 +303,7 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    /**
-     * Adds `points` to the signed-in user's total points and persists it.
-     * Accepts positive values only; silently ignores falsy/negative values.
-     */
+    // Adds positive points to the signed-in user's profile and syncs progress to Firestore.
     async awardPoints(points) {
       if (!this.currentUser) return;
       const value = Number(points);

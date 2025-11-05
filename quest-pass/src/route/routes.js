@@ -1,20 +1,16 @@
 import { createWebHistory, createRouter } from "vue-router";
-// we need to import auth here so our navigation guard can use it
-import { auth } from '../firebase.js';
 import { onAuthStateChanged } from "firebase/auth";
-import SpotifyCallback from '@/components/SpotifyCallback.vue';
+import { auth } from "../firebase.js";
+import SpotifyCallback from "@/components/SpotifyCallback.vue";
 
-// import "page" components using the correct relative paths
-// fix: you are right! your files are in src/components/
-// we will now import from ../components/
-import Home from '../components/Home.vue';
-import Login from '../components/Login.vue';
-import Profile from '../components/Profile.vue';
-import EventDetails from '../components/EventDetails.vue';
+import Home from "../components/Home.vue";
+import Login from "../components/Login.vue";
+import Profile from "../components/Profile.vue";
+import EventDetails from "../components/EventDetails.vue";
 import LandingPage from "../components/LandingPage.vue";
 import MiniGames from "../components/MiniGames.vue";
 import Instructions from "../components/Instructions.vue";
-import LoadingScreen from '../components/Loading.vue';
+import LoadingScreen from "../components/Loading.vue";
 import Tiers from "../components/Tiers.vue";
 import Merch from "../components/Merch.vue";
 import SilverMerch from "../components/SilverMerch.vue";
@@ -41,7 +37,7 @@ const routes = [
     path: '/instructions',
     name: 'Instructions',
     component: Instructions,
-    // Show only to guests (not logged-in users)
+    // Only show to guests (not logged-in users).
     meta: {
       guestOnly: true,
       transitionMessage: {
@@ -60,10 +56,11 @@ const routes = [
         title: 'Spinning up events…',
         subtitle: 'Cueing the next experience',
       },
-    }, // protect the main app area
+    },
   },
   {
-    path: '/login', // The login page
+    // The login page.
+    path: '/login',
     name: 'Login',
     component: Login,
     meta: {
@@ -74,7 +71,8 @@ const routes = [
     },
   },
   {
-    path: '/profile', // The user profile page
+    // The user profile page.
+    path: '/profile',
     name: 'Profile',
     component: Profile,
     meta: {
@@ -83,7 +81,7 @@ const routes = [
         title: 'Opening your profile…',
         subtitle: 'Gathering your musical journey',
       },
-    }, // we can add this to protect pages
+    },
   },
   {
     path: '/minigames',
@@ -137,7 +135,8 @@ const routes = [
   },
 
   {
-    path: '/event/:id', // A dynamic route for event details
+    // A dynamic route for event details.
+    path: '/event/:id',
     name: 'EventDetails',
     component: EventDetails,
     meta: {
@@ -146,26 +145,24 @@ const routes = [
         title: 'Loading event details…',
         subtitle: 'Sound-checking the lineup for you',
       },
-    }, // protect this page too
-    // allow the route param `id` to be passed as a prop to the component
+    },
+    // Allow the route param `id` to be passed as a prop to the component.
     props: true,
   },
   {
-  path: '/spotify-callback',
-  name: 'SpotifyCallback',
-  component: SpotifyCallback,
-},
-// Payment/Cart routes removed as we pivoted to a free merch claim flow
-// catch-all LAST:
+    path: '/spotify-callback',
+    name: 'SpotifyCallback',
+    component: SpotifyCallback,
+  },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes, // short for `routes: routes`
+  routes,
 
   scrollBehavior(to, from, savedPosition) {
-    // If a savedPosition exists (e.g., using the browser's back button), use it.
+    // If a savedPosition exists (e.g., using the browser's back button)
     if (savedPosition) {
       return savedPosition;
     }
@@ -182,53 +179,31 @@ onAuthStateChanged(auth, (user) => {
   authReady = true;
 });
 
-
-
-// this is a "navigation guard"
-// it runs before every single page change
+// Runs before every navigation change.
 router.beforeEach((to, from, next) => {
-  //   // we check if the page we're 'to'-ing requires auth
-  //   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-    
-  //   // and we check firebase to see if a user is currently logged in
-  //   const user = auth.currentUser;
+  const needsAuth = to.matched.some((record) => record.meta.requiresAuth);
 
-  //   if (requiresAuth && !user) {
-  //     // if the page needs login and they aren't, send to login
-  //     next('/login');
-  //   } else {
-  //     // otherwise, let them go
-  //     next();
-  //   }
-  // });
-    const needsAuth = to.matched.some((record) => record.meta.requiresAuth);
-
-  // this function decides where to go once we know auth state
+  // Decides where to go once the auth state is known.
   function proceed() {
-    // 1a. if user is logged in and tries to go to /login, send them to /home
     if (to.path === "/login" && cachedUser) {
       next("/home");
       return;
     }
 
-    // 2. if the route needs auth and there's no logged-in user, send to /login
     if (needsAuth && !cachedUser) {
       next({ path: "/login", query: { redirect: to.fullPath } });
       return;
     }
 
-    // 2b. if the route is guest-only and user is logged in, send to /home
     const guestOnly = to.matched.some((record) => record.meta.guestOnly);
     if (guestOnly && cachedUser) {
       next("/home");
       return;
     }
 
-    // 3. otherwise, allow navigation
     next();
   }
 
-  // if we don't know auth state yet (first load), wait for it once
   if (!authReady) {
     const stop = onAuthStateChanged(auth, (user) => {
       cachedUser = user;

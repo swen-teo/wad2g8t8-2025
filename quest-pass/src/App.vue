@@ -43,26 +43,21 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/firebase.js'; // our firebase config
-import { useUserStore } from '@/store/user.js'; // our pinia store
-import { useRouter } from 'vue-router';
-import Navbar from '@/components/Navbar.vue'; // our navbar component
+import { computed, provide, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import Navbar from '@/components/Navbar.vue';
 import Loading from '@/components/Loading.vue';
 import SparkleBackground from '@/components/SparkleBackground.vue';
-import { useRoute } from 'vue-router';
 import { useNavigationStore } from '@/store/navigation.js';
 
-// a simple, local state for toasts.
-// can move this into a store later if needed.
+// Local toast notifications state.
 const toasts = ref([]);
 let toastId = 0;
 
 function addToast({ title, message, type = 'primary' }) {
   const id = toastId++;
   toasts.value.push({ id, title, message, type });
-  // auto-remove after 5 seconds
+  // Auto-remove after five seconds.
   setTimeout(() => removeToast(id), 5000);
 }
 
@@ -70,23 +65,10 @@ function removeToast(id) {
   toasts.value = toasts.value.filter((t) => t.id !== id);
 }
 
-// provide this function to all child components
-// so any component can show a toast.
-import { provide } from 'vue';
 provide('addToast', addToast);
-
-// --- firebase auth listener ---
-const userStore = useUserStore();
-const router = useRouter();
 const route = useRoute();
 const navigationStore = useNavigationStore();
 
 const showNavbar = computed(() => route.name !== 'Login');
-
-// onmounted runs once when the app component is first created.
-onMounted(() => {
-  // Auth listener centralized in main.js and routing guard centralized in routes.js
-  // Keeping App.vue lean to avoid duplicate guards that may conflict with navigation.
-});
 </script>
 

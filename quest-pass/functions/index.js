@@ -2,14 +2,12 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const cors = require("cors")({ origin: true });
-const stripe = require("stripe");
-
-// Initialize Firebase Admin
+// Initializes Firebase Admin.
 admin.initializeApp();
 const db = admin.firestore();
 const { Timestamp, FieldValue } = admin.firestore;
 
-// Populate Events from Jambase
+// Populates Firestore with events from Jambase.
 exports.populateEventsFromJambase = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     if (req.method === "OPTIONS") return res.status(204).send("");
@@ -77,7 +75,7 @@ exports.populateEventsFromJambase = functions.https.onRequest((req, res) => {
 });
 
 
-// Generate Gemini Quiz for Trivia
+// Generates a trivia quiz using Gemini.
 async function requestGeminiQuiz(apiKey, prompt) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
   const { data } = await axios.post(
@@ -99,7 +97,7 @@ async function requestGeminiQuiz(apiKey, prompt) {
   try {
     quiz = JSON.parse(raw);
   } catch {
-    // Try to extract the first valid JSON array from the string
+    // Try to extract the first valid JSON array from the string.
     const arrMatch = raw.match(/\[[^\]]*\](?![\s\S]*\[[^\]]*\])/s);
     if (arrMatch) {
       try {
@@ -108,7 +106,7 @@ async function requestGeminiQuiz(apiKey, prompt) {
         quiz = [];
       }
     } else {
-      // Try to extract any JSON array (greedy)
+      // Try to extract any JSON array (greedy).
       const fallbackMatch = raw.match(/\[[\s\S]*\]/);
       try {
         quiz = fallbackMatch ? JSON.parse(fallbackMatch[0]) : [];

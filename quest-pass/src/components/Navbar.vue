@@ -73,11 +73,6 @@
         </ul>
 
         <!-- User Dropdown (Logged In) -->
-        <!-- 
-          FIX: Changed v-if="userStore.isLoggedIn" to v-if="userStore.currentUser"
-          This prevents an error when Vue tries to render 'userStore.currentUser.name'
-          before the currentUser object has been loaded from Firestore.
-        -->
         <ul
           class="navbar-nav ms-auto"
           v-if="userStore.currentUser"
@@ -146,8 +141,6 @@
             </ul>
           </li>
         </ul>
-
-        <!-- Auth CTA removed intentionally: no Login/Sign Up button in navbar -->
       </div>
     </div>
   </nav>
@@ -177,7 +170,6 @@ function toggleDropdown() {
 function toggleNav() {
   // Prefer Vue-controlled collapse; fall back to Bootstrap if present
   isNavOpen.value = !isNavOpen.value;
-  // Keep Bootstrap collapse state in sync if available (no-op if not loaded)
   try {
     const el = navbarCollapse.value;
     const bootstrap = window?.bootstrap;
@@ -222,9 +214,7 @@ async function handleLogout() {
   router.push({ name: 'Login' });
 }
 
-// Note: Login/Sign Up CTA was intentionally removed from the navbar per design.
-
-// Programmatically hide the mobile navbar when navigating or clicking a nav item
+// Hide the mobile navbar when navigating or clicking a nav item
 function getCollapseInstance() {
   const el = navbarCollapse.value;
   const bootstrap = window.bootstrap;
@@ -249,7 +239,7 @@ function handleCollapseClick(e) {
   }
 }
 
-// Also close the collapse whenever the route changes (e.g., via RouterLink)
+// Close the collapse whenever the route changes
 watch(
   () => route.fullPath,
   () => {
@@ -403,7 +393,7 @@ watch(
     padding: 0.5rem 0.25rem;
   }
 
-  /* Put some spacing between the two nav lists when stacked */
+  /* Spacing between the two nav lists when stacked */
   .navbar-collapse .navbar-nav + .navbar-nav {
     margin-top: 0.25rem;
   }
