@@ -18,8 +18,6 @@ import LoadingScreen from '../components/Loading.vue';
 import Tiers from "../components/Tiers.vue";
 import Merch from "../components/Merch.vue";
 import SilverMerch from "../components/SilverMerch.vue";
-import Cart from "../components/Cart.vue";
-import Paymentform from "../components/Paymentform.vue";
 
 const routes = [
   {
@@ -32,12 +30,6 @@ const routes = [
     path: '/loading',
     name: 'Loading',
     component: LoadingScreen,
-  },
-  {
-    path: '/cart',
-    name: 'Cart',
-    component: Cart,
-    meta: { requiresAuth: true },
   },
   {
     path: '/instructions',
@@ -104,10 +96,7 @@ const routes = [
   component: SpotifyCallback,
 },
 {
-  path: '/Paymentform',
-  name: 'Paymentform',
-  component: Paymentform,
-  meta: { requiresAuth: true },
+  // Payment/Cart routes removed as we pivoted to a free merch claim flow
 },
 // catch-all LAST:
   { path: '/:pathMatch(.*)*', redirect: '/' }

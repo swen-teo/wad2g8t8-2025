@@ -1,7 +1,7 @@
 <template>
   <div class="merch-creator-page container my-5">
     <h1 class="page-title text-center mb-4">
-      Design Your QuestPass Merch!
+      Claim Your Free QuestPass Merch
     </h1>
 
     <!-- Access gating: require Gold tier -->
@@ -239,7 +239,7 @@
           </div>
 
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3>Price: <span class="text-success">{{ formattedPrice }}</span></h3>
+            <h3 class="mb-0">Price: <span class="text-success">Free</span></h3>
 
             <div class="d-flex gap-3 align-items-center">
               <div>
@@ -248,52 +248,127 @@
                   id="size"
                   v-model="selectedSize"
                   class="form-select d-inline-block"
-                  style="width: 100px;"
+                  style="width: 120px;"
                 >
                   <option v-for="size in sizeOptions" :key="size" :value="size">
                     {{ size }}
                   </option>
                 </select>
               </div>
-
-              <div>
-                <label for="quantity" class="form-label me-2 mb-0">Qty:</label>
-                <input
-                  type="number"
-                  id="quantity"
-                  v-model.number="quantity"
-                  min="1"
-                  class="form-control d-inline-block"
-                  style="width: 80px"
-                />
-              </div>
             </div>
           </div>
 
-          <button class="btn btn-primary btn-lg w-100" @click="addToCart">
-            <font-awesome-icon :icon="['fas', 'cart-plus']" class="me-2" />
-            Add to Cart
+          <button
+            class="btn btn-primary btn-lg w-100"
+            :disabled="claiming || hasClaimed"
+            @click="claimFreeMerch"
+          >
+            <template v-if="hasClaimed">
+              <font-awesome-icon :icon="['fas', 'check-circle']" class="me-2" />
+              Claimed!
+            </template>
+            <template v-else>
+              <font-awesome-icon :icon="['fas', 'gift']" class="me-2" />
+              {{ claiming ? 'Claiming…' : 'Claim your free merch' }}
+            </template>
           </button>
+
+          <div v-if="claimSuccess" class="alert alert-success mt-3 mb-0" role="alert">
+            <div>Your custom merch has been saved! We’ll process your claim shortly.</div>
+            <div v-if="lastSaved" class="small text-muted mt-1">
+              Saved item: <strong>{{ lastSavedLabel }}</strong>
+              <span class="mx-1">•</span>
+              Size: <strong>{{ lastSaved.size }}</strong>
+            </div>
+          </div>
+          <div v-else-if="claimError" class="alert alert-danger mt-3 mb-0" role="alert">
+            {{ claimError }}
+          </div>
+          <p v-else-if="hasClaimed" class="text-center text-muted mt-3 small mb-0">
+            You have already claimed your free merch. One per user.
+          </p>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container (position fixed) -->
+  <div
+    class="toast-container position-fixed top-0 end-0 p-3"
+    style="z-index: 1100;"
+    aria-live="polite"
+    aria-atomic="true"
+  >
+    <div
+      v-if="showToast"
+      :class="toastClass"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+    >
+      <div class="d-flex">
+        <div class="toast-body">{{ toastMessage }}</div>
+        <button
+          type="button"
+          class="btn-close me-2 m-auto"
+          :class="{ 'btn-close-white': toastVariant === 'success' }"
+          aria-label="Close"
+          @click="hideToast"
+        ></button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
-import { useRouter } from "vue-router";
-import { useCartStore } from "@/store/cart";
+import { ref, computed, watch, onMounted } from "vue";
 import { useUserStore } from "@/store/user";
+import { db } from "@/firebase";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
-const router = useRouter();
-const cartStore = useCartStore();
 const userStore = useUserStore();
 
 const selectedProduct = ref("tshirt");
 const selectedSize = ref("M");
-const quantity = ref(1);
-const basePrice = ref(25.0);
+const basePrice = ref(0);
+const hasClaimed = ref(false);
+const claiming = ref(false);
+const claimSuccess = ref(false);
+const claimError = ref(null);
+const lastSaved = ref(null);
+
+// Toast state and helpers
+const showToast = ref(false);
+const toastMessage = ref("");
+const toastVariant = ref("success"); // 'success' | 'danger'
+const toastTimeoutId = ref(null);
+
+const toastClass = computed(() => {
+  const base = "toast align-items-center show";
+  return toastVariant.value === 'success' ? `${base} text-bg-success` : `${base} text-bg-danger`;
+});
+
+function showToastMessage(variant, message, duration = 3000) {
+  toastVariant.value = variant;
+  toastMessage.value = message;
+  showToast.value = true;
+  if (toastTimeoutId.value) {
+    clearTimeout(toastTimeoutId.value);
+    toastTimeoutId.value = null;
+  }
+  toastTimeoutId.value = setTimeout(() => {
+    showToast.value = false;
+    toastTimeoutId.value = null;
+  }, duration);
+}
+
+function hideToast() {
+  showToast.value = false;
+  if (toastTimeoutId.value) {
+    clearTimeout(toastTimeoutId.value);
+    toastTimeoutId.value = null;
+  }
+}
 
 const merchConfig = ref({
   text: { content: "", color: "#000000", size: 24, fontFamily: "Arial", x: 50, y: 50 },
@@ -317,6 +392,17 @@ const baseProductImage = computed(() => {
   }
 });
 
+const productLabels = {
+  tshirt: 'T-Shirt',
+  cap: 'Cap',
+  jacket: 'Jacket',
+};
+
+const lastSavedLabel = computed(() => {
+  const key = lastSaved.value?.product;
+  return productLabels[key] || (key ? String(key) : '—');
+});
+
 const textStyle = computed(() => ({
   color: merchConfig.value.text.color,
   fontSize: `${merchConfig.value.text.size}px`,
@@ -335,20 +421,20 @@ const imageStyle = computed(() => ({
   transform: "translate(-50%, -50%)",
 }));
 
-const formattedPrice = computed(() => `$${(basePrice.value * quantity.value).toFixed(2)}`);
+const formattedPrice = computed(() => `$${(basePrice.value).toFixed(2)}`);
 
 watch(selectedProduct, (newValue) => {
   switch (newValue) {
     case "tshirt":
-      basePrice.value = 25.0;
+      basePrice.value = 0.0;
       selectedSize.value = "M";
       break;
     case "cap":
-      basePrice.value = 20.0;
+      basePrice.value = 0.0;
       selectedSize.value = "One Size";
       break;
     case "jacket":
-      basePrice.value = 60.0;
+      basePrice.value = 0.0;
       selectedSize.value = "M";
       break;
   }
@@ -449,21 +535,76 @@ async function generatePreviewDataUrl() {
   }
 }
 
-async function addToCart() {
-  const preview = await generatePreviewDataUrl();
-  const customMerchItem = {
-    id: Date.now(),
-    product: selectedProduct.value,
-    size: selectedSize.value,
-    config: JSON.parse(JSON.stringify(merchConfig.value)),
-    quantity: quantity.value,
-    price: basePrice.value,
-    previewImage: preview || baseProductImage.value,
-  };
+async function claimFreeMerch() {
+  if (!userStore.currentUser?.uid) return;
+  if (userStore.currentUser?.currentTier !== 'Gold') {
+    claimError.value = 'Only Gold tier users can claim free merch.';
+    return;
+  }
+  if (hasClaimed.value || claiming.value) return;
+  claiming.value = true;
 
-  cartStore.addItem(customMerchItem);
-  router.push({ name: "Cart" });
+  try {
+    const preview = await generatePreviewDataUrl();
+    const uid = userStore.currentUser.uid;
+    const claimRef = doc(db, 'merchClaims', uid);
+    const claimSnap = await getDoc(claimRef);
+    if (claimSnap.exists()) {
+      hasClaimed.value = true;
+      claimSuccess.value = true; // already saved previously; show success state
+      // Load saved details for summary
+      const data = claimSnap.data();
+      if (data?.product || data?.size) {
+        lastSaved.value = { product: data.product, size: data.size };
+      }
+      return;
+    }
+
+    await setDoc(claimRef, {
+      uid,
+      product: selectedProduct.value,
+      size: selectedSize.value,
+      config: JSON.parse(JSON.stringify(merchConfig.value)),
+      previewImage: preview || baseProductImage.value,
+      status: 'claimed',
+      claimedAt: serverTimestamp(),
+    });
+
+    hasClaimed.value = true;
+    claimSuccess.value = true;
+    claimError.value = null;
+    lastSaved.value = { product: selectedProduct.value, size: selectedSize.value };
+    showToastMessage(
+      'success',
+      `Merch saved: ${productLabels[lastSaved.value.product] || lastSaved.value.product} • Size ${lastSaved.value.size}`
+    );
+  } catch (err) {
+    console.error('Failed to claim merch:', err);
+    claimError.value = 'Something went wrong saving your claim. Please try again.';
+    showToastMessage('danger', 'Failed to save your merch. Please try again.');
+  } finally {
+    claiming.value = false;
+  }
 }
+
+onMounted(async () => {
+  try {
+    const uid = userStore.currentUser?.uid;
+    if (!uid) return;
+    const claimRef = doc(db, 'merchClaims', uid);
+    const snap = await getDoc(claimRef);
+    hasClaimed.value = snap.exists();
+    if (hasClaimed.value) {
+      claimSuccess.value = true;
+      const data = snap.data();
+      if (data?.product || data?.size) {
+        lastSaved.value = { product: data.product, size: data.size };
+      }
+    }
+  } catch (e) {
+    console.warn('Could not check claim status:', e);
+  }
+});
 </script>
 
 <style scoped>
