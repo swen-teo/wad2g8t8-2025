@@ -22,6 +22,11 @@
   --primary-1: #a78bfa;  /* purple */
   --primary-2: #60a5fa;  /* blue */
 
+  /* Reward token colors (single source of truth) */
+  --reward-5: #a78bfa;   /* purple — aligns with primary-1 */
+  --reward-10: #f5c26b;  /* gold */
+  --reward-20: #b23b3b;  /* deep red */
+
   --card: #ffffff;
   --card-radius: 22px;
   --elev-1: 0 12px 28px rgba(125,120,255,.10), 0 2px 6px rgba(90,70,180,.05);

@@ -88,6 +88,7 @@ const routes = [
   {
     path: '/minigames',
     name: 'MiniGames',
+    component: MiniGames,
     meta: {
       requiresAuth: true,
       transitionMessage: {
@@ -154,9 +155,7 @@ const routes = [
   name: 'SpotifyCallback',
   component: SpotifyCallback,
 },
-{
-  // Payment/Cart routes removed as we pivoted to a free merch claim flow
-},
+// Payment/Cart routes removed as we pivoted to a free merch claim flow
 // catch-all LAST:
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ];
