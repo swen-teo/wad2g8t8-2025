@@ -177,7 +177,7 @@ exports.generateQuiz = functions.https.onRequest((req, res) => {
       const artist = String(req.body.artist || "").trim();
       if (!artist) return res.status(400).json({ error: "Missing artist" });
 
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.VITE_GEMINI_API_KEY;
       if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
 
       const prompt = `You are a music trivia generator. Create exactly 5 multiple-choice questions about the artist "${artist}". Return ONLY a JSON array with {"question": string, "options": [string, string, string, string], "correctAnswer": string}.`;
