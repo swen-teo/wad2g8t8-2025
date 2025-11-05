@@ -104,6 +104,15 @@ async function handleGoogleLogin() {
   <div class="container-fluid vh-100 login-bg">
     <div class="row h-100 align-items-center justify-content-center">
       <div class="col-md-6 col-lg-4">
+        <!-- shared SVG gradient defs for icon fills -->
+        <svg aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute">
+          <defs>
+            <linearGradient id="qpTitleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="var(--primary-1)" />
+              <stop offset="100%" stop-color="var(--primary-2)" />
+            </linearGradient>
+          </defs>
+        </svg>
         <!-- decorative animated background layer -->
         <div class="bg-sparkles" aria-hidden="true">
           <!-- The dots layer from your original styles -->
@@ -122,7 +131,7 @@ async function handleGoogleLogin() {
         <div class="card shadow-lg border-0" style="border-radius: 1rem">
           <div class="card-body p-4 p-md-5 text-center">
             <div class="brand d-flex align-items-center justify-content-center gap-3 mb-4">
-              <font-awesome-icon icon="fa-solid fa-ticket-simple" class="fa-3x text-primary-1" />
+              <font-awesome-icon icon="fa-solid fa-ticket-simple" class="fa-3x gradient-icon" />
               <span class="app-name">QuestPass</span>
             </div>
             <h1 class="page-title mb-3">Welcome Back</h1>
@@ -306,12 +315,21 @@ async function handleGoogleLogin() {
 .app-name {
   font-size: 1.75rem;
   font-weight: 700;
-  background: linear-gradient(90deg, #8b5cf6 0%, #c084fc 50%, #a855f7 100%);
+  background: linear-gradient(90deg, var(--primary-1) 0%, var(--primary-2) 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+/* Apply the same title gradient to the Font Awesome SVG icon */
+:deep(.gradient-icon) {
+  /* fallback color if gradient fill is unavailable */
+  color: var(--primary-2);
+}
+:deep(.gradient-icon) path {
+  fill: url(#qpTitleGradient) !important;
 }
 
 @keyframes gradientShift {
