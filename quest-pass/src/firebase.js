@@ -4,8 +4,7 @@ import { getAuth } from 'firebase/auth';
 import { initializeFirestore } from 'firebase/firestore';
 import { getFunctions } from "firebase/functions";
 
-// Your web app's Firebase configuration
-// (You provided this)
+// QuestPass Web App's Firebase configuration
 export const firebaseConfig = {
   apiKey: 'AIzaSyDrcESDuT2jbQjllA8LXQN8vL9RkpF0qbg',
   authDomain: 'questpass-b3680.firebaseapp.com',
@@ -20,13 +19,14 @@ export const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize and export Firebase services
-// These are what your components (Login, App, Profile, etc.)
+// These are what components (Login, App, Profile, etc.)
 // will import and use.
 export const auth = getAuth(app);
 // export const db = getFirestore(app);
 export const db = initializeFirestore(app, {
   experimentalAutoDetectLongPolling: true,  
 });
-// You can also export the main 'app' if you need it elsewhere
+
+// Export the main 'app' if you need it elsewhere
 export default app;
 export const functions = getFunctions(app);
