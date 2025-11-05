@@ -1321,6 +1321,7 @@ function buildTitleInitials(title) {
 .main-content-wrapper {
   position: relative;
   z-index: 3; /* Keep content above the banner background */
+  margin-top: clamp(1.5rem, 3vw, 2.75rem);
 }
 
 /* 3. Sticky Progress Card */
@@ -1949,7 +1950,7 @@ function buildTitleInitials(title) {
     gap: 1rem;
   }
 
-  .main-content-wrapper { margin-top: -20px; }
+  .main-content-wrapper { margin-top: 1.25rem; }
 }
 
 /* ======= Visual Enhancements (meta chips, score ring, gradient buttons, borders) ======= */
