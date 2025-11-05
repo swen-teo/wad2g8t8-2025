@@ -194,6 +194,17 @@ function randomString(n = 64) {
   return r;
 }
 
+let popupWindow = null;
+let popupMonitor = null;
+
+function stopPopupMonitor() {
+  if (popupMonitor) {
+    clearInterval(popupMonitor);
+    popupMonitor = null;
+  }
+  popupWindow = null;
+}
+
 async function startSpotifyAuth(options = {}) {
   const { preserveError = false, autoLoading = true } = options;
   try {
@@ -230,6 +241,16 @@ async function startSpotifyAuth(options = {}) {
       loading.value = false;
       return;
     }
+    stopPopupMonitor();
+    popupWindow = popup;
+    popupMonitor = window.setInterval(() => {
+      if (!popupWindow || popupWindow.closed) {
+        stopPopupMonitor();
+        if (loading.value) loading.value = false;
+        closeQuest();
+      }
+    }, 500);
+
     try {
       popup.focus();
     } catch (e) {
@@ -313,6 +334,7 @@ function onMessage(e) {
   const msg = e.data || {};
   if (msg.source === 'spotify') {
     if (msg.ok) {
+      stopPopupMonitor();
       loading.value = false;
       error.value = '';
       // Give the popup a moment to persist refreshed tokens before checking plays again.
@@ -328,6 +350,7 @@ function onMessage(e) {
 
 function closeQuest() {
   if (!loading.value) {
+    stopPopupMonitor();
     emit('close');
   }
 }
@@ -336,5 +359,8 @@ onMounted(() => {
   window.addEventListener('message', onMessage);
   if (token()) checkSpotify();
 });
-onUnmounted(() => window.removeEventListener('message', onMessage));
+onUnmounted(() => {
+  stopPopupMonitor();
+  window.removeEventListener('message', onMessage);
+});
 </script>
