@@ -1,12 +1,21 @@
+import { firebaseConfig } from '@/firebase.js';
+
 /**
  * Generates quiz questions by fetching from the secure backend.
  * @param {string} artist - The name of the artist for the quiz.
  * @returns {Promise<Array<Object>>} A promise that resolves to an array of question objects.
  */
+
+const CLOUD_FUNCTION_URL = firebaseConfig?.projectId
+  ? `https://us-central1-${firebaseConfig.projectId}.cloudfunctions.net/generateQuiz`
+  : null;
+
+const DEFAULT_API_URL = import.meta.env.DEV ? '/api/quiz' : CLOUD_FUNCTION_URL || '/api/quiz';
+
 export async function generateQuizQuestions(artist) {
   // we're fetching from a secure backend
-  const QUIZ_API_URL = import.meta.env.VITE_QUIZ_API_URL || '/api/quiz';
-  const RETRYABLE_STATUS = new Set([502, 404]);
+  const QUIZ_API_URL = import.meta.env.VITE_QUIZ_API_URL || DEFAULT_API_URL;
+  const RETRYABLE_STATUS = new Set([502, 503, 404]);
 
   let attempt = 0;
   for (;;) {
@@ -62,9 +71,22 @@ export async function generateQuizQuestions(artist) {
         detail = await response.text();
       }
     } catch {}
-    const msg = `Failed to fetch quiz from backend (HTTP ${response.status}). ${[detail, extra]
-      .filter(Boolean)
-      .join(' ')}`.trim();
+    const context = [detail, extra].filter(Boolean).join(' ').trim();
+    const normalizedContext = context.toLowerCase();
+
+    if (
+      normalizedContext.includes('status code 503') ||
+      normalizedContext.includes('service unavailable')
+    ) {
+      console.warn(
+        'Quiz request reported temporary unavailability; retrying after backoff.',
+        { status: response.status, detail, extra }
+      );
+      await new Promise((resolve) => setTimeout(resolve, getRetryDelay(attempt)));
+      continue;
+    }
+
+    const msg = `Failed to fetch quiz from backend (HTTP ${response.status}). ${context}`.trim();
     throw new Error(msg);
   }
 }
