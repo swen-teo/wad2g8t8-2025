@@ -7,13 +7,7 @@ const cors = require("cors")({ origin: true });
 admin.initializeApp();
 const db = admin.firestore();
 const { Timestamp, FieldValue } = admin.firestore;
-
-// ----------------------
-// Example HTTP function
-// ----------------------
-exports.myFunction = functions.https.onRequest((req, res) => {
-  res.send("Hello from Firebase v1!");
-});
+const stripelib = require("stripe");
 
 // ----------------------
 // Stripe Payment Intent (Callable)

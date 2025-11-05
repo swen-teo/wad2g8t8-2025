@@ -29,7 +29,7 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 
 // --- Configuration ---
 // !! Replace with your actual Stripe publishable key
-const stripePublishableKey = "pk_test_51SPelBQp2ch3qt7pm8YHwQyMs0Ql7wu48dYDYWhJOO0iNme8Ca5JSaTD7BARobe1rO6KX2bXSHAMi0Ud2zAUNKYU00d2QyBcLc"; 
+const stripePublishableKey = "pk_live_51SPekvR2taviemsz1XFf4Aof4YBCVUIgYuMUmLKdfWGBV0Cf2O3Q2w4T96wsVuJqD7S0GHZCMXLRWd5qNO5qdsde00jPIOzreY"; 
 // This could be a prop or come from a store
 const paymentAmountCents = 5000; 
 
