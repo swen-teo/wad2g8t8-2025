@@ -72,7 +72,7 @@ const tiers = computed(() => [
   {
     name: 'Gold',
     levels: 'Levels 21+',
-    voucherValue: 'Purchase Custom Merch',
+    voucherValue: 'Redeem Custom Merch',
     voucherClass: 'text-success fw-semibold',
     linkUrl: '/Merch', // CHANGED
   },
