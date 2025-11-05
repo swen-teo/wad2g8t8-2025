@@ -8,49 +8,69 @@ admin.initializeApp();
 const db = admin.firestore();
 const { Timestamp, FieldValue } = admin.firestore;
 
-// ----------------------
-// Example HTTP function
-// ----------------------
-exports.myFunction = functions.https.onRequest((req, res) => {
-  res.send("Hello from Firebase v1!");
-});
 
 // ----------------------
 // Stripe Payment Intent (Callable)
 // ----------------------
-exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
-  const stripeSecret = functions.config().stripe?.secret;
-  if (!stripeSecret) {
-    console.error("Missing Stripe secret in functions config");
-    throw new functions.https.HttpsError(
-      "failed-precondition",
-      "Stripe secret not configured. Run: firebase functions:config:set stripe.secret=YOUR_KEY"
-    );
-  }
-
-  const stripe = require("stripe")(stripeSecret);
-
-  try {
-    if (!context.auth) {
-      throw new functions.https.HttpsError("unauthenticated", "User must be logged in");
+exports.createPaymentIntent = functions.https.onRequest((req, res) => {
+  // 1. Use CORS, just like Jambase
+  cors(req, res, async () => {
+    
+    // 2. Handle OPTIONS and check for POST method, like Jambase
+    if (req.method === "OPTIONS") return res.status(204).send("");
+    if (req.method !== "POST") {
+      return res.status(405).send("Method Not Allowed");
     }
 
-    const amount = data.amount;
-    if (!amount || amount <= 0) {
-      throw new functions.https.HttpsError("invalid-argument", "Amount must be a positive number");
+    // 3. Get secret from process.env, like Jambase
+    // NOTE: Make sure you've set this!
+    // Run: firebase functions:config:set stripe.secret=YOUR_KEY (or use Secret Manager)
+    const stripeSecret = process.env.STRIPE_SECRET; 
+    if (!stripeSecret) {
+      console.error("Missing STRIPE_SECRET in environment");
+      return res.status(500).send({ error: "Stripe secret not configured." });
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: "usd",
-      automatic_payment_methods: { enabled: true },
-    });
+    const stripe = require("stripe")(stripeSecret);
 
-    return { clientSecret: paymentIntent.client_secret };
-  } catch (error) {
-    console.error("Stripe error:", error);
-    throw new functions.https.HttpsError("unknown", error.message, error);
-  }
+    try {
+      // 4. Manual Authentication (replaces context.auth)
+      // Your client must send an "Authorization: Bearer <TOKEN>" header
+      let uid;
+      if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+        const idToken = req.headers.authorization.split("Bearer ")[1];
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        uid = decodedToken.uid;
+      }
+
+      if (!uid) {
+        // 5. Send error with res.status(), not throw
+        return res.status(401).send({ error: "User must be logged in" });
+      }
+
+      // 6. Get data from req.body, not the 'data' object
+      const amount = req.body.amount;
+      if (!amount || amount <= 0) {
+        return res.status(400).send({ error: "Amount must be a positive number" });
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: "usd",
+        automatic_payment_methods: { enabled: true },
+        // Optional: Associate the payment with the Firebase user
+        metadata: { firebase_uid: uid } 
+      });
+
+      // 7. Send success response
+      return res.status(200).send({ clientSecret: paymentIntent.client_secret });
+
+    } catch (error) {
+      console.error("Stripe error:", error);
+      // 8. Send error with res.status()
+      return res.status(500).send({ error: error.message });
+    }
+  });
 });
 
 // ----------------------

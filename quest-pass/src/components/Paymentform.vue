@@ -8,7 +8,7 @@
 
       <button :disabled="isLoading" class="pay-button">
         <span v-if="isLoading">Processing...</span>
-        <span v-else>Pay $50.00</span>
+        <span v-else>Pay {{ formattedTotal }}</span>
       </button>
 
       <div v-if="paymentError" class="error-message" role="alert">
@@ -23,22 +23,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { loadStripe } from '@stripe/stripe-js';
 import { getFunctions, httpsCallable } from "firebase/functions";
+import { useCartStore } from '@/store/cart';
 
-// --- Configuration ---
-// !! Replace with your actual Stripe publishable key
-const stripePublishableKey = "pk_test_51SPelBQp2ch3qt7pm8YHwQyMs0Ql7wu48dYDYWhJOO0iNme8Ca5JSaTD7BARobe1rO6KX2bXSHAMi0Ud2zAUNKYU00d2QyBcLc"; 
-// This could be a prop or come from a store
-const paymentAmountCents = 5000; 
+// --- Stripe Configuration ---
+const stripePublishableKey = "pk_test_51SPekvR2taviemszz5Pgr4Ly4E4csze8Zj3onwazJfG8ufx8W3Y9CKjXhIfvzxlvJKcsOiCMZmLJ5xtoYnL39u3H00wepDU4AU"
 
 // --- Reactive State ---
-const isLoading = ref(true); // Start as true until Stripe is loaded
+const isLoading = ref(true);
 const paymentError = ref(null);
 const paymentSuccess = ref(false);
 
-// --- Private Refs ---
+// --- Stripe Elements Refs ---
 let stripe = null;
 let cardElement = null;
 
@@ -46,13 +44,14 @@ let cardElement = null;
 const functions = getFunctions();
 const createPaymentIntent = httpsCallable(functions, "createPaymentIntent");
 
-// --- Lifecycle Hooks ---
+// --- Cart Store ---
+const cartStore = useCartStore();
 
-/**
- * When the component mounts:
- * 1. Load the Stripe.js script.
- * 2. Create and mount the card element.
- */
+// --- Computed total ---
+const totalPriceCents = computed(() => Math.round(cartStore.totalPrice * 100));
+const formattedTotal = computed(() => cartStore.formattedTotalPrice);
+
+// --- Lifecycle Hooks ---
 onMounted(async () => {
   try {
     stripe = await loadStripe(stripePublishableKey);
@@ -60,8 +59,6 @@ onMounted(async () => {
 
     const elements = stripe.elements();
     cardElement = elements.create("card", {
-      // You can add styling options here
-      // See: https://stripe.com/docs/js/elements_object/create_element?type=card#elements_create-options-style
       style: {
         base: {
           iconColor: '#666EE8',
@@ -69,14 +66,11 @@ onMounted(async () => {
           fontWeight: '400',
           fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
           fontSize: '16px',
-          '::placeholder': {
-            color: '#CFD7E0',
-          },
+          '::placeholder': { color: '#CFD7E0' },
         },
       }
     });
     
-    // Mount the element to the DOM
     cardElement.mount("#card-element");
     isLoading.value = false;
 
@@ -87,70 +81,39 @@ onMounted(async () => {
   }
 });
 
-/**
- * Clean up the card element when the component is unmounted
- * to prevent memory leaks.
- */
 onBeforeUnmount(() => {
-  if (cardElement) {
-    cardElement.destroy();
-  }
+  if (cardElement) cardElement.destroy();
 });
 
-// --- Methods ---
-
-/**
- * Handle the form submission.
- */
+// --- Handle Payment ---
 const handleSubmit = async () => {
-  // Guard clauses
-  if (isLoading.value || !stripe || !cardElement) {
-    return;
-  }
+  if (isLoading.value || !stripe || !cardElement) return;
   
-  // Reset state
   isLoading.value = true;
   paymentError.value = null;
   paymentSuccess.value = false;
 
   try {
-    // 1. Get Client Secret from your Firebase Function
-    const result = await createPaymentIntent({ amount: paymentAmountCents });
+    const result = await createPaymentIntent({ amount: totalPriceCents.value });
     const clientSecret = result.data.clientSecret;
 
-    if (!clientSecret) {
-      throw new Error("Failed to get payment secret from server.");
-    }
+    if (!clientSecret) throw new Error("Failed to get payment secret from server.");
 
-    // 2. Confirm the card payment with Stripe
     const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: cardElement,
-        // You could add billing details here if needed
-        // billing_details: {
-        //   name: 'Jenny Rosen',
-        // },
-      },
+      payment_method: { card: cardElement },
     });
 
-    // 3. Handle the result
     if (error) {
-      // Show error to your customer
       paymentError.value = error.message;
       console.error("Stripe payment error:", error.message);
     } else if (paymentIntent.status === "succeeded") {
-      // Payment succeeded!
       paymentSuccess.value = true;
       console.log("Payment succeeded!", paymentIntent);
-      // You might want to clear the card or redirect
-      // cardElement.clear(); 
     } else {
-      // Handle other statuses (e.g., "processing", "requires_action")
       paymentError.value = `Payment status: ${paymentIntent.status}`;
     }
 
   } catch (error) {
-    // Handle errors from your Firebase Function or network issues
     console.error("Payment submission error:", error);
     paymentError.value = "An unexpected error occurred. Please try again.";
   } finally {
@@ -158,6 +121,7 @@ const handleSubmit = async () => {
   }
 };
 </script>
+
 
 <style scoped>
 .payment-form-container {

@@ -76,10 +76,16 @@ const cartStore = useCartStore()
 const router = useRouter()
 
 function proceedToCheckout() {
-  // Placeholder for checkout functionality
-  console.log('Proceeding to checkout with:', cartStore.items)
-  router.push({ name: 'Paymentform' })
+  // Navigate to Paymentform and pass cart data and total price via route state
+  router.push({ 
+    name: 'Paymentform', 
+    state: {
+      items: cartStore.items,
+      totalPrice: cartStore.totalPrice // raw number
+    } 
+  })
 }
+
 
 function keepShopping() {
   router.push({ name: 'Merch' })
