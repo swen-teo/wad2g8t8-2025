@@ -103,10 +103,9 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useUserStore } from '@/store/user.js'; 
-// 🛑 Removed Firebase functions imports as API is scrapped
 
-// 🎯 FIX: Move Persistence Helpers and Initial Load to the TOP 
-// --- Persistence Helpers ---
+
+
 const STORAGE_KEY = 'merchVoucherState';
 
 function loadState() {
@@ -126,7 +125,7 @@ function saveState(state) {
     }
 }
 
-// 🎯 FIX: Execute Initial Load BEFORE defining reactive refs
+
 const initialState = loadState(); 
 // -----------------------------------------------------------------
 
@@ -135,7 +134,7 @@ const userStore = useUserStore();
 // --- State Variables ---
 const isLoading = ref(false); 
 const isSpinning = ref(false); 
-// 🎯 Initialize from loaded state
+
 const hasSpun = ref(initialState.hasSpun || false); 
 const wheelRotation = ref(0); 
 const voucherCode = ref(initialState.voucherCode || '');
@@ -148,14 +147,14 @@ const statusMessage = ref(hasSpun.value ? 'Voucher claimed.' : 'Ready to spin!')
 const userTier = computed(() => userStore.currentUser?.currentTier);
 
 const SEGMENTS = {
-    '$5': { value: 5, degrees: 60 },   
+    '$5': { value: 5, degrees: 60 }, 
     '$10': { value: 10, degrees: 180 }, 
     '$20': { value: 20, degrees: 300 }, 
 };
 
 const TIER_REWARDS = {
-    Silver: [5, 5, 10],   
-    Gold: [5, 10, 20],     
+    Silver: [5, 5, 10], 
+    Gold: [5, 10, 20], 
     Platinum: [10, 20, 20], 
 };
 
@@ -196,13 +195,13 @@ async function handleSpinEnd() {
         
         await new Promise(resolve => setTimeout(resolve, 500)); 
 
-        const randomCode = `MERCH-${voucherValue.value}-${Math.floor(Math.random() * 9000) + 1000}`;
+        const randomCode = `TICKETMASTER-${voucherValue.value}-${Math.floor(Math.random() * 9000) + 1000}`;
         
         voucherCode.value = randomCode; 
         statusMessage.value = "Voucher Ready!";
         error.value = '';
 
-        // 🎯 FIX: Save the entire state to local storage after success
+       
         saveState({
             hasSpun: true,
             voucherCode: voucherCode.value,
