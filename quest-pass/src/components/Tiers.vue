@@ -1,48 +1,54 @@
 <template>
   <div class="container py-5">
-    <div class=" mb-5">
-  <h1 class="page-title mb-3">QuestPass Tier Levels</h1>
-      <p class="lead text-muted">Advance your tier by earning points through event quests to unlock exclusive rewards and benefits.</p>
+    <div class="mb-5">
+      <h1 class="page-title mb-3">QuestPass Tier Levels</h1>
+      <p class="lead text-muted">
+        Advance your tier by earning points through event quests to unlock exclusive rewards and benefits.
+      </p>
     </div>
 
-    <div class="card shadow-lg tier-table-card">
+    <div class="card shadow-lg tier-panel">
       <div class="card-body p-4 p-md-5">
-        
         <h3 class="fw-bold mb-4">Progression & Rewards</h3>
 
-        <div class="table-responsive table-container">
-          <table class="table table-hover align-middle tier-table">
-            <thead>
-              <tr>
-                <th scope="col">Tier</th>
-                <th scope="col">Level Range</th>
-                <th scope="col">Voucher Reward</th>
-                <th scope="col" class="text-end"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="tier in tiers" 
-                  :key="tier.name" 
-                  :class="[ 'tier-' + tier.name.toLowerCase(), { 'tier-row-highlight': tier.name === userStore.currentUser?.currentTier } ]">
-                
-                <td class="fw-bold">{{ tier.name }}</td>
-                <td>{{ tier.levels }}</td>
-                <td :class="tier.voucherClass">
-                  <span v-if="tier.voucherValue">{{ tier.voucherValue }}</span>
-                  <span v-else>No Voucher</span>
-                </td>
-                <td class="text-end">
-                  <!-- 
-                    CHANGED: Added v-if to hide the button for Bronze 
-                  -->
-                  <router-link :to="tier.linkUrl" class="btn btn-sm btn-outline-info" v-if="tier.name !== 'Bronze'">
-                    View Details
+        <!-- 1 card per row on all sizes -->
+        <div class="row g-3">
+          <div class="col-12" v-for="tier in tiers" :key="tier.name">
+            <div
+              :class="[
+                'tier-item',
+                'accent-' + tier.name.toLowerCase(),
+                { 'is-current': tier.name === userStore.currentUser?.currentTier }
+              ]"
+            >
+              <div class="left-accent"></div>
+
+              <div class="content">
+                <div class="top-row">
+                  <div class="title fw-semibold">{{ tier.name }}</div>
+                  <router-link
+                    v-if="tier.name !== 'Bronze'"
+                    :to="tier.linkUrl"
+                    class="chip"
+                  >
+                    View 
                   </router-link>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                </div>
+
+                <div class="meta">
+                  <span class="label">Levels</span>
+                  <span class="value">{{ tier.levels }}</span>
+                  <span class="dot">•</span>
+                  <span class="label">Reward</span>
+                  <span class="value" :class="tier.voucherClass">
+                    {{ tier.voucherValue || 'No Voucher' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div> <!-- /row -->
+
       </div>
     </div>
   </div>
@@ -55,109 +61,89 @@ import { useUserStore } from '@/store/user';
 const userStore = useUserStore();
 
 const tiers = computed(() => [
-  {
-    name: 'Bronze',
-    levels: 'Levels 1–10',
-    voucherValue: null,
-    voucherClass: 'text-muted',
-    linkUrl: '/tier/bronze', // This route won't be used now, but good to keep it consistent
-  },
-  {
-    name: 'Silver',
-    levels: 'Levels 11–20',
-    voucherValue: 'Randomised Voucher',
-    voucherClass: 'text-success',
-    linkUrl: '/SilverMerch', // CHANGED
-  },
-  {
-    name: 'Gold',
-    levels: 'Levels 21+',
-    voucherValue: 'Redeem Custom Merch',
-    voucherClass: 'text-success fw-semibold',
-    linkUrl: '/Merch', // CHANGED
-  },
+  { name: 'Bronze', levels: 'Levels 1–10', voucherValue: null, voucherClass: 'text-muted', linkUrl: '/tier/bronze' },
+  { name: 'Silver', levels: 'Levels 11–20', voucherValue: 'Randomised Voucher', voucherClass: 'text-success', linkUrl: '/SilverMerch' },
+  { name: 'Gold',   levels: 'Levels 21+', voucherValue: 'Redeem Custom Merch', voucherClass: 'text-success fw-semibold', linkUrl: '/Merch' },
 ]);
 </script>
 
 <style scoped>
-/* All styles from the previous step are retained */
-.tier-table-card {
-  border-radius: 1rem;
-  background-color: #ffffff;
+/* Panel */
+.tier-panel { border-radius: 1rem; background: #fff; }
+@media (max-width: 575.98px) { .tier-panel .card-body { padding: 1rem !important; } }
+
+/* Item */
+.tier-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0,0,0,.06);
 }
 
-.table-container {
-  border-radius: 0.75rem;
-  overflow: hidden;
-  border: 1px solid #dee2e6; /* Adds a clean border */
+/* no yellow glow: just a subtle border change, no bg/shadow */
+.tier-item.is-current {
+  border-color: #f69036ff;   /* tweak or remove if you want zero highlight */
+  background: #fff;
+  box-shadow: none;
 }
 
-.tier-table {
-  --bs-table-bg: none;
-  --bs-table-hover-bg: #f5f5f5;
-  margin-bottom: 0; 
+/* left accent bar */
+.tier-item .left-accent {
+  width: 4px;
+  align-self: stretch;
+  border-radius: 6px;
+  background: #e9ecef;
 }
 
-.tier-table thead th {
-  background-color: #f8f9fa;
-  border-bottom-width: 2px;
-}
+/* content */
+.tier-item .content { flex: 1 1 auto; min-width: 0; }
+.tier-item .top-row { display: flex; align-items: center; justify-content: space-between; }
+.tier-item .title { font-size: 1rem; }
 
-.tier-table th:nth-child(2),
-.tier-table td:nth-child(2),
-.tier-table th:nth-child(4),
-.tier-table td:nth-child(4) {
-  white-space: nowrap;
-}
-
-/* Glow styles for tier names */
-.tier-bronze .fw-bold {
-  color: #a05a2c; /* Darker bronze */
-  text-shadow: 0 0 6px rgba(205, 127, 50, 0.7); /* Bronze glow */
-}
-
-.tier-silver .fw-bold {
-  color: #a8a8a8; /* Darker silver */
-  text-shadow: 0 0 8px rgba(224, 224, 224, 0.9); /* Silver glow */
-}
-
-.tier-gold .fw-bold {
-  color: #b8860b; /* Dark goldenrod */
-  text-shadow: 0 0 8px rgba(255, 215, 0, 0.8); /* Gold glow */
-}
-
-/* Base highlight class (border style) */
-.tier-row-highlight {
-  border-left-width: 4px;
-  border-left-style: solid;
+/* gradient chip */
+.tier-item .chip {
+  display: inline-block;
+  padding: 5px 20px;
+  font-size: .8rem;
+  line-height: 1.4;
+  border-radius: 9999px;
+  border: none;
+  color: white;
   font-weight: 600;
+  text-decoration: none;
+  background: linear-gradient(90deg, #a18cd1 0%, #649bff 100%);
+  box-shadow: 0 2px 6px rgba(100,155,255,.3);
+  transition: all .25s ease;
+}
+.tier-item .chip:hover {
+  background: linear-gradient(90deg, #649bff 0%, #4d9fff 100%);
+  color: black;
+  box-shadow: 0 3px 10px rgba(100,155,255,.5);
+  transform: translateY(-1px);
 }
 
-/* Make the highlight color match the tier */
-.tier-row-highlight.tier-bronze {
-  border-left-color: #cd7f32;
-  background-color: #fff4e8;
+/* meta row */
+.tier-item .meta {
+  margin-top: 4px;
+  font-size: .9rem;
+  color: #6c757d;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
+.tier-item .meta .label { color: #8b949e; }
+.tier-item .meta .value { color: #343a40; }
+.tier-item .meta .dot   { color: #c5c9ce; }
 
-.tier-row-highlight.tier-silver {
-  border-left-color: #c0c0c0;
-  background-color: #f7f7f7;
-}
+/* tier accent colors */
+.accent-bronze .left-accent { background: #cd7f32; }
+.accent-silver .left-accent { background: #c0c0c0; }
+.accent-gold   .left-accent { background: #ffd700; }
 
-.tier-row-highlight.tier-gold {
-  border-left-color: #ffd700;
-  background-color: #fffbeb;
-}
-
-
-.tier-row-highlight .fw-bold {
-  font-weight: 700;
-}
-
-.text-success {
-    color: var(--bs-success);
-}
-.text-info {
-    color: var(--bs-info);
+/* soften any text glows on tiny screens */
+@media (max-width: 575.98px) {
+  .tier-bronze .fw-bold, .tier-silver .fw-bold, .tier-gold .fw-bold { text-shadow: none; }
 }
 </style>
