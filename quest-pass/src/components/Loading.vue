@@ -27,18 +27,26 @@
       </div>
 
       <div class="loader-caption" role="status" aria-live="polite">
-        <span class="caption-title">Spinning up events…</span>
-        <span class="caption-subtitle">Cueing the next experience</span>
+        <span class="caption-title">{{ title }}</span>
+        <span class="caption-subtitle">{{ subtitle }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-const { isLoading } = defineProps({
+const { isLoading, title, subtitle } = defineProps({
   isLoading: {
     type: Boolean,
     default: true,
+  },
+  title: {
+    type: String,
+    default: 'Spinning up events…',
+  },
+  subtitle: {
+    type: String,
+    default: 'Cueing the next experience',
   },
 });
 

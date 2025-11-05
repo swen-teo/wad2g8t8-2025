@@ -1,6 +1,11 @@
 <template>
   <div>
     <SparkleBackground />
+    <Loading
+      :is-loading="navigationStore.isTransitioning"
+      :title="navigationStore.title"
+      :subtitle="navigationStore.subtitle"
+    />
     <Navbar v-if="showNavbar" />
 
 
@@ -44,8 +49,10 @@ import { auth } from '@/firebase.js'; // our firebase config
 import { useUserStore } from '@/store/user.js'; // our pinia store
 import { useRouter } from 'vue-router';
 import Navbar from '@/components/Navbar.vue'; // our navbar component
+import Loading from '@/components/Loading.vue';
 import SparkleBackground from '@/components/SparkleBackground.vue';
 import { useRoute } from 'vue-router';
+import { useNavigationStore } from '@/store/navigation.js';
 
 // a simple, local state for toasts.
 // can move this into a store later if needed.
@@ -72,6 +79,7 @@ provide('addToast', addToast);
 const userStore = useUserStore();
 const router = useRouter();
 const route = useRoute();
+const navigationStore = useNavigationStore();
 
 const showNavbar = computed(() => route.name !== 'Login');
 

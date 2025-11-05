@@ -105,14 +105,8 @@ function createDefaultUserProfile(user) {
 
     // Default progress fields (all fresh!)
     totalPoints: 0,
-    badges: ['First Quest'],
-
-    favoriteGenres: [],
-    streakDays: 1,
     joinDate: now,
     completedQuests: 0,
-    purchasedTickets: 0,
-    activeQuests: [],
     hasSeenInstructions: false,
     miniGames: createMiniGameDefaultState(),
   });

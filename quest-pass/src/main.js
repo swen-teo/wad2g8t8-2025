@@ -24,10 +24,28 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 
 import { useUserStore } from './store/user.js';
+import { useNavigationStore, extractTransitionMessage } from './store/navigation.js';
 
 library.add(fas, far, fab)
 
 const pinia = createPinia()
+const navigationStore = useNavigationStore(pinia)
+
+router.beforeEach((to, from, next) => {
+  if (from.name) {
+    const message = extractTransitionMessage(to)
+    navigationStore.startTransition(message)
+  }
+  next()
+})
+
+router.afterEach(() => {
+  navigationStore.finishTransition()
+})
+
+router.onError(() => {
+  navigationStore.finishTransition()
+})
 
 let appInstance = null; 
 onAuthStateChanged(auth, async (userAuth) => {

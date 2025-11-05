@@ -24,6 +24,12 @@ const routes = [
     path: '/',
     name: 'LandingPage',
     component: LandingPage,
+    meta: {
+      transitionMessage: {
+        title: 'Welcoming you to QuestPass…',
+        subtitle: 'Tuning the spotlight for your arrival',
+      },
+    },
   },
 
   {
@@ -36,57 +42,110 @@ const routes = [
     name: 'Instructions',
     component: Instructions,
     // Show only to guests (not logged-in users)
-    meta: { guestOnly: true },
+    meta: {
+      guestOnly: true,
+      transitionMessage: {
+        title: 'Opening the playbook…',
+        subtitle: 'Highlighting how to start your quest',
+      },
+    },
   },
   {
     path: '/home',
     name: 'Home',
     component: Home,
-    meta: { requiresAuth: true }, // protect the main app area
+    meta: {
+      requiresAuth: true,
+      transitionMessage: {
+        title: 'Spinning up events…',
+        subtitle: 'Cueing the next experience',
+      },
+    }, // protect the main app area
   },
   {
     path: '/login', // The login page
     name: 'Login',
     component: Login,
+    meta: {
+      transitionMessage: {
+        title: 'Opening the gates…',
+        subtitle: 'Signing you in for the show',
+      },
+    },
   },
   {
     path: '/profile', // The user profile page
     name: 'Profile',
     component: Profile,
-    meta: { requiresAuth: true }, // we can add this to protect pages
+    meta: {
+      requiresAuth: true,
+      transitionMessage: {
+        title: 'Opening your profile…',
+        subtitle: 'Gathering your musical journey',
+      },
+    }, // we can add this to protect pages
   },
   {
     path: '/minigames',
     name: 'MiniGames',
-    component: MiniGames,
-    meta: { requiresAuth: true },
+    meta: {
+      requiresAuth: true,
+      transitionMessage: {
+        title: 'Booting mini games…',
+        subtitle: 'Loading fresh challenges for you',
+      },
+    },
   },
   {
     path: '/tiers',
     name: 'Tiers',
     component: Tiers,
-    meta: { requiresAuth: true },
+    meta: {
+      requiresAuth: true,
+      transitionMessage: {
+        title: 'Checking membership tiers…',
+        subtitle: 'Matching perks to your playlist',
+      },
+    },
   },
 
   {
     path: '/merch',
     name: 'Merch',
     component: Merch,
-    meta: { requiresAuth: true },
+    meta: {
+      requiresAuth: true,
+      transitionMessage: {
+        title: 'Loading the merch table…',
+        subtitle: 'Folding the finest tour apparel',
+      },
+    },
   },
   
   {
     path: '/SilverMerch',
     name: 'SilverMerch',
     component: SilverMerch,
-    meta: { requiresAuth: true },
+    meta: {
+      requiresAuth: true,
+      transitionMessage: {
+        title: 'Curating the silver collection…',
+        subtitle: 'Polishing limited-edition finds',
+      },
+    },
   },
 
   {
     path: '/event/:id', // A dynamic route for event details
     name: 'EventDetails',
     component: EventDetails,
-    meta: { requiresAuth: true }, // protect this page too
+    meta: {
+      requiresAuth: true,
+      transitionMessage: {
+        title: 'Loading event details…',
+        subtitle: 'Sound-checking the lineup for you',
+      },
+    }, // protect this page too
     // allow the route param `id` to be passed as a prop to the component
     props: true,
   },
