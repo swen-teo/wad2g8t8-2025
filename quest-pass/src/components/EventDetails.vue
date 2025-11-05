@@ -144,20 +144,20 @@
               }"
             >
               <div class="card-body p-4 p-xl-5 d-flex flex-column gap-4 justify-content-between">
-                <div
-                  class="reward-access-card__status d-flex flex-column flex-sm-row align-items-center align-items-sm-start text-center text-sm-start gap-3 gap-sm-4"
-                >
-                  <div
-                    class="status-icon"
-                    :class="{
-                      'status-icon--pending': isComplete && !isRewardUnlocked,
-                      'status-icon--unlocked': isRewardUnlocked,
-                    }"
-                  >
-                    <font-awesome-icon :icon="rewardStatusIcon" />
+                <div class="reward-access-card__status d-flex flex-column text-start gap-3 gap-sm-4">
+                  <div class="reward-access-card__status-row d-flex align-items-center gap-3 gap-sm-4">
+                    <div
+                      class="status-icon"
+                      :class="{
+                        'status-icon--pending': isComplete && !isRewardUnlocked,
+                        'status-icon--unlocked': isRewardUnlocked,
+                      }"
+                    >
+                      <font-awesome-icon :icon="rewardStatusIcon" />
+                    </div>
+                    <div class="status-eyebrow text-uppercase small fw-semibold text-muted mb-0">Presale Access</div>
                   </div>
                   <div class="reward-access-card__status-text">
-                    <div class="status-eyebrow text-uppercase small fw-semibold text-muted mb-2">Presale Access</div>
                     <h5 class="fw-bold mb-2">{{ rewardStatusHeading }}</h5>
                     <p class="text-muted small mb-0">{{ rewardStatusMessage }}</p>
                   </div>
@@ -520,7 +520,7 @@ const rewardStatusMessage = computed(() => {
 });
 
 const rewardStatusIcon = computed(() => {
-  if (isRewardUnlocked.value) return ['fas', 'ticket-simple'];
+  if (isRewardUnlocked.value) return ['fas', 'lock-open'];
   if (isComplete.value) return ['fas', 'hourglass-half'];
   return ['fas', 'lock'];
 });
@@ -1565,28 +1565,20 @@ function buildTitleInitials(title) {
 }
 
 .status-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
+  --status-color: #f59e0b;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  background: rgba(251, 191, 36, 0.18);
-  color: #f59e0b;
-  font-size: 1.2rem;
-  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.2);
+  color: var(--status-color);
+  font-size: 1.75rem;
+  line-height: 1;
 }
 
 .status-icon--pending {
-  background: rgba(129, 140, 248, 0.16);
-  color: #6366f1;
-  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.22);
+  --status-color: #6366f1;
 }
 
 .status-icon--unlocked {
-  background: rgba(16, 185, 129, 0.18);
-  color: #059669;
-  box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.2);
+  --status-color: #059669;
 }
 
 .status-eyebrow {
