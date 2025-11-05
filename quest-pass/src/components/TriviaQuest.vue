@@ -1,5 +1,5 @@
 <template>
-  <div class="quest-overlay" @click.self="closeQuest">
+  <div class="quest-overlay">
     <div class="card quest-card-modal quest-card-glass shadow-lg">
       <button class="btn-close-overlay btn-close-white" @click="closeQuest">&times;</button>
 
