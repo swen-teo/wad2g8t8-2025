@@ -6,7 +6,7 @@ import { getFunctions } from "firebase/functions";
 
 // Your web app's Firebase configuration
 // (You provided this)
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: 'AIzaSyDrcESDuT2jbQjllA8LXQN8vL9RkpF0qbg',
   authDomain: 'questpass-b3680.firebaseapp.com',
   projectId: 'questpass-b3680',
