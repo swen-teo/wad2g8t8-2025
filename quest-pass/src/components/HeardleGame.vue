@@ -72,8 +72,17 @@
           <button class="btn btn-outline-secondary" :disabled="isComplete" @click="skipAttempt">
             Skip
           </button>
-          <button class="btn btn-outline-danger ms-auto" @click="resetGame">
-            <font-awesome-icon :icon="['fas','sync']" />
+          <button
+            class="btn ms-auto"
+            :class="isRegenerating ? 'btn-outline-secondary' : 'btn-outline-danger'"
+            @click="resetGame"
+            :disabled="isRegenerating"
+          >
+            <template v-if="isRegenerating">Regenerated!</template>
+            <template v-else>
+              <font-awesome-icon :icon="['fas','sync']" class="me-2" />
+              Get a new song
+            </template>
           </button>
         </div>
 
@@ -155,6 +164,9 @@ const errorMessage = ref(null)
 const showSuggestions = ref(false)
 const focusedIndex = ref(-1)
 const showInfo = ref(false)
+// UI feedback on reset button
+const isRegenerating = ref(false)
+const regenBtnTimer = ref(null)
 
 // Audio State
 const audioCtx = ref(null)
@@ -201,6 +213,9 @@ onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
   if (!sessionFinalized.value && attempts.value.length > 0) {
     finalizeMiniGameSession({ outcome: 'abandoned', pointsEarned: 0 })
+  }
+  if (regenBtnTimer.value) {
+    clearTimeout(regenBtnTimer.value)
   }
 })
 
@@ -436,9 +451,22 @@ function resetGame() {
   if (allSongs.value.length > 0) {
     answer.value = pickRandom(allSongs.value)
     beginSession()
+    // Visual feedback: disable button briefly and show confirmation text
+    if (regenBtnTimer.value) clearTimeout(regenBtnTimer.value)
+    isRegenerating.value = true
+    regenBtnTimer.value = setTimeout(() => {
+      isRegenerating.value = false
+      regenBtnTimer.value = null
+    }, 1500)
   } else {
     // If list is empty (e.g., initial fetch failed), try fetching again
     fetchAndSetGame()
+    if (regenBtnTimer.value) clearTimeout(regenBtnTimer.value)
+    isRegenerating.value = true
+    regenBtnTimer.value = setTimeout(() => {
+      isRegenerating.value = false
+      regenBtnTimer.value = null
+    }, 1800)
   }
 }
 
@@ -507,6 +535,7 @@ function pickRandom(list) {
   overflow: visible; /* allow popovers/lists to extend beyond */
   display: flex;
   height: 100%;
+  position: relative;
 }
 .game-icon {
   width: 36px; height: 36px; border-radius: 10px;
@@ -544,6 +573,8 @@ function pickRandom(list) {
   max-width: min(90vw, 280px);
   z-index: 1080;
 }
+
+/* (Toast removed per inline-button feedback request) */
 
 /* ensure inner body doesn't clip overflow either and fills height */
 .game-card :deep(.card-body) {

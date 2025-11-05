@@ -65,89 +65,105 @@
       
       <!-- Game UI (Main Content) -->
       <div v-else>
-        <!-- Artist Image -->
-        <div class="image-container shadow-sm mb-3">
-          <img 
-            v-if="answer"
-            :src="answer.pictureUrl" 
-            :alt="`Blurred image of ${answer.name}`"
-            :style="{ filter: `blur(${effectiveBlur}px)` }"
-            @error="onImageError"
-          />
-          <!-- Win overlay: subtle success chip -->
-          <div v-if="isWin" class="image-overlay" aria-live="polite">
-            <div class="overlay-chip success">
-              <font-awesome-icon :icon="['fas','check']" class="me-2" />
-              Correct!
+        <div class="row align-items-start g-3 g-md-4">
+          <!-- Left: Image -->
+          <div class="col-12 col-md-5 d-flex justify-content-center justify-content-md-start">
+            <div class="image-container shadow-sm mb-3 mb-md-0">
+              <img 
+                v-if="answer"
+                :src="answer.pictureUrl" 
+                :alt="`Blurred image of ${answer.name}`"
+                :style="{ filter: `blur(${effectiveBlur}px)` }"
+                @error="onImageError"
+              />
+              <!-- Win overlay: subtle success chip -->
+              <div v-if="isWin" class="image-overlay" aria-live="polite">
+                <div class="overlay-chip success">
+                  <font-awesome-icon :icon="['fas','check']" class="me-2" />
+                  Correct!
+                </div>
+              </div>
+              <!-- Loss overlay: show revealed answer on top of unblurred image -->
+              <div v-if="isLoss" class="image-overlay" aria-live="polite">
+                <div class="overlay-chip">
+                  <font-awesome-icon :icon="['fas','eye']" class="me-2" />
+                  Answer: <strong class="ms-1">{{ answer.name }}</strong>
+                </div>
+              </div>
             </div>
           </div>
-          <!-- Loss overlay: show revealed answer on top of unblurred image -->
-          <div v-if="isLoss" class="image-overlay" aria-live="polite">
-            <div class="overlay-chip">
-              <font-awesome-icon :icon="['fas','eye']" class="me-2" />
-              Answer: <strong class="ms-1">{{ answer.name }}</strong>
+
+          <!-- Right: Controls + Input + Attempts -->
+          <div class="col-12 col-md-7">
+            <!-- Controls -->
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3 controls">
+              <button class="btn btn-outline-secondary" :disabled="isComplete" @click="skipAttempt">
+                <font-awesome-icon :icon="['fas','forward']" class="me-2" />Skip
+              </button>
+              <button
+                class="btn ms-auto"
+                :class="isRegenerating ? 'btn-outline-secondary' : 'btn-outline-danger'"
+                @click="resetGame"
+                :disabled="isRegenerating"
+              >
+                <template v-if="isRegenerating">Regenerated!</template>
+                <template v-else>
+                  <font-awesome-icon :icon="['fas','sync']" class="me-2" />
+                  Get a new artist
+                </template>
+              </button>
             </div>
-          </div>
-        </div>
 
-        <!-- Controls -->
-        <div class="d-flex flex-wrap gap-2 align-items-center mb-3 controls">
-          <button class="btn btn-outline-secondary" :disabled="isComplete" @click="skipAttempt">
-            <font-awesome-icon :icon="['fas','forward']" class="me-2" />Skip
-          </button>
-          <button class="btn btn-outline-danger ms-auto" @click="resetGame">
-            <font-awesome-icon :icon="['fas','sync']" />
-          </button>
-        </div>
+            <!-- Guess input with suggestions -->
+            <div class="guess-box mb-3">
+              <input 
+                type="text" 
+                class="form-control"
+                placeholder="Guess the artist..."
+                v-model="query"
+                :disabled="isComplete"
+                @focus="showSuggestions = true"
+                @blur="hideSuggestions"
+                @keydown.down.prevent="onArrowDown"
+                @keydown.up.prevent="onArrowUp"
+                @keydown.enter.prevent="onEnter"
+                @keydown.esc.prevent="onEscape"
+              >
+              <ul 
+                class="list-group suggestion-list shadow-sm"
+                v-if="showSuggestions && suggestions.length > 0"
+              >
+                <li 
+                  v-for="(artist, index) in suggestions" 
+                  :key="artist.id"
+                  class="list-group-item list-group-item-action"
+                  :class="{ 'active': index === focusedIndex }"
+                  @mousedown="selectSuggestion(artist)"
+                  @mouseenter="focusedIndex = index"
+                >
+                  <strong>{{ artist.name }}</strong>
+                </li>
+              </ul>
+            </div>
 
-        <!-- Guess input with suggestions -->
-        <div class="guess-box mb-3">
-          <input 
-            type="text" 
-            class="form-control"
-            placeholder="Guess the artist..."
-            v-model="query"
-            :disabled="isComplete"
-            @focus="showSuggestions = true"
-            @blur="hideSuggestions"
-            @keydown.down.prevent="onArrowDown"
-            @keydown.up.prevent="onArrowUp"
-            @keydown.enter.prevent="onEnter"
-            @keydown.esc.prevent="onEscape"
-          >
-          <ul 
-            class="list-group suggestion-list shadow-sm"
-            v-if="showSuggestions && suggestions.length > 0"
-          >
-            <li 
-              v-for="(artist, index) in suggestions" 
-              :key="artist.id"
-              class="list-group-item list-group-item-action"
-              :class="{ 'active': index === focusedIndex }"
-              @mousedown="selectSuggestion(artist)"
-              @mouseenter="focusedIndex = index"
-            >
-              <strong>{{ artist.name }}</strong>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Attempts list -->
-        <div class="attempts-list">
-          <div v-if="isLoss" class="alert alert-warning text-center">
-            <strong>So close!</strong> The answer was <br><strong>{{ answer.name }}</strong>
-          </div>
-          <div 
-            v-for="(guess, index) in reversedAttempts" 
-            :key="index"
-            class="alert"
-            :class="guess.isCorrect ? 'alert-success' : 'alert-danger'"
-          >
-            <font-awesome-icon :icon="['fas', guess.isCorrect ? 'check' : 'times']" class="me-2" />
-            {{ guess.name }}
-          </div>
-          <div v-if="isWin" class="alert alert-success text-center">
-            <strong>Well done! You got it!</strong>
+            <!-- Attempts list -->
+            <div class="attempts-list">
+              <div v-if="isLoss" class="alert alert-warning text-center">
+                <strong>So close!</strong> The answer was <br><strong>{{ answer.name }}</strong>
+              </div>
+              <div 
+                v-for="(guess, index) in reversedAttempts" 
+                :key="index"
+                class="alert"
+                :class="guess.isCorrect ? 'alert-success' : 'alert-danger'"
+              >
+                <font-awesome-icon :icon="['fas', guess.isCorrect ? 'check' : 'times']" class="me-2" />
+                {{ guess.name }}
+              </div>
+              <div v-if="isWin" class="alert alert-success text-center">
+                <strong>Well done! You got it!</strong>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -176,6 +192,9 @@ const errorMessage = ref(null)
 const showSuggestions = ref(false)
 const focusedIndex = ref(-1)
 const showInfo = ref(false)
+// UI feedback on reset button
+const isRegenerating = ref(false)
+const regenBtnTimer = ref(null)
 
 // Stores
 const userStore = useUserStore()
@@ -219,6 +238,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
+  if (regenBtnTimer.value) clearTimeout(regenBtnTimer.value)
 })
 
 // Show newest attempts first
@@ -361,9 +381,21 @@ function resetGame() {
   // Pick a new random artist from the *existing* list
   if (allArtists.value.length > 0) {
     answer.value = pickRandom(allArtists.value)
+    if (regenBtnTimer.value) clearTimeout(regenBtnTimer.value)
+    isRegenerating.value = true
+    regenBtnTimer.value = setTimeout(() => {
+      isRegenerating.value = false
+      regenBtnTimer.value = null
+    }, 1500)
   } else {
     // If list is empty (e.g., initial fetch failed), try fetching again
     fetchAndSetGame()
+    if (regenBtnTimer.value) clearTimeout(regenBtnTimer.value)
+    isRegenerating.value = true
+    regenBtnTimer.value = setTimeout(() => {
+      isRegenerating.value = false
+      regenBtnTimer.value = null
+    }, 1800)
   }
 }
 
@@ -433,7 +465,8 @@ function pickRandom(list) {
   box-shadow: 0 6px 14px rgba(96,75,200,0.18);
 }
 .image-container {
-  width: min(100%, 340px); /* make image area smaller and centered */
+  /* Smaller, responsive square so the input stays visible */
+  width: clamp(200px, 60vw, 300px); /* centered */
   aspect-ratio: 1 / 1;
   border-radius: 0.75rem;
   overflow: hidden;
@@ -533,10 +566,12 @@ function pickRandom(list) {
 /* Center and constrain card + scale image on larger screens */
 @media (min-width: 768px) {
   .game-card { max-width: 720px; margin-left: auto; margin-right: auto; }
-  .image-container { width: 420px; }
+  /* Keep image moderate on tablets */
+  .image-container { width: clamp(240px, 40vw, 360px); }
 }
 @media (min-width: 992px) {
   .game-card { max-width: 840px; }
-  .image-container { width: 520px; }
+  /* And on desktops */
+  .image-container { width: clamp(280px, 36vw, 400px); }
 }
 </style>

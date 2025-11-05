@@ -68,7 +68,7 @@
 
     <!-- Selected game panel: renders only when chosen -->
     <transition name="slide-fade">
-      <div v-if="selectedGame" class="card border-0 shadow-sm rounded-3 mb-4">
+      <div v-if="selectedGame" ref="gamePanelRef" class="card game-panel border-0 shadow-sm rounded-3 mb-4">
         <div class="card-header bg-white d-flex align-items-center justify-content-between py-3 px-3 px-sm-4 rounded-top-3">
           <div class="fw-semibold">{{ currentGameTitle }}</div>
           <button class="btn btn-sm btn-outline-secondary" @click="closeGame">
@@ -88,15 +88,22 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import HeardleGame from './HeardleGame.vue'
 import CelebrityGuess from './CelebrityGuess.vue'
 import AlbumGuess from './AlbumGuess.vue'
 
 const selectedGame = ref(null) // 'heardle' | 'album' | 'celebrity' | null
+const gamePanelRef = ref(null)
 
 function selectGame(key) {
   selectedGame.value = key
+  // After rendering the panel, make sure it's fully visible
+  nextTick(() => {
+    if (gamePanelRef.value && typeof gamePanelRef.value.scrollIntoView === 'function') {
+      gamePanelRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  })
 }
 function closeGame() {
   selectedGame.value = null
@@ -135,6 +142,15 @@ const currentGameTitle = computed(() => {
   /* Keep grid nicely sized on xl+ screens */
   .container { max-width: 1140px; }
 }
+
+/* Ensure the selected game panel doesn't clip inner content
+   (overrides global .card { overflow: hidden; }) */
+.game-panel {
+  overflow: visible !important;
+  /* If a fixed/sticky navbar exists, this prevents the panel top from hiding under it */
+  scroll-margin-top: 72px;
+}
+.game-panel .card-body { overflow: visible; }
 
 .game-choice {
   padding: 1rem 1.1rem;
