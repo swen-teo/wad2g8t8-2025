@@ -8,7 +8,7 @@
         <div class="qp-logo-badge">
             <font-awesome-icon icon="fa-solid fa-music" aria-hidden="true" />
         </div>
-        <h1 class="display-4 mt-4 qp-title">
+        <h1 class="page-title mt-4 text-center">
             QUESTPASS
         </h1>
         <div class="h5 mt-4 qp-subtitle">
@@ -54,7 +54,7 @@
 
     
     <div class="container my-5 py-5 fade-in-section">
-        <h1 class="text-center mb-5 fw-bold">How It Works</h1>
+    <h1 class="page-title text-center mb-5">How It Works</h1>
         <div class="mx-auto" style="max-width: 700px;">
 
             <div class="mb-4 step-hover-reveal">

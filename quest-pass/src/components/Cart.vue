@@ -1,6 +1,6 @@
 <template>
   <div class="container my-5">
-    <h1 class="mb-4">Your Shopping Cart</h1>
+  <h1 class="page-title mb-4">Your Shopping Cart</h1>
 
     <div v-if="cartStore.itemCount > 0">
       <div 

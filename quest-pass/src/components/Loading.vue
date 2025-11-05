@@ -56,6 +56,10 @@ const covers = [
 .loader-overlay {
   position: fixed;
   inset: 0;
+  /* Ensure external classes (like Bootstrap margin utilities) don't clip the overlay */
+  margin: 0 !important;
+  width: 100vw;
+  height: 100dvh;
   display: grid;
   place-items: center;
   background:

@@ -1,7 +1,7 @@
 <template>
   <div class="container py-5">
     <div class=" mb-5">
-      <h1 class="display-5 fw-bold mb-3">QuestPass Tier Levels</h1>
+  <h1 class="page-title mb-3">QuestPass Tier Levels</h1>
       <p class="lead text-muted">Advance your tier by earning points through event quests to unlock exclusive rewards and benefits.</p>
     </div>
 

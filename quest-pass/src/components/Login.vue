@@ -125,7 +125,7 @@ async function handleGoogleLogin() {
               <font-awesome-icon icon="fa-solid fa-ticket-simple" class="fa-3x text-primary-1" />
               <span class="app-name">QuestPass</span>
             </div>
-            <h1 class="fw-bold mb-3">Welcome Back</h1>
+            <h1 class="page-title mb-3">Welcome Back</h1>
             <p class="text-muted mb-4">Log in to continue your quest.</p>
 
             <!-- email/password form -->
@@ -307,6 +307,7 @@ async function handleGoogleLogin() {
   font-size: 1.75rem;
   font-weight: 700;
   background: linear-gradient(90deg, #8b5cf6 0%, #c084fc 50%, #a855f7 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-transform: uppercase;

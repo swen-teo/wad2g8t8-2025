@@ -1,6 +1,6 @@
 <template>
   <div class="merch-creator-page container my-5">
-    <h1 class="text-center mb-4 display-4 fw-bold text-primary">
+    <h1 class="page-title text-center mb-4">
       Design Your QuestPass Merch!
     </h1>
 
