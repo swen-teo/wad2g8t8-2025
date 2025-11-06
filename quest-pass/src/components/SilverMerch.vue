@@ -32,7 +32,7 @@
                     
                     <!-- Main Content (Wheel or Voucher) -->
                     <div v-else>
-                        <div class="d-flex flex-column flex-md-row align-items-center justify-content-center gap-5 mb-5">
+                        <div class="d-flex flex-column flex-lg-row align-items-center justify-content-center gap-5 mb-5 layout-stack">
                             
                             <!-- Wheel Container -->
                             <div class="wheel-container mx-auto">
@@ -298,7 +298,6 @@ async function handleSpinEnd() {
             console.error("Failed to save voucher to Firestore:", err);
             statusMessage.value = "An error occurred while saving.";
             error.value = "Could not save your voucher. Please refresh and try again.";
-            // Don't set hasSpun to true, so they can retry
         } finally {
             isLoading.value = false; // Done loading/saving
         }
@@ -332,7 +331,7 @@ async function copyCode() {
 
 .wheel-container {
     /* Responsive sizing for the wheel */
-    --wheel-size: clamp(260px, 70vw, 424px);
+    --wheel-size: clamp(260px, 68vw, 420px);
     --label-radius: calc(var(--wheel-size) * 0.34);
     width: var(--wheel-size);
     height: var(--wheel-size);
@@ -341,6 +340,7 @@ async function copyCode() {
     align-items: center;
     justify-content: center;
     padding: 10px;
+    aspect-ratio: 1 / 1;
 }
 
 .wheel-pointer {
@@ -365,6 +365,7 @@ async function copyCode() {
 .wheel {
     width: 100%;
     height: 100%;
+    aspect-ratio: 1 / 1;
     border-radius: 50%;
     position: relative;
     overflow: hidden;
@@ -374,9 +375,8 @@ async function copyCode() {
         var(--reward-10) 120deg 240deg,     /* $10 segment */
         var(--reward-20) 240deg 360deg      /* $20 segment */
     );
-    /* Inner shadow for 3D effect */
     box-shadow: 0 0 15px rgba(0,0,0,0.3), inset 0 0 25px rgba(0,0,0,0.4);
-    border: 5px solid #fff; /* White border */
+    border: 5px solid #fff;
 }
 
 .wheel::after {
@@ -416,8 +416,31 @@ async function copyCode() {
 }
 
 .voucher-legend {
-    width: 250px;
+    width: min(280px, 82vw);
     flex-shrink: 0;
+}
+
+.voucher-legend ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.voucher-legend li {
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.voucher-legend li strong {
+    flex: 1 1 120px;
+}
+
+.voucher-legend li .badge {
+    margin-left: auto;
+}
+
+.layout-stack {
+    width: 100%;
 }
 
 .legend-color-box {
@@ -428,7 +451,6 @@ async function copyCode() {
     border: 1px solid rgba(0,0,0,0.1);
 }
 
-/* Voucher Code Display */
 .code-display {
     background-color: #f8f9fa; 
     border: 2px dashed #ced4da; 
@@ -443,7 +465,6 @@ async function copyCode() {
     font-variant-numeric: tabular-nums;
 }
 
-/* Success message styling to match app theme */
 .success-title {
     margin: 0 0 .5rem 0;
     display: inline-flex;
@@ -470,7 +491,66 @@ async function copyCode() {
     }
 }
 
-/* Dark mode tweaks */
+@media (max-width: 991.98px) {
+    .layout-stack {
+        gap: 2.5rem !important;
+        flex-wrap: wrap;
+    }
+
+    .wheel-container {
+        --wheel-size: clamp(260px, 80vw, 380px);
+    }
+
+    .voucher-legend {
+        width: min(320px, 90vw);
+        margin-top: 1rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .layout-stack {
+        flex-wrap: nowrap;
+        align-items: stretch !important;
+    }
+
+    .voucher-legend {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .voucher-legend li {
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .voucher-legend li strong {
+        flex: 1 1 auto;
+    }
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .wheel-container {
+        --wheel-size: clamp(300px, 40vw, 420px);
+    }
+
+    .voucher-legend {
+        width: min(320px, 34vw);
+    }
+}
+
+@media (min-width: 1200px) {
+    .wheel-container {
+        --wheel-size: clamp(360px, 34vw, 460px);
+    }
+
+    .voucher-legend {
+        width: min(360px, 28vw);
+    }
+}
+
 @media (prefers-color-scheme: dark) {
     .wheel-pointer {
         color: #cfc7bf;

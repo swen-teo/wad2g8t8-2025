@@ -1,6 +1,6 @@
 <template>
   <nav class="navbar navbar-expand-md navbar-light sticky-top">
-    <div class="container">
+    <div class="container-lg">
       <router-link
         class="navbar-brand fw-bold"
         :to="{ name: 'LandingPage' }"
@@ -284,7 +284,7 @@ watch(
   overflow: hidden;
   top: calc(100% + 0.5rem);
   transform: none !important;
-  z-index: 2000; /* ensure above content */
+  z-index: 2000;
 }
 
 .navbar-nav.ms-auto .dropdown-menu .dropdown-item,
@@ -320,6 +320,7 @@ watch(
   width: auto;
   margin: 0;
   margin-left: 0;
+  min-width: 0;
 }
 
 .user-dropdown-toggle:hover,
@@ -333,12 +334,12 @@ watch(
   max-width: 12rem;
   justify-content: flex-end;
   text-align: right;
-  min-width: 0; /* allow truncation */
+  min-width: 0;
 }
 
 .user-name {
   max-width: 7.5rem;
-  overflow: hidden; /* paired with text-truncate */
+  overflow: hidden;
 }
 
 .user-points {
@@ -358,7 +359,6 @@ watch(
 }
 
 @media (max-width: 575.98px) {
-  /* tighter button and gaps on very small screens */
   .user-dropdown-toggle {
     gap: 0.5rem;
     padding: 0.35rem 0.6rem;
@@ -371,39 +371,32 @@ watch(
     max-width: 6rem;
   }
 
-  /* make dropdown menu fit within viewport on phones */
   .navbar-nav.ms-auto .dropdown-menu {
     right: 0;
     left: auto;
     width: min(92vw, 320px);
   }
 
-  /* hide the username on extra-cramped widths to avoid wrapping */
   @media (max-width: 380px) {
     .user-name { display: none; }
     .user-meta { max-width: 6.5rem; }
   }
 }
 
-/* Improve responsiveness of navbar on small/medium screens */
 @media (max-width: 991.98px) {
-  /* Collapse panel padding so items don't stick to edges */
   .navbar-collapse {
     padding: 0.5rem 0;
   }
 
-  /* Stack nav links nicely with comfortable tap targets */
   .navbar-collapse .nav-link {
     margin-left: 0 !important;
     padding: 0.5rem 0.25rem;
   }
 
-  /* Spacing between the two nav lists when stacked */
   .navbar-collapse .navbar-nav + .navbar-nav {
     margin-top: 0.25rem;
   }
 
-  /* Ensure user dropdown doesn't overflow the viewport when collapsed */
   .navbar-collapse.show .navbar-nav.ms-auto .dropdown-menu {
     position: absolute;
     right: 0;
@@ -411,13 +404,40 @@ watch(
     width: min(92vw, 340px);
   }
 
-  /* Slightly reduce the user meta width so it doesn’t wrap early */
   .user-meta {
     max-width: 10.5rem;
   }
 }
 
-/* Make the toggler more visible on white background */
+@media (min-width: 768px) and (max-width: 1199.98px) {
+  .navbar .container-lg {
+    max-width: none;
+    padding-inline: 1.5rem;
+  }
+
+  .navbar-nav.me-auto {
+    gap: 0.25rem;
+  }
+
+  .navbar-nav > .nav-item .nav-link {
+    padding-inline: 0.4rem;
+  }
+
+  .user-dropdown-toggle {
+    gap: 0.65rem;
+    padding: 0.4rem 0.75rem;
+    max-width: min(100%, 15rem);
+  }
+
+  .user-meta {
+    max-width: 8.5rem;
+  }
+
+  .user-name {
+    max-width: 5.5rem;
+  }
+}
+
 .navbar-toggler {
   border-color: rgba(0, 0, 0, 0.15);
 }

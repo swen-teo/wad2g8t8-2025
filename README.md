@@ -2,7 +2,7 @@
 
 We are a group of students from Singapore Management University (SMU) working on a group project for the course of IS216 Web Application Development II (WAD2).
 
-Our project Quest Pass is a Vue 3 + Vite single-page app that gamifies live events with quests and rewards. Users can **browse events**, **omplete musi**c and **trivia quests**, and **track progress** tied to their Firebase profile. 
+Our project Quest Pass is a Vue 3 + Vite single-page app that gamifies live events with quests and rewards. Users can **browse events**, **complete music quest** and **trivia quests**, and **track progress** tied to their Firebase profile. 
 
 A platform that lets fans **earn presale access codes** and **rewards** by completing interactive quests.
 
@@ -126,7 +126,8 @@ firebase init
   - Service ID
   - Template ID
   - Public Key
-- **Cost**: Free tier (200 emails/month)
+- **Cost**: Free tier 
+- ⚠️ **Important**: Free tier only allows up to 200 email requests. Once used up, new API is needed.
 
 ### 5. Create Environment Files
 
