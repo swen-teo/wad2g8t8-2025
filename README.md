@@ -114,8 +114,8 @@ npm run dev
 
 4) Open the app
 
-- Local: http://localhost:8888
-- In Codespaces, use the forwarded URL for port 8888
+- Local: http://localhost:3000
+- In Codespaces, use the forwarded URL for port 3000
 
 ## Environment variables and configuration
 
@@ -282,5 +282,3 @@ Cloud Functions (`quest-pass/functions/package.json`):
 - Document Firestore data model (collections, indexes) as the project evolves
 
 ---
-
-This README explains how to set up the environment, run the app, and understand the integration points (Firebase, Spotify, Gemini) in a way that’s reproducible for academic graders.
