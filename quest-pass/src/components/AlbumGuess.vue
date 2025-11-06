@@ -8,11 +8,11 @@
           </div>
           <h5 class="mb-0">Album Guesser</h5>
         </div>
-        <div v-if="!isLoading && !isComplete" class="d-flex align-items-center gap-2 flex-wrap">
+        <div v-if="!isLoading" class="d-flex align-items-center gap-2 flex-wrap header-badges">
           <span class="badge bg-light text-dark border">
             Attempt {{ attempts.length + 1 }} / {{ MAX_ATTEMPTS }}
           </span>
-          <span class="badge bg-warning text-dark border">
+          <span v-if="!isComplete" class="badge bg-warning text-dark border">
             <font-awesome-icon :icon="['fas','trophy']" class="me-1" /> Worth {{ currentAttemptPoints }} pts
           </span>
           <div class="info-trigger">
@@ -538,6 +538,11 @@ onMounted(fetchArtists)
 .game-card :deep(.card-body) { overflow: visible; display: flex; flex-direction: column; }
 .info-trigger { position: relative; }
 .info-popover { position: absolute; right: 0; top: 120%; width: 260px; max-width: min(90vw, 280px); z-index: 1080; }
+
+/* Header badges wrapping on narrow cards (parity with other games) */
+.header-badges { row-gap: .5rem; }
+.header-badges .badge { white-space: nowrap; }
+.header-badges .info-trigger { flex: 0 0 auto; }
 
 /* Removed fixed max-width so cards fill their grid columns at all breakpoints */
 @media (max-width: 575.98px) {
