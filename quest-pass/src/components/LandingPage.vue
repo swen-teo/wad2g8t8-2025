@@ -195,7 +195,7 @@ function enterSite() {
   position: relative;
   z-index: 2;
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(3rem, 15vw, 8rem);
+  font-size: clamp(2.25rem, 12vw, 3.25rem);
   font-weight: 700;
   color: transparent;
   background: linear-gradient(90deg, var(--primary-1) 0%, var(--primary-2) 100%);
@@ -203,9 +203,9 @@ function enterSite() {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   display: flex;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.02em;
   margin: 0;
-  padding-bottom: 2rem;
+  padding-bottom: 1rem;
   transform: translateZ(0);
 }
 
@@ -260,7 +260,10 @@ function enterSite() {
 #enter-button {
   margin-top: 1.5rem;
 }
-
+#enter-button.btn {
+    
+    padding: 0.7rem 1.25rem;
+  }
 @keyframes reveal-button {
   to {
     opacity: 1;
@@ -273,6 +276,7 @@ function enterSite() {
   display: grid;
   place-items: center;
   max-width: 400px;
+
 }
 
 @keyframes subtle-float {
@@ -298,37 +302,37 @@ function enterSite() {
 .floating-card {
   position: absolute;
   background: var(--card);
-  padding: 1rem;
+  padding: 0.7rem;
   border-radius: 1.25rem;
   box-shadow: var(--elev-1);
   border: 1px solid #f0e6ff;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  width: 200px;
+  width: 160px;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
   animation-duration: 4s;
 }
 
 .floating-card.card-1 {
-  top: -2rem;
-  right: -2rem;
+  top: -1.2rem;
+  right: -1.2rem;
   animation-name: card-float-1;
 }
 
 .floating-card.card-2 {
-  bottom: -0.01rem;
-  left: -1.2rem;
+  bottom: -0.4rem;
+  left: -0.8rem;
   animation-name: card-float-2;
   animation-delay: 1s;
 }
 
 .floating-card-icon {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
-  border-radius: 999px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
   color: #fff;
@@ -342,12 +346,12 @@ function enterSite() {
 
 .floating-card-label {
   color: var(--ink-muted);
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 500;
 }
 
 .floating-card-value {
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -357,7 +361,7 @@ function enterSite() {
     transform: translateY(0) rotate(0);
   }
   50% {
-    transform: translateY(-15px) rotate(5deg);
+    transform: translateY(-10px) rotate(4deg);
   }
 }
 
@@ -367,17 +371,50 @@ function enterSite() {
     transform: translateY(0) rotate(0);
   }
   50% {
-    transform: translateY(-10px) rotate(-5deg);
+    transform: translateY(-8px) rotate(-4deg);
   }
 }
 
-.floating-card {
-  display: none;
-}
+
 
 @media (min-width: 640px) {
   .floating-card {
-    display: flex;
+    width: 180px;      
+    padding: 0.9rem;
+    gap: 0.7rem;
+    transform: none;
+    animation-duration: 4s;
   }
+   .floating-card.card-1 { top: -1.8rem; right: -1.8rem; }
+  .floating-card.card-2 { bottom: -0.8rem; left: -1rem; }
 }
+
+@media (max-width: 420px) {
+  #hero-image-container {
+    max-width: 86vw;
+  }
+  .hero-image {
+    aspect-ratio: 4 / 3;   
+    object-fit: cover;
+  }
+
+  .floating-card {
+    transform: scale(0.78);
+    transform-origin: center;
+    width: 132px;
+    padding: 0.5rem;
+    gap: 0.45rem;
+  }
+  .floating-card-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .floating-card-label { font-size: 0.62rem; }
+  .floating-card-value { font-size: 0.88rem; }
+
+  /* safer positions on very small screens */
+  .floating-card.card-1 { top: -0.25rem; right: -0.25rem; }
+  .floating-card.card-2 { bottom: -0.2rem; left: -0.25rem; }
+}
+
 </style>
