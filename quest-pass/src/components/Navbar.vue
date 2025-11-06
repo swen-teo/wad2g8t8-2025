@@ -232,6 +232,11 @@ function handleCollapseClick(e) {
   // Close the collapse when a nav link, dropdown item, or button inside is clicked
   const target = e.target;
   if (!target) return;
+  // Don't close the navbar when the user clicks the user dropdown toggle itself
+  // This fixes mobile: opening the user dropdown shouldn't collapse the hamburger menu
+  if (target.closest('.user-dropdown-toggle')) {
+    return;
+  }
   const clickable = target.closest('a.nav-link, a.dropdown-item, a.btn, button');
   if (clickable) {
     hideNavbarCollapse();

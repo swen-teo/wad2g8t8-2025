@@ -44,9 +44,9 @@
                                     :style="{ transform: `rotate(${wheelRotation}deg)` }"
                                     @transitionend="handleSpinEnd"
                                 >
-                                    <div class="segment-label" style="transform: rotate(60deg) translateY(calc(-1 * var(--label-radius)));">$5</div>
-                                    <div class="segment-label" style="transform: rotate(180deg) translateY(calc(-1 * var(--label-radius)));">$10</div>
-                                    <div class="segment-label" style="transform: rotate(300deg) translateY(calc(-1 * var(--label-radius)));">$20</div>
+                                    <div class="segment-label" style="transform: rotate(60deg) translateY(calc(-1 * var(--label-radius)));"></div>
+                                    <div class="segment-label" style="transform: rotate(180deg) translateY(calc(-1 * var(--label-radius)));"></div>
+                                    <div class="segment-label" style="transform: rotate(300deg) translateY(calc(-1 * var(--label-radius)));"></div>
                                 </div>
                             </div>
                             
