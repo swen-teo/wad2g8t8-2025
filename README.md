@@ -33,7 +33,8 @@ You'll need to register and obtain API keys from the following services:
 3. **Google Gemini API** (AI-powered trivia generation)
 4. **Google Maps API** (Venue location maps)
 5. **EmailJS** (Email notifications)
-6. **Spotify Web API** (Music discovery quest - optional)
+6. **Spotify Web API** (Music discovery quest)
+7. **Deezer API** (Mini Games; No key needed)
 
 ---
 
@@ -95,14 +96,14 @@ firebase init
 ### 4. Get API Keys
 
 #### JamBase API
-- Visit [JamBase API](https://jambase.com/jb-api)
+- Visit [JamBase API](https://apidocs.jambase.com/docs/jambase-api)
 - Sign up for a developer account
 - Navigate to your dashboard to get your API key
 - **Cost**: Free tier available
 - ⚠️ **Important**: Free trial API keys expire after 2 weeks. You'll need to request an extension or upgrade to continue using the service.
 
 #### Google Gemini API
-- Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+- Go to [Google AI Studio](https://aistudio.google.com/api-keys)
 - Sign in with your Google account
 - Click "Create API Key"
 - Copy your API key
@@ -128,6 +129,41 @@ firebase init
   - Public Key
 - **Cost**: Free tier 
 - ⚠️ **Important**: Free tier only allows up to 200 email requests. Once used up, new API is needed.
+
+#### Spotify Web API (Optional - for Music Discovery Quest)
+- Go to Spotify Developer Dashboard
+- Log in with your Spotify account (create one if needed)
+- Click "Create App"
+- Fill in the app details:
+  - App Name: QuestPass
+  - App Description: Music discovery and event platform
+  - Redirect URI: `http://localhost:3000/callback` (for local dev)
+  - Add your production URL later: `https://your-domain.com/callback`
+- Accept the Terms of Service
+- Click "Create"
+- Copy your:
+  - Client ID
+  - Client Secret
+- Click "Edit Settings" and add all redirect URIs you'll use
+- Cost: Free (with rate limits: 180 requests/minute)
+- ⚠️ Note: Requires OAuth 2.0 implementation for user authorization
+
+#### Deezer API (Used automatically - No key required)
+- The app uses the public Deezer API for:
+  - Artist images and metadata
+  - Album cover art
+  - Music catalog data for guessing games
+- No API key required - completely free and open
+- CORS Handling: The app uses `corsproxy.io` to bypass CORS restrictions
+- Rate Limits:
+  - Generous limits for free tier
+  - No authentication needed for public endpoints
+- Endpoints used:
+  - `/chart/0/artists` - Popular artists
+  - `/chart/0/tracks` - Popular tracks
+  - /`artist/{id}/albums` - Artist's albums
+- 📚 Documentation: Deezer API Docs
+
 
 ### 5. Create Environment Files
 
@@ -190,7 +226,7 @@ export const firebaseConfig = {
 
 ### Local Development Setup
 
-#### Option 1: Run with Live Firebase (Recommended)
+#### Run with Live Firebase (Recommended)
 
 This connects to your live Firebase project while developing locally:
 
@@ -199,41 +235,6 @@ This connects to your live Firebase project while developing locally:
 npm run dev
 
 # The app will be available at http://localhost:3000
-```
-
-This uses your production Firebase services (Authentication, Firestore) but serves the frontend locally with hot-reload.
-
-#### Option 2: Run with Firebase Emulators (Advanced)
-
-For completely offline development without touching production data:
-
-```bash
-# Terminal 1: Start Firebase emulators
-firebase emulators:start
-
-# Terminal 2: Start the dev server
-npm run dev
-```
-
-The emulators provide:
-- **Firestore Emulator**: Local database at `localhost:8080`
-- **Authentication Emulator**: Local auth at `localhost:9099`
-- **Functions Emulator**: Local functions at `localhost:5001`
-- **Emulator UI**: View data at `http://localhost:4000`
-
-⚠️ **Note**: When using emulators, you'll need to update `src/firebase.js` to connect to local emulators:
-
-```javascript
-import { connectAuthEmulator } from 'firebase/auth';
-import { connectFirestoreEmulator } from 'firebase/firestore';
-import { connectFunctionsEmulator } from 'firebase/functions';
-
-// After initializing auth, db, functions:
-if (location.hostname === 'localhost') {
-  connectAuthEmulator(auth, 'http://localhost:9099');
-  connectFirestoreEmulator(db, 'localhost', 8080);
-  connectFunctionsEmulator(functions, 'localhost', 5001);
-}
 ```
 
 ### Build for Production
@@ -245,7 +246,6 @@ npm run build
 # Preview production build locally
 npm run preview
 
-# The preview will be available at http://localhost:4173
 ```
 
 ---
@@ -387,4 +387,4 @@ For questions or issues:
 
 ---
 
-**Built with ❤️ by the QuestPass Team**
+**Built with ❤️ by the QuestPass Team - Gorgeous Genius Glamorous Gracious Glowing Girls - THE 6Gs!**
