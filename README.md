@@ -2,6 +2,7 @@
 
 Quest Pass is a Vue 3 + Vite single-page app that gamifies live events with quests and rewards. Users can browse events, complete music and trivia quests, and track progress tied to their Firebase profile. A platform that lets fans earn presale access codes and rewards by completing interactive quests.
 
+You can view the website here: https://questpass-b3680.web.app/
 
 ## Contents
 
