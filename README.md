@@ -1,285 +1,389 @@
 # QuestPass 🎵🎟️
 
-Quest Pass is a Vue 3 + Vite single-page app that gamifies live events with quests and rewards. Users can browse events, complete music and trivia quests, and track progress tied to their Firebase profile. A platform that lets fans earn presale access codes and rewards by completing interactive quests.
+We are a group of students from Singapore Management University (SMU) working on a group project for the course of IS216 Web Application Development II (WAD2).
+
+Our project Quest Pass is a Vue 3 + Vite single-page app that gamifies live events with quests and rewards. Users can **browse events**, **omplete musi**c and **trivia quests**, and **track progress** tied to their Firebase profile. 
+
+A platform that lets fans **earn presale access codes** and **rewards** by completing interactive quests.
 
 You can view the website here: https://questpass-b3680.web.app/
 
-## Contents
+---
 
-- Overview and features
-- Architecture and folder structure
-- Prerequisites
-- Quick start (frontend)
-- Environment variables and configuration (Firebase, Spotify, Gemini)
-- Trivia quiz API contract
-- Firebase Functions (emulate and deploy)
-- Scripts
-- Troubleshooting
-- Roadmap / suggested improvements
+## 🚀 Quick Start
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** (v18 or higher) - [Download here](https://nodejs.org/)
+- **npm** or **yarn** package manager
+- **Firebase CLI** - Install globally:
+  ```bash
+  npm install -g firebase-tools
+  ```
+- **Git** - [Download here](https://git-scm.com/)
+
+### Required API Keys
+
+You'll need to register and obtain API keys from the following services:
+
+1. **Firebase** (Authentication, Firestore, Cloud Functions)
+2. **JamBase API** (Event data)
+3. **Google Gemini API** (AI-powered trivia generation)
+4. **Google Maps API** (Venue location maps)
+5. **EmailJS** (Email notifications)
+6. **Spotify Web API** (Music discovery quest - optional)
 
 ---
 
-## Overview
+## 📋 Environment Setup
 
-Key capabilities:
+### 1. Clone the Repository
 
-- Vue 3 SPA (Vite, Pinia, Vue Router, Bootstrap)
-- Firebase Authentication + Firestore for user data and events
-- MusicQuest: Spotify PKCE auth + Recently Played validation
-- TriviaQuest: Gemini-backed multiple-choice quiz
-- Optional Cloud Functions for seeding events and generating quizzes
-
-### Core features
-
-- Authentication (Firebase Auth)
-- Event discovery and details
-- Quests: Music, Trivia, and mini-games
-- Rewards: Auto-generate reward codes on event creation (trigger)
-
-## Architecture
-
-- Frontend: Vue 3 (Vite) SPA served locally on port 8888
-- Auth/DB: Firebase (Auth, Firestore)
-- Integrations:
-  - Spotify OAuth (PKCE) for MusicQuest
-  - Gemini for quiz generation (dev middleware or Cloud Function)
-- Cloud Functions:
-  - HTTP: populateEventsFromJambase (requires JAMBASE_KEY)
-  - Firestore trigger: generateRewardCodeOnEventCreate
-  - HTTP: generateQuiz (requires GEMINI_API_KEY)
-
-## Folder structure
-
-```
-quest-pass/
-  firebase.json
-  vite.config.js            # Vite dev on port 8888; @ alias to src; dev quiz middleware
-  package.json              # dev, build, preview scripts
-  index.html
-  public/
-  src/
-    main.js
-    App.vue
-    style.css
-    firebase.js             # Firebase web config (currently hard-coded)
-    assets/
-    components/             # Home, Login, MusicQuest, TriviaQuest, etc.
-    route/
-      routes.js
-    services/
-      spotify.js            # Spotify PKCE + Recently Played validation
-      gemini-quiz.js        # Uses /api/quiz (dev) or VITE_QUIZ_API_URL (prod)
-    store/
-      user.js               # Plus cart/navigation stores in repo
-  functions/
-    index.js                # Jambase importer, reward code trigger, generateQuiz
-    package.json            # engines.node=22
+```bash
+git clone <your-repository-url>
+cd questpass
 ```
 
-## Prerequisites
+### 2. Install Dependencies
 
-- Node.js 18+ for the frontend (Vite 7)
-- For Firebase Functions deploy, Node.js 22 (configured in `functions/package.json`)
-- Firebase CLI with project access
-  - Install: `npm i -g firebase-tools`
-  - Login: `firebase login`
-- A Firebase project (enable Authentication and Firestore)
-- Spotify Developer App (Client ID + redirect URI)
-- Gemini API key (for quizzes)
-
-## Quick start (frontend)
-
-1) Install dependencies
-
-```
-cd quest-pass
+```bash
+# Install main project dependencies
 npm install
+
+# Install Firebase Functions dependencies
+cd functions
+npm install
+cd ..
 ```
 
-2) Configure env for Trivia in dev
+### 3. Configure Firebase
 
-Create `quest-pass/.env.local` with your Gemini API key (either name works):
+#### A. Create a Firebase Project
 
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Click "Add project" and follow the setup wizard
+3. Enable the following services:
+   - **Authentication** (Email/Password provider)
+   - **Firestore Database** (Start in production mode)
+   - **Cloud Functions**
+   - **Hosting**
+
+#### B. Get Firebase Configuration
+
+1. In Firebase Console, go to **Project Settings** > **General**
+2. Scroll to "Your apps" and click the web icon `</>`
+3. Register your app and copy the configuration object
+4. Note down these values for your `.env` file
+
+#### C. Set up Firebase locally
+
+```bash
+# Login to Firebase
+firebase login
+
+# Initialize Firebase in your project (if not already done)
+firebase init
+
+# Select:
+# - Firestore
+# - Functions
+# - Hosting
 ```
-# quest-pass/.env.local
-GEMINI_API_KEY=your_gemini_api_key
-# or
-VITE_GEMINI_API_KEY=your_gemini_api_key
+
+### 4. Get API Keys
+
+#### JamBase API
+- Visit [JamBase API](https://jambase.com/jb-api)
+- Sign up for a developer account
+- Navigate to your dashboard to get your API key
+- **Cost**: Free tier available
+- ⚠️ **Important**: Free trial API keys expire after 2 weeks. You'll need to request an extension or upgrade to continue using the service.
+
+#### Google Gemini API
+- Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+- Sign in with your Google account
+- Click "Create API Key"
+- Copy your API key
+- **Cost**: Free tier with generous limits
+
+#### Google Maps API
+- Visit [Google Cloud Console](https://console.cloud.google.com/)
+- Create a new project or select existing one
+- Enable these APIs:
+  - Maps JavaScript API
+  - Maps Embed API
+  - Maps Static API
+- Go to **Credentials** and create an API key
+- **Cost**: $200 free credit monthly
+
+#### EmailJS
+- Sign up at [EmailJS](https://www.emailjs.com/)
+- Create an email service (Gmail, Outlook, etc.)
+- Create an email template
+- Get your:
+  - Service ID
+  - Template ID
+  - Public Key
+- **Cost**: Free tier (200 emails/month)
+
+### 5. Create Environment Files
+
+#### Root `.env` file
+
+Create a `.env` file in the project root:
+
+```env
+# JamBase API
+VITE_JAMBASE_API_KEY=your_jambase_api_key_here
+
+# Google Gemini AI
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+
+# Google Maps
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+
+# EmailJS
+VITE_EMAILJS_SERVICE_ID=your_emailjs_service_id
+VITE_EMAILJS_TEMPLATE_ID=your_emailjs_template_id
+VITE_EMAILJS_PUBLIC_KEY=your_emailjs_public_key
+
+# Stripe (Optional - for future payment features)
+VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+VITE_STRIPE_SECRET_KEY=your_stripe_secret_key
 ```
 
-3) Start the dev server (Vite on port 8888)
+#### Firebase Functions `.env` file
 
+Create a `functions/.env` file:
+
+```env
+VITE_JAMBASE_API_KEY=your_jambase_api_key_here
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+VITE_EMAILJS_SERVICE_ID=your_emailjs_service_id
+VITE_EMAILJS_TEMPLATE_ID=your_emailjs_template_id
+VITE_EMAILJS_PUBLIC_KEY=your_emailjs_public_key
 ```
+
+### 6. Update Firebase Configuration
+
+Edit `src/firebase.js` with your Firebase project configuration:
+
+```javascript
+export const firebaseConfig = {
+  apiKey: 'YOUR_FIREBASE_API_KEY',
+  authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
+  projectId: 'YOUR_PROJECT_ID',
+  storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+  appId: 'YOUR_APP_ID',
+  measurementId: 'YOUR_MEASUREMENT_ID',
+};
+```
+
+---
+
+## 🎮 Running the Application
+
+### Local Development Setup
+
+#### Option 1: Run with Live Firebase (Recommended)
+
+This connects to your live Firebase project while developing locally:
+
+```bash
+# Start the Vite development server
+npm run dev
+
+# The app will be available at http://localhost:3000
+```
+
+This uses your production Firebase services (Authentication, Firestore) but serves the frontend locally with hot-reload.
+
+#### Option 2: Run with Firebase Emulators (Advanced)
+
+For completely offline development without touching production data:
+
+```bash
+# Terminal 1: Start Firebase emulators
+firebase emulators:start
+
+# Terminal 2: Start the dev server
 npm run dev
 ```
 
-4) Open the app
+The emulators provide:
+- **Firestore Emulator**: Local database at `localhost:8080`
+- **Authentication Emulator**: Local auth at `localhost:9099`
+- **Functions Emulator**: Local functions at `localhost:5001`
+- **Emulator UI**: View data at `http://localhost:4000`
 
-- Local: http://localhost:3000
-- In Codespaces, use the forwarded URL for port 3000
+⚠️ **Note**: When using emulators, you'll need to update `src/firebase.js` to connect to local emulators:
 
-## Environment variables and configuration
+```javascript
+import { connectAuthEmulator } from 'firebase/auth';
+import { connectFirestoreEmulator } from 'firebase/firestore';
+import { connectFunctionsEmulator } from 'firebase/functions';
 
-### Firebase web config
-
-The project currently hard-codes Firebase config in `quest-pass/src/firebase.js`.
-
-For your own Firebase project:
-
-- Create a Web App in Firebase Console and copy the config
-- Update the object in `src/firebase.js` to match your project
-- Or refactor to Vite env vars (recommended):
-  - `VITE_FIREBASE_API_KEY`
-  - `VITE_FIREBASE_AUTH_DOMAIN`
-  - `VITE_FIREBASE_PROJECT_ID`
-  - `VITE_FIREBASE_STORAGE_BUCKET`
-  - `VITE_FIREBASE_MESSAGING_SENDER_ID`
-  - `VITE_FIREBASE_APP_ID`
-  - `VITE_FIREBASE_MEASUREMENT_ID`
-
-Make sure Firebase Authentication (Email/Password or your providers) and Firestore are enabled.
-
-### Spotify (MusicQuest)
-
-`quest-pass/src/services/spotify.js` currently hard-codes:
-
-- SPOTIFY_CLIENT_ID
-- SPOTIFY_REDIRECT_URI (a Codespaces URL on port 8888)
-
-To use your own Spotify app:
-
-1) Create a Spotify Developer App and copy the Client ID
-2) Add your redirect URI in the app settings (must match exactly)
-3) Update the constants in `src/services/spotify.js`, or refactor to env vars (recommended):
-   - `VITE_SPOTIFY_CLIENT_ID`
-   - `VITE_SPOTIFY_REDIRECT_URI`
-
-Tip: Set env in `quest-pass/.env.local`. Common pitfall: redirect URI mismatch.
-
-### Trivia (Gemini)
-
-Dev mode:
-
-- Vite runs a small dev middleware that serves `POST /api/quiz` using your Gemini API key.
-- Set `GEMINI_API_KEY` (or `VITE_GEMINI_API_KEY`) in `quest-pass/.env.local`.
-
-Prod options:
-
-- Deploy the Cloud Function `generateQuiz` and set the secret:
-  - `firebase functions:secrets:set GEMINI_API_KEY`
-- Point the frontend to the deployed endpoint via `VITE_QUIZ_API_URL`, e.g.:
-  - `VITE_QUIZ_API_URL=https://us-central1-<your-project>.cloudfunctions.net/generateQuiz`
-
-## Trivia quiz API contract
-
-Used by both the dev middleware and the Cloud Function.
-
-- Method: POST
-- Path: `/api/quiz` (dev) or the deployed Function URL (prod)
-- Body: `{ "artist": string }`
-- Response: `[{ question: string, options: string[4], correctAnswer: string }, ...]`
-
-## Firebase Functions (optional, recommended for prod)
-
-Functions live in `quest-pass/functions/` and use Node 22.
-
-Included endpoints/triggers:
-
-- `populateEventsFromJambase` (HTTP) – seeds Firestore with events; requires `JAMBASE_KEY`
-- `generateRewardCodeOnEventCreate` (Firestore trigger) – adds `rewardCode` to new events
-- `generateQuiz` (HTTP) – returns 5 MCQ questions; requires `GEMINI_API_KEY`
-
-### Local emulation
-
-1) Create `quest-pass/functions/.env` with required secrets:
-
-```
-# quest-pass/functions/.env
-JAMBASE_KEY=your_jambase_api_key
-GEMINI_API_KEY=your_gemini_api_key
+// After initializing auth, db, functions:
+if (location.hostname === 'localhost') {
+  connectAuthEmulator(auth, 'http://localhost:9099');
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectFunctionsEmulator(functions, 'localhost', 5001);
+}
 ```
 
-2) Start the Functions emulator:
+### Build for Production
 
+```bash
+# Create production build
+npm run build
+
+# Preview production build locally
+npm run preview
+
+# The preview will be available at http://localhost:4173
 ```
-cd quest-pass/functions
-npm install
-npm run serve
-```
-
-Example emulator URLs:
-
-```
-http://127.0.0.1:5001/<your-firebase-project>/us-central1/populateEventsFromJambase
-http://127.0.0.1:5001/<your-firebase-project>/us-central1/generateQuiz
-```
-
-### Deploy to Firebase
-
-1) Set production secrets (one-time per update):
-
-```
-firebase functions:secrets:set JAMBASE_KEY
-firebase functions:secrets:set GEMINI_API_KEY
-```
-
-2) Deploy functions:
-
-```
-cd quest-pass/functions
-npm run deploy
-```
-
-### Jambase API key (obtain/renew)
-
-If your `JAMBASE_KEY` expires or you need a new one, request a key at:
-
-- https://data.jambase.com/try/
-
-After obtaining a new key, update your local `.env` for emulation and re-set the production secret:
-
-```
-# Local (functions emulator)
-quest-pass/functions/.env
-
-JAMBASE_KEY=your_new_jambase_api_key
-
-# Production (one-time per update)
-firebase functions:secrets:set JAMBASE_KEY
-```
-
-Note: `firebase.json` currently configures Functions only (no Hosting). You can add Hosting later to deploy the SPA, or deploy the frontend to Vercel/Netlify.
-
-## Scripts
-
-Frontend (`quest-pass/package.json`):
-
-- `npm run dev` – start Vite dev server (port 8888)
-- `npm run build` – production build
-- `npm run preview` – preview the production build locally
-
-Cloud Functions (`quest-pass/functions/package.json`):
-
-- `npm run serve` – start Firebase Functions emulator
-- `npm run deploy` – deploy functions only
-- `npm run logs` – stream function logs
-
-## Troubleshooting
-
-- Vite dev port: The app runs on port 8888 (see `vite.config.js`). Update external redirects (Spotify) accordingly in Codespaces or your local hostname.
-- Spotify 401/redirect issues: ensure the client ID and redirect URI match Spotify app settings exactly.
-- Trivia dev errors like `GEMINI_API_KEY missing` or HTTP 502: set `GEMINI_API_KEY` or `VITE_GEMINI_API_KEY` in `quest-pass/.env.local`.
-- Pointing to prod quiz: set `VITE_QUIZ_API_URL` to the deployed Cloud Function URL.
-- CORS/404 for quiz in prod: ensure the function is deployed and the URL/region is correct.
-- Firestore permission errors: verify Firebase rules and that you’re authenticated where required.
-- Missing `JAMBASE_KEY`: set the secret in `functions/.env` for emulators and with `firebase functions:secrets:set` for deploys.
-
-## Roadmap / suggested improvements
-
-- Move hard-coded keys/URIs to Vite env vars with `.env.local` and `.env.production`
-- Add Firebase Hosting configuration to deploy the SPA alongside Functions
-- Add basic tests and a CI workflow (build/lint) for PRs
-- Add screenshots or a short demo GIF to this README
-- Document Firestore data model (collections, indexes) as the project evolves
 
 ---
+
+## 🚢 Deployment
+
+### Deploy to Firebase Hosting
+
+```bash
+# Build and deploy
+npm run build
+firebase deploy
+
+# Deploy only hosting
+firebase deploy --only hosting
+
+# Deploy only functions
+firebase deploy --only functions
+```
+
+Your app will be live at: `https://YOUR_PROJECT_ID.web.app`
+
+---
+
+## 🎯 Features
+
+### For Users
+- 🎵 **Music Discovery Quest**: Connect Spotify to verify you've listened to an artist
+- 🧠 **AI-Powered Trivia**: Test your knowledge with generated quizzes
+- 🎟️ **Reward System**: Earn points to unlock presale access codes
+- 🗺️ **Event Discovery**: Browse upcoming concerts with venue maps
+- 📧 **Email Notifications**: Get notified when you unlock rewards
+
+### For Developers
+- ⚡ **Vue 3 + Vite**: Modern, fast development experience
+- 🔥 **Firebase Backend**: Authentication, Firestore, Cloud Functions
+- 🎨 **Bootstrap 5**: Responsive, accessible UI components
+- 🤖 **AI Integration**: Gemini API for dynamic content generation
+- 🎮 **Gamification**: Point-based progression system
+
+---
+
+## 📁 Project Structure
+
+```
+questpass/
+├── src/
+│   ├── components/        # Vue components
+│   │   ├── AlbumGuess.vue
+│   │   ├── CelebrityGuess.vue
+│   │   ├── EventDetails.vue
+│   │   ├── MusicQuest.vue
+│   │   └── TriviaQuest.vue
+│   ├── route/            # Vue Router configuration
+│   ├── store/            # Pinia state management
+│   ├── services/         # API service modules
+│   ├── firebase.js       # Firebase initialization
+│   ├── main.js          # App entry point
+│   └── style.css        # Global styles
+├── functions/           # Firebase Cloud Functions
+│   ├── index.js        # Functions definitions
+│   └── package.json
+├── public/             # Static assets
+├── .env                # Environment variables
+├── firebase.json       # Firebase configuration
+├── vite.config.js     # Vite configuration
+└── package.json       # Project dependencies
+```
+
+---
+
+## 🎨 Available Games
+
+### 1. Album Guesser
+Guess the album from a progressively revealed cover art. Earn up to 60 points based on how quickly you guess correctly.
+
+### 2. Artist Guesser
+Identify the artist from a blurred image that gets clearer with each attempt.
+
+### 3. Music Heardle
+Listen to song snippets and guess the track. The snippet gets longer with each wrong guess.
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Build fails with API key errors**
+- Ensure all environment variables are properly set in `.env`
+- Restart the dev server after changing `.env` files
+
+**Firebase deployment fails**
+- Run `firebase login` to re-authenticate
+- Check that your Firebase project is correctly initialized
+- Ensure billing is enabled for Cloud Functions
+
+**CORS errors with external APIs**
+- The app uses `corsproxy.io` for Deezer API calls
+- If issues persist, consider setting up your own CORS proxy
+
+**Spotify integration not working**
+- Spotify Web API requires separate OAuth setup
+- This feature is optional and can be disabled
+
+---
+
+## 📝 License
+
+This project is proprietary. All rights reserved.
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📧 Support
+
+For questions or issues:
+- Open an issue on GitHub
+- Contact the development team
+
+---
+
+## 🙏 Acknowledgments
+
+- **JamBase** for event data
+- **Google Gemini** for AI-powered trivia
+- **Deezer API** for music metadata
+- **Bootstrap** for UI components
+- **Vue.js** community for excellent documentation
+
+---
+
+**Built with ❤️ by the QuestPass Team**
